@@ -945,7 +945,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ==========================================================================
-       RESPONSIVE BREAKPOINTS
+       RESPONSIVE BREAKPOINTS — LAPTOP, DESKTOP, TABLET, PHONE
        ========================================================================== */
 
     /* ---- Large Desktop (1441px+) ---- */
@@ -973,78 +973,29 @@
       .fm-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
     }
 
-    /* =========================================================
-       TABLET / PHONE (≤900px) — SIDEBAR BECOMES OVERLAY
-       ========================================================= */
+    /* ---- Tablet Landscape / Small Laptop (769px–900px) ---- */
     @media (max-width: 900px) {
       .layout {
         flex-direction: column;
         min-height: 0;
         overflow-x: visible;
       }
-
-      /* Sidebar becomes a full-width block above the files list */
       .sidebar {
-        width: 100%;
-        position: relative;
-        top: auto;
-        height: auto;
-        max-height: 45vh;
-        overflow-y: auto;
-        border-right: 0;
+        width: 100%; position: static; height: auto;
+        flex-direction: column; border-right: 0;
         border-bottom: 3px solid var(--amber);
         padding: 16px 18px;
-        transition: max-height var(--smooth), padding var(--smooth), opacity var(--smooth);
+        max-height: none;
       }
-      .layout.side-hidden .sidebar {
-        max-height: 0;
-        padding-top: 0;
-        padding-bottom: 0;
-        border-bottom-width: 0;
-        opacity: 0;
-        overflow: hidden;
-        visibility: hidden;
-      }
-
+      .layout.side-hidden .sidebar { display: none; }
       .main-col { padding: 18px 14px 30px; }
-      .layout.side-hidden .main-col { padding-top: 18px; }
+      .layout.side-hidden .main-col { padding-top: calc(var(--topbar-h) + 4px); }
       .layout.side-hidden .main-col-inner { transform: none; }
       .side-spacer { display: none; }
-
-      /* ============================================================
-         SIDEBAR TOGGLE — vertical tab on the LEFT edge, centered.
-         Stays on the SIDE, not at the top.
-         ============================================================ */
       .side-show {
-        position: fixed !important;
-        left: 0 !important;
-        right: auto !important;
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        z-index: 90 !important;
-        width: 34px;
-        height: 56px;
-        border-radius: 0 10px 10px 0;
-        border: 2px solid var(--royal);
-        border-left: 0;
-        background: #fff;
-        color: var(--royal);
-        font-size: 16px;
-        box-shadow: 2px 4px 14px rgba(27,27,179,.35);
-        display: inline-flex !important;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
+        left: auto; right: 14px; top: 14px;
       }
-      .side-show:active {
-        transform: translateY(-50%) scale(.94) !important;
-      }
-      .layout.side-hidden .side-show {
-        left: 0 !important;
-        right: auto !important;
-      }
-
-      .hero { padding-right: 24px; }
+      .layout.side-hidden .side-show { left: auto; right: 14px; }
       .hero-title { font-size: 20px; }
       .hero-actions { justify-content: flex-start; }
       .hero-spacer { display: none; }
@@ -1137,8 +1088,6 @@
 
       .fm-progress { min-width: 240px; padding: 12px 16px; left: 14px; right: 14px; transform: none; bottom: 14px; bottom: calc(14px + var(--safe-bottom)); }
       .fm-toast { left: 14px; right: 14px; transform: none; bottom: 14px; bottom: calc(14px + var(--safe-bottom)); }
-
-      .sidebar { max-height: 40vh; }
     }
 
     /* ---- Small Phone (360px–480px) ---- */
@@ -1158,16 +1107,6 @@
       .hero-count { padding: 6px 10px; font-size: 10.5px; }
       .hero-storage { padding: 6px 10px; min-width: 0; }
       .hero-storage-line { font-size: 10px; }
-
-      .side-show {
-        width: 30px;
-        height: 50px;
-        font-size: 15px;
-        left: 0 !important;
-        right: auto !important;
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-      }
 
       .fm-crumb-bar { padding: 10px; gap: 8px; }
       .fm-crumb { font-size: 12px; padding: 5px 8px; }
@@ -1215,8 +1154,6 @@
       .fm-progress-title { font-size: 12.5px; }
       .fm-progress-cancel { padding: 4px 10px; font-size: 10.5px; }
       .fm-toast { padding: 10px 14px; font-size: 12.5px; }
-
-      .sidebar { max-height: 38vh; }
     }
 
     /* ---- Very Small Phone (320px–359px) ---- */
@@ -1240,7 +1177,7 @@
       .fm-dropzone { min-height: 220px; }
       .fm-preview-container { max-height: 98vh; max-height: 98dvh; }
       .fm-preview-body { min-height: 200px; }
-      .sidebar { padding: 12px 14px; max-height: 36vh; }
+      .sidebar { padding: 12px 14px; }
       .side-btn { padding: 8px 12px; font-size: 12px; min-height: 36px; }
     }
 
@@ -1308,7 +1245,7 @@
         <div class="side-buttons-list" id="side-buttons-container"></div>
         <div class="side-spacer"></div>
       </aside>
-      <button class="side-show" id="side-toggle" type="button" title="Show sidebar" aria-label="Show sidebar">&#10095;</button>
+      <button class="side-show" id="side-toggle" type="button" title="Hide sidebar">&#10094;</button>
       <div class="main-col">
         <div class="main-col-inner">
           <section class="hero">
@@ -1763,6 +1700,7 @@
 
   /* ============================================================================
      DYNAMIC TOPBAR HEIGHT SYNC
+     Keeps the sidebar flush against the header at all times.
      ============================================================================ */
   function syncTopbarHeight() {
     const topbar = document.querySelector('.topbar');
@@ -3806,61 +3744,14 @@
     }
   }
 
-  // ============================================================================
-  // SIDEBAR TOGGLE — mobile-aware with persistence
-  // ============================================================================
-  (function initSidebarToggle() {
-    if (!sideToggle) return;
-
-    const mq = window.matchMedia('(max-width: 900px)');
-    const isMobile = () => mq.matches;
-
-    function applyToggleState(hidden) {
-      layout.classList.toggle('side-hidden', hidden);
+  // ---------- SIDEBAR TOGGLE ----------
+  if (sideToggle) {
+    sideToggle.addEventListener('click', () => {
+      const hidden = layout.classList.toggle('side-hidden');
       sideToggle.innerHTML = hidden ? '&#10095;' : '&#10094;';
       sideToggle.title = hidden ? 'Show sidebar' : 'Hide sidebar';
-      sideToggle.setAttribute('aria-label', hidden ? 'Show sidebar' : 'Hide sidebar');
-      try { localStorage.setItem('ldi_sidebar_hidden', hidden ? '1' : '0'); } catch (e) {}
-    }
-
-    function readSavedState() {
-      try {
-        const v = localStorage.getItem('ldi_sidebar_hidden');
-        if (v === null) return null;
-        return v === '1';
-      } catch (e) { return null; }
-    }
-
-    // Initial state
-    if (isMobile()) {
-      const saved = readSavedState();
-      // Default to HIDDEN on mobile — user sees files first
-      applyToggleState(saved === null ? true : saved);
-    } else {
-      // Desktop: always visible by default
-      applyToggleState(false);
-    }
-
-    // Toggle click
-    sideToggle.addEventListener('click', () => {
-      const willHide = !layout.classList.contains('side-hidden');
-      applyToggleState(willHide);
     });
-
-    // Handle breakpoint changes
-    function handleBreakpoint(e) {
-      if (e.matches) {
-        // Entered mobile — default to hidden unless user saved a preference
-        const saved = readSavedState();
-        applyToggleState(saved === null ? true : saved);
-      } else {
-        // Entered desktop — always show
-        applyToggleState(false);
-      }
-    }
-    if (mq.addEventListener) mq.addEventListener('change', handleBreakpoint);
-    else if (mq.addListener) mq.addListener(handleBreakpoint);
-  })();
+  }
 
   // ---------- DRAG & DROP ----------
   let dragDepth = 0;
