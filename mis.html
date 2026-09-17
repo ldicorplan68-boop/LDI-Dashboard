@@ -970,6 +970,21 @@
       transition: background .15s;
     }
     .fm-preview-body .unsupported-preview .download-link:hover { background: var(--royal-2); }
+    .fm-preview-body .unsupported-preview .retry-link {
+      display: inline-block; margin: 16px 6px 0; padding: 10px 22px;
+      background: #fff; color: var(--royal); border-radius: 10px;
+      border: 2px solid #fff; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700; font-size: 13px;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .fm-preview-body .unsupported-preview .retry-link:hover {
+      background: transparent; color: #fff; border-color: #fff;
+    }
+    .fm-preview-body .unsupported-preview .auto-retry-note {
+      margin-top: 12px; font-size: 12px; color: #ffd98a;
+      font-weight: 600; letter-spacing: .2px;
+    }
     .fm-preview-loading {
       display: flex; flex-direction: column; align-items: center; gap: 14px;
       color: #cfd6ff; font-size: 14px; font-weight: 600;
@@ -1104,7 +1119,7 @@
     .fm-pending-row.resuming { border-color: var(--royal); background: #eef1fb; }
 
     /* ==========================================================================
-       RESPONSIVE BREAKPOINTS — LAPTOP, DESKTOP, TABLET, PHONE
+       RESPONSIVE BREAKPOINTS
        ========================================================================== */
 
     @media (min-width: 1441px) {
@@ -1635,14 +1650,12 @@
 
 <div class="fm-toast" id="fm-toast" hidden></div>
 
-<!-- Floating indicator: shows up whenever there are unfinished uploads -->
 <button class="fm-pending-fab" id="fm-pending-fab" hidden type="button">
   <span class="fm-pending-fab-icon">&#9208;&#65039;</span>
   <span class="fm-pending-fab-text">Resume Uploads</span>
   <span class="fm-pending-fab-count" id="fm-pending-fab-count">0</span>
 </button>
 
-<!-- Pending uploads modal -->
 <div class="fm-modal-overlay" id="fm-pending-modal" hidden>
   <div class="fm-modal fm-pending-modal">
     <div class="fm-alert-icon warn">&#9208;&#65039;</div>
@@ -1758,20 +1771,10 @@
 
 <script>
 /* ============================================================================
-   ART FILE MANAGER — BLOB-BASED PREVIEW/DOWNLOAD + CONNECTION GUARD
-   + RESUMABLE (TUS) UPLOADS WITH RESUME BUTTON
-   ============================================================================
-   Key fixes vs. original:
-   - Every file is fetched through the authenticated Supabase Storage API
-     (with apikey + Authorization headers) and turned into a local Blob URL.
-   - Previews and downloads NEVER depend on the public bucket URL.
-   - Uploads of small files use a size-scaled timeout and are retried with
-     exponential backoff on transient errors.
-   - Uploads of large files (>= 6 MB) use Supabase's TUS resumable endpoint
-     so a failed upload can be resumed from the last successful chunk, even
-     after a page reload.
-   - A connection monitor pings the backend; if the Cloudflare tunnel drops,
-     a banner appears and everything recovers automatically when it's back.
+   ART FILE MANAGER
+   - Blob-based previews/downloads with connection-aware retry
+   - Resumable (TUS) uploads with a Resume button
+   - Auto-recovery when the Cloudflare tunnel comes back online
    ============================================================================ */
 (function(){
   'use strict';
@@ -1785,24 +1788,30 @@
   const CONCURRENCY   = 4;
 
   // --- Upload tuning -----------------------------------------------------
-  const UPLOAD_CONCURRENCY     = 2;        // tunnel-friendly
-  const UPLOAD_TIMEOUT_BASE_MS = 60000;    // 60s floor
-  const UPLOAD_TIMEOUT_PER_MB  = 10000;    // +10s per MB
-  const UPLOAD_TIMEOUT_MAX_MS  = 300000;   // 5 min ceiling
-  const UPLOAD_MAX_ATTEMPTS    = 4;        // 1 try + 3 retries
+  const UPLOAD_CONCURRENCY     = 2;
+  const UPLOAD_TIMEOUT_BASE_MS = 60000;
+  const UPLOAD_TIMEOUT_PER_MB  = 10000;
+  const UPLOAD_TIMEOUT_MAX_MS  = 300000;
+  const UPLOAD_MAX_ATTEMPTS    = 4;
+
+  // --- Blob (preview / download) tuning ---------------------------------
+  const BLOB_FETCH_ATTEMPTS  = 3;
+  const BLOB_TIMEOUT_BASE_MS = 45000;
+  const BLOB_TIMEOUT_PER_MB  = 8000;
+  const BLOB_TIMEOUT_MAX_MS  = 300000;
 
   // --- Resumable (TUS) upload tuning ------------------------------------
-  const UPLOAD_RESUMABLE_THRESHOLD = 6 * 1024 * 1024;   // 6 MB
-  const TUS_CHUNK_SIZE             = 6 * 1024 * 1024;   // must stay 6 MB
+  const UPLOAD_RESUMABLE_THRESHOLD = 6 * 1024 * 1024;
+  const TUS_CHUNK_SIZE             = 6 * 1024 * 1024;
   const UPLOAD_STATE_KEY           = 'ldi_pending_uploads_v1';
-  const UPLOAD_STATE_MAX_AGE_MS    = 7 * 24 * 60 * 60 * 1000;  // 7 days
+  const UPLOAD_STATE_MAX_AGE_MS    = 7 * 24 * 60 * 60 * 1000;
 
   const RETRYABLE_STATUS = new Set([
     408, 425, 429, 500, 502, 503, 504,
-    520, 521, 522, 523, 524, 525, 527     // Cloudflare-family codes
+    520, 521, 522, 523, 524, 525, 527
   ]);
 
-  const PREVIEW_MAX_BYTES = 60 * 1024 * 1024; // 60 MB hard cap for in-browser preview
+  const PREVIEW_MAX_BYTES = 60 * 1024 * 1024;
 
   const DEFAULT_ICON = '\uD83D\uDCC1';
   const ICON_CHOICES = [
@@ -1978,9 +1987,40 @@
   let previewItem      = null;
   let previewObjectUrl = null;
   let previewAbort     = null;
+  let previewAutoRetryUnsub = null;
 
   let deleteCancelRequested = false;
   let activeDeleteController = null;
+
+  /* ============================================================================
+     HELPERS
+     ============================================================================ */
+  function sleep(ms, signal) {
+    return new Promise((resolve, reject) => {
+      if (signal && signal.aborted) {
+        return reject(new DOMException('Aborted', 'AbortError'));
+      }
+      const t = setTimeout(resolve, ms);
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          clearTimeout(t);
+          reject(new DOMException('Aborted', 'AbortError'));
+        }, { once: true });
+      }
+    });
+  }
+
+  function isNetworkError(err) {
+    if (!err) return false;
+    if (err.network) return true;
+    if (err.name === 'AbortError') return false;
+    const msg = String(err.message || err);
+    return /Failed to fetch|NetworkError|Load failed|network error|ERR_NETWORK|ERR_INTERNET|ERR_CONNECTION|timed out|timeout|unreachable/i.test(msg);
+  }
+
+  function isOfflineError(err) {
+    return !!(err && (err.network || err.offline));
+  }
 
   /* ============================================================================
      CONNECTION MANAGER
@@ -2094,6 +2134,16 @@
       restartTimer,
       setOnline,
       setReconnectHandler,
+      /**
+       * Called from anywhere in the app when a network fetch fails.
+       * Flips the banner to "offline" and shortens the ping interval.
+       */
+      reportNetworkFailure: (reason) => {
+        if (online) {
+          setOnline(false, reason || 'Server unreachable — Cloudflare tunnel may be down');
+          restartTimer();
+        }
+      },
       onChange: (fn) => { listeners.add(fn); return () => listeners.delete(fn); }
     };
   })();
@@ -2624,13 +2674,19 @@
 
   /* ---------------- STORAGE API ---------------- */
   async function listFolder(prefix) {
-    const res = await fetchT(`${SUPABASE_URL}/storage/v1/object/list/${encodeURIComponent(BUCKET)}`, {
-      method: 'POST',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ prefix, limit: 2000, offset: 0, sortBy: { column: 'name', order: 'asc' } })
-    });
-    if (!res.ok) throw new Error('List failed: ' + await res.text());
-    return res.json();
+    try {
+      const res = await fetchT(`${SUPABASE_URL}/storage/v1/object/list/${encodeURIComponent(BUCKET)}`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ prefix, limit: 2000, offset: 0, sortBy: { column: 'name', order: 'asc' } })
+      });
+      if (!res.ok) throw new Error('List failed: ' + await res.text());
+      Connection.setOnline(true);
+      return res.json();
+    } catch (err) {
+      if (isNetworkError(err)) Connection.reportNetworkFailure();
+      throw err;
+    }
   }
 
   async function verifyRootFolderExists() {
@@ -2678,34 +2734,115 @@
   }
 
   /* ============================================================================
-     AUTHENTICATED BLOB FETCH — previews/downloads never touch the public URL
+     AUTHENTICATED BLOB FETCH
+     Previews and downloads never touch the public bucket URL directly.
+     Retries on transient / network errors, falls back to public URL, and
+     marks the connection offline when the Cloudflare tunnel drops.
      ============================================================================ */
-  async function fetchObjectBlob(fullPath, signal) {
-    const apiUrl = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}/${encodePath(fullPath)}`;
-    let lastErr = null;
+  function singleBlobFetch(url, headers, timeoutMs, outerSignal) {
+    return new Promise((resolve, reject) => {
+      const ctrl = new AbortController();
+      let timedOut = false;
+      const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, timeoutMs);
+      const onOuterAbort = () => ctrl.abort();
 
-    try {
-      const res = await fetchT(apiUrl, { method: 'GET', headers: authHeaders() }, signal);
-      if (res.ok) return await res.blob();
-      lastErr = new Error('HTTP ' + res.status);
-    } catch (err) {
-      lastErr = err;
-    }
+      if (outerSignal) {
+        if (outerSignal.aborted) {
+          clearTimeout(timer);
+          reject(new DOMException('Aborted', 'AbortError'));
+          return;
+        }
+        outerSignal.addEventListener('abort', onOuterAbort, { once: true });
+      }
 
-    try {
-      const pub = getPublicUrl(fullPath);
-      const res = await fetchT(pub, { method: 'GET' }, signal);
-      if (res.ok) return await res.blob();
-      lastErr = new Error('HTTP ' + res.status);
-    } catch (err) {
-      lastErr = err;
-    }
+      const cleanup = () => {
+        clearTimeout(timer);
+        if (outerSignal) outerSignal.removeEventListener('abort', onOuterAbort);
+      };
 
-    throw new Error('Could not read file from storage' + (lastErr ? ' (' + lastErr.message + ')' : ''));
+      fetch(url, { method: 'GET', headers, signal: ctrl.signal, cache: 'no-store' })
+        .then(res => { cleanup(); resolve(res); })
+        .catch(err => {
+          cleanup();
+          if (outerSignal && outerSignal.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'));
+            return;
+          }
+          const e = new Error(timedOut ? 'Request timed out' : 'Network error — server unreachable');
+          e.network = true;
+          e.cause = err;
+          reject(e);
+        });
+    });
   }
 
   function getPublicUrl(fullPath) {
     return `${SUPABASE_URL}/storage/v1/object/public/${encodeURIComponent(BUCKET)}/${encodePath(fullPath)}`;
+  }
+
+  async function fetchObjectBlob(fullPath, outerSignal, sizeHint) {
+    const sizeMB = sizeHint ? sizeHint / 1048576 : 0;
+    const timeoutMs = Math.min(
+      BLOB_TIMEOUT_MAX_MS,
+      BLOB_TIMEOUT_BASE_MS + sizeMB * BLOB_TIMEOUT_PER_MB
+    );
+
+    const sources = [
+      {
+        url: `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}/${encodePath(fullPath)}`,
+        headers: authHeaders()
+      },
+      { url: getPublicUrl(fullPath), headers: {} }
+    ];
+
+    let lastErr = null;
+    let sawNetworkFailure = false;
+
+    for (const src of sources) {
+      for (let attempt = 0; attempt < BLOB_FETCH_ATTEMPTS; attempt++) {
+        if (outerSignal && outerSignal.aborted) {
+          throw new DOMException('Aborted', 'AbortError');
+        }
+        if (attempt > 0) {
+          const backoff = Math.min(8000, 700 * Math.pow(2, attempt - 1));
+          await sleep(backoff + Math.random() * 400, outerSignal);
+        }
+
+        try {
+          const res = await singleBlobFetch(src.url, src.headers, timeoutMs, outerSignal);
+          if (res.ok) {
+            if (sawNetworkFailure) Connection.setOnline(true);
+            return await res.blob();
+          }
+
+          const httpErr = new Error('HTTP ' + res.status);
+          httpErr.status = res.status;
+          httpErr.retryable = RETRYABLE_STATUS.has(res.status);
+          lastErr = httpErr;
+          if (!httpErr.retryable) break;
+        } catch (err) {
+          if (err && err.name === 'AbortError') throw err;
+          lastErr = err;
+          if (isNetworkError(err)) {
+            sawNetworkFailure = true;
+            Connection.reportNetworkFailure();
+          } else if (err && err.retryable === false) {
+            break;
+          }
+        }
+      }
+    }
+
+    if (sawNetworkFailure || isNetworkError(lastErr)) {
+      const e = new Error('Server unreachable — the Cloudflare tunnel may be down. Please wait a moment and retry.');
+      e.network = true;
+      e.offline = true;
+      e.cause = lastErr;
+      throw e;
+    }
+
+    throw new Error('Could not read file from storage' +
+      (lastErr ? ' (' + lastErr.message + ')' : ''));
   }
 
   function saveBlobAsFile(blob, fileName) {
@@ -2735,7 +2872,11 @@
       showToast('Downloaded "' + name + '"', 2400);
     } catch (err) {
       progressEnd();
-      showToast('Download failed: ' + err.message, 4500);
+      if (isOfflineError(err)) {
+        showToast('Server unreachable — check your tunnel connection', 5000);
+      } else {
+        showToast('Download failed: ' + err.message, 4500);
+      }
     }
   }
 
@@ -2775,7 +2916,11 @@
 
     if (done === 0) {
       progressEnd();
-      showToast('Could not download any files', 4000);
+      if (!Connection.isOnline()) {
+        showToast('Server unreachable — could not download folder', 5000);
+      } else {
+        showToast('Could not download any files', 4000);
+      }
       return;
     }
 
@@ -2905,7 +3050,11 @@
       renameInput.disabled = false;
       renameConfirm.disabled = false;
       renameConfirm.textContent = 'Rename';
-      showToast('Rename failed: ' + err.message, 4000);
+      if (isOfflineError(err)) {
+        showToast('Server unreachable — rename cancelled', 5000);
+      } else {
+        showToast('Rename failed: ' + err.message, 4000);
+      }
     }
   }
 
@@ -3036,7 +3185,11 @@
       updateStorageInfo().catch(err => console.error(err));
     } catch (err) {
       progressEnd();
-      showToast('Delete failed: ' + err.message, 4000);
+      if (isOfflineError(err)) {
+        showToast('Server unreachable — delete cancelled', 5000);
+      } else {
+        showToast('Delete failed: ' + err.message, 4000);
+      }
     } finally {
       deleteCancelRequested = false;
       activeDeleteController = null;
@@ -3424,7 +3577,7 @@
   }
 
   /* ============================================================================
-     PREVIEW SYSTEM — fully blob based
+     PREVIEW SYSTEM
      ============================================================================ */
   function getFileExtension(name) {
     return (name.split('.').pop() || '').toLowerCase();
@@ -3443,7 +3596,8 @@
       (text || 'Loading preview…') + '</span></div>';
   }
 
-  function showPreviewError(msg, item) {
+  function showPreviewError(msg, item, opts) {
+    opts = opts || {};
     previewBody.innerHTML = '';
 
     const wrap = document.createElement('div');
@@ -3451,7 +3605,7 @@
 
     const icon = document.createElement('span');
     icon.className = 'big-icon';
-    icon.textContent = '⚠️';
+    icon.textContent = opts.networkError ? '📡' : '⚠️';
 
     const p1 = document.createElement('p');
     p1.textContent = msg;
@@ -3459,11 +3613,27 @@
     const p2 = document.createElement('p');
     p2.style.opacity = '.75';
     p2.style.fontSize = '13px';
-    p2.textContent = 'You can still download this file — it will not open in a new tab.';
+    p2.textContent = opts.networkError
+      ? 'The preview will resume automatically once the server is reachable again.'
+      : 'You can still download this file — it will not open in a new tab.';
 
     wrap.appendChild(icon);
     wrap.appendChild(p1);
     wrap.appendChild(p2);
+
+    if (opts.networkError && item) {
+      const retryBtn = document.createElement('button');
+      retryBtn.type = 'button';
+      retryBtn.className = 'retry-link';
+      retryBtn.textContent = '🔄 Retry now';
+      retryBtn.addEventListener('click', () => openPreview(item));
+      wrap.appendChild(retryBtn);
+
+      const note = document.createElement('div');
+      note.className = 'auto-retry-note';
+      note.textContent = 'Waiting for connection…';
+      wrap.appendChild(note);
+    }
 
     const dl = document.createElement('button');
     dl.type = 'button';
@@ -3475,12 +3645,29 @@
     wrap.appendChild(dl);
 
     previewBody.appendChild(wrap);
+
+    // Auto-retry when the connection comes back online.
+    if (opts.networkError && item) {
+      if (previewAutoRetryUnsub) { try { previewAutoRetryUnsub(); } catch (e) {} }
+      previewAutoRetryUnsub = Connection.onChange(online => {
+        if (online && previewItem && previewItem.name === item.name) {
+          openPreview(item);
+        }
+      });
+    }
   }
 
   function revokePreviewUrl() {
     if (previewObjectUrl) {
       try { URL.revokeObjectURL(previewObjectUrl); } catch (e) {}
       previewObjectUrl = null;
+    }
+  }
+
+  function clearPreviewAutoRetry() {
+    if (previewAutoRetryUnsub) {
+      try { previewAutoRetryUnsub(); } catch (e) {}
+      previewAutoRetryUnsub = null;
     }
   }
 
@@ -3514,11 +3701,19 @@
     let blob;
     try {
       previewAbort = new AbortController();
-      blob = await fetchObjectBlob(fullPathFor(fileName), previewAbort.signal);
+      blob = await fetchObjectBlob(fullPathFor(fileName), previewAbort.signal, size);
     } catch (err) {
       previewAbort = null;
       if (err && err.name === 'AbortError') return;
-      showPreviewError('Could not load this file: ' + err.message, item);
+      if (isOfflineError(err)) {
+        showPreviewError(
+          'Server unreachable — the Cloudflare tunnel may be down.',
+          item,
+          { networkError: true }
+        );
+      } else {
+        showPreviewError('Could not load this file: ' + err.message, item);
+      }
       return;
     }
     previewAbort = null;
@@ -3758,6 +3953,7 @@
       try { previewAbort.abort(); } catch (e) {}
       previewAbort = null;
     }
+    clearPreviewAutoRetry();
     revokePreviewUrl();
     previewOverlay.hidden = true;
     previewBody.innerHTML = '';
@@ -3804,8 +4000,8 @@
       applyFilterAndSort();
       renderItems();
     } catch (err) {
-      const looksLikeNetwork = /Failed to fetch|NetworkError|aborted|timeout/i.test(err.message || '');
-      if (looksLikeNetwork) Connection.setOnline(false);
+      const looksLikeNetwork = isNetworkError(err);
+      if (looksLikeNetwork) Connection.reportNetworkFailure();
 
       if (currentPath === '') {
         rootExists = false;
@@ -4004,26 +4200,6 @@
   /* ============================================================================
      UPLOAD HELPERS
      ============================================================================ */
-
-  function sleep(ms, signal) {
-    return new Promise((resolve, reject) => {
-      if (signal && signal.aborted) {
-        return reject(new DOMException('Aborted', 'AbortError'));
-      }
-      const t = setTimeout(resolve, ms);
-      if (signal) {
-        signal.addEventListener('abort', () => {
-          clearTimeout(t);
-          reject(new DOMException('Aborted', 'AbortError'));
-        }, { once: true });
-      }
-    });
-  }
-
-  /**
-   * Single small-file upload attempt. Size-scaled timeout, retryable flag on
-   * the error object.
-   */
   async function uploadOne(fullPath, file, outerSignal) {
     const sizeMB  = (file && file.size ? file.size : 0) / 1048576;
     const timeout = Math.min(
@@ -4084,7 +4260,6 @@
   /* ============================================================================
      RESUMABLE (TUS) UPLOADS
      ============================================================================ */
-
   const resumableSessions = new Map();
 
   function makeFingerprint(file, fullPath) {
@@ -4126,9 +4301,7 @@
         });
       });
       localStorage.setItem(UPLOAD_STATE_KEY, JSON.stringify(arr));
-    } catch (e) {
-      // Quota or privacy mode — sessions just won't survive a reload.
-    }
+    } catch (e) {}
   }
 
   function loadPersistedSessions() {
@@ -4232,7 +4405,7 @@
         method: 'DELETE',
         headers: Object.assign(authHeaders(), { 'Tus-Resumable': '1.0.0' })
       });
-    } catch (e) { /* best effort */ }
+    } catch (e) {}
   }
 
   async function runTusUpload(session, signal) {
@@ -4335,10 +4508,6 @@
     throw makePausedError(session, lastErr);
   }
 
-  /**
-   * Small files: single POST with retries.
-   * Large files: TUS pipeline with resume.
-   */
   async function uploadWithRetry(fullPath, file, outerSignal) {
     if (file.size >= UPLOAD_RESUMABLE_THRESHOLD) {
       return await uploadLargeResumable(fullPath, file, outerSignal);
@@ -4502,9 +4671,8 @@
   }
 
   /* ============================================================================
-     PENDING UPLOADS UI — the "Resume" surface
+     PENDING UPLOADS UI
      ============================================================================ */
-
   function renderPendingUploads() {
     const fab   = document.getElementById('fm-pending-fab');
     const count = document.getElementById('fm-pending-fab-count');
@@ -4790,7 +4958,11 @@
       updateStorageInfo().catch(err => console.error(err));
     } catch (err) {
       progressEnd();
-      showToast('Delete failed: ' + err.message, 4000);
+      if (isOfflineError(err)) {
+        showToast('Server unreachable — delete cancelled', 5000);
+      } else {
+        showToast('Delete failed: ' + err.message, 4000);
+      }
     } finally {
       deleteCancelRequested = false;
       activeDeleteController = null;
@@ -4853,7 +5025,11 @@
       modalInput.disabled = false;
       modalConfirm.disabled = false;
       modalConfirm.textContent = 'Create';
-      showToast('Create folder failed: ' + err.message, 4000);
+      if (isOfflineError(err)) {
+        showToast('Server unreachable — could not create folder', 5000);
+      } else {
+        showToast('Create folder failed: ' + err.message, 4000);
+      }
     }
   }
 
@@ -5117,11 +5293,9 @@
     buildIconPicker();
     setSelectedIcon(DEFAULT_ICON);
 
-    // Bring back any unfinished uploads from a previous session
     loadPersistedSessions();
     renderPendingUploads();
 
-    // Kick off connectivity monitoring first
     Connection.check(true).then(ok => {
       Connection.start();
       if (!ok) {
@@ -5148,9 +5322,9 @@
     syncTopbarHeight();
   })();
 
-  /* Clean up any lingering object URLs when leaving the page */
   window.addEventListener('beforeunload', () => {
     revokePreviewUrl();
+    clearPreviewAutoRetry();
   });
 })();
 </script>
