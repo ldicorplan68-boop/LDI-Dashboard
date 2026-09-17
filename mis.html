@@ -26,6 +26,7 @@
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --safe-left: env(safe-area-inset-left, 0px);
       --safe-right: env(safe-area-inset-right, 0px);
+      --topbar-h: 68px; /* fallback, updated by JS */
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -104,9 +105,9 @@
       display: flex; flex-direction: column;
     }
 
+    /* ================= TOPBAR ================= */
     .topbar {
       position: sticky; top: 0; z-index: 50;
-      min-height: 68px;
       background-image: linear-gradient(90deg, rgba(13,13,122,.88) 0%, rgba(27,27,179,.78) 45%, rgba(13,13,122,.88) 100%), url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/ldi1.png');
       background-size: cover; background-position: center;
       border-bottom: 3px solid var(--amber);
@@ -143,12 +144,13 @@
 
     .layout {
       display: flex; gap: 0; align-items: stretch;
-      min-height: calc(100vh - 68px);
-      min-height: calc(100dvh - 68px);
+      min-height: calc(100vh - var(--topbar-h));
+      min-height: calc(100dvh - var(--topbar-h));
       position: relative;
       overflow-x: hidden;
     }
 
+    /* ================= SIDEBAR ================= */
     .sidebar {
       width: 230px; flex-shrink: 0;
       background: var(--royal-deep);
@@ -158,9 +160,10 @@
       box-shadow: 4px 0 18px rgba(13,13,122,.25);
       padding: 24px 18px;
       display: flex; flex-direction: column; gap: 10px;
-      position: sticky; top: 68px;
-      height: calc(100vh - 68px);
-      height: calc(100dvh - 68px);
+      position: sticky;
+      top: var(--topbar-h);
+      height: calc(100vh - var(--topbar-h));
+      height: calc(100dvh - var(--topbar-h));
       overflow-y: auto;
       transition: transform var(--smooth), opacity var(--smooth), visibility var(--smooth);
       will-change: transform;
@@ -233,7 +236,7 @@
     }
     .layout.side-hidden .main-col-inner { transform: translateX(-80px); }
 
-    /* ---------- HERO ---------- */
+    /* ================= HERO ================= */
     .hero {
       position: relative; color: #fff;
       padding: 20px 24px; border-radius: var(--r-lg);
@@ -355,7 +358,7 @@
     .hero-refresh.spinning { transform: rotate(360deg); }
     .hero-refresh:disabled { opacity: .55; cursor: wait; transform: none; }
 
-    /* ---------- BREADCRUMBS + SEARCH ---------- */
+    /* ================= BREADCRUMBS + SEARCH ================= */
     .fm-crumb-bar {
       display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
       margin-bottom: 14px; padding: 10px 14px;
@@ -419,7 +422,7 @@
       box-shadow: 0 0 0 3px rgba(27,27,179,.14);
     }
 
-    /* ---------- DROPZONE & GRID ---------- */
+    /* ================= DROPZONE & GRID ================= */
     .fm-dropzone {
       position: relative; min-height: 440px;
       background: var(--surface); border-radius: var(--r-md);
@@ -473,7 +476,7 @@
     .fm-empty .empty-icon { font-size: 44px; margin-bottom: 8px; display: block; color: var(--muted); }
     .fm-empty p { margin: 0; }
 
-    /* ---------- CONTEXT MENU ---------- */
+    /* ================= CONTEXT MENU ================= */
     .fm-context-menu {
       position: fixed; z-index: 250; background: #fff;
       border: 1px solid var(--border); border-radius: 10px;
@@ -511,7 +514,7 @@
       max-width: 200px;
     }
 
-    /* ---------- MODALS ---------- */
+    /* ================= MODALS ================= */
     .fm-modal-overlay {
       position: fixed; inset: 0; background: rgba(13,13,122,.55);
       backdrop-filter: blur(6px); z-index: 200;
@@ -587,7 +590,7 @@
     }
     .fm-alert-stat-value.danger { color: var(--red); }
 
-    /* ---------- MANAGE MODAL ---------- */
+    /* ================= MANAGE MODAL ================= */
     .manage-modal { max-width: 600px; }
     .manage-status-bar {
       display: flex; align-items: center; gap: 8px;
@@ -699,7 +702,7 @@
       box-shadow: 0 0 0 2px rgba(27,27,179,.18);
     }
 
-    /* ---------- PROGRESS / TOAST ---------- */
+    /* ================= PROGRESS / TOAST ================= */
     .fm-progress {
       position: fixed; bottom: 26px;
       bottom: calc(26px + var(--safe-bottom));
@@ -752,7 +755,7 @@
       to { opacity: 1; transform: translate(-50%, 0); }
     }
 
-    /* ---------- CONFLICT MODAL ---------- */
+    /* ================= CONFLICT MODAL ================= */
     .fm-conflict-modal { max-width: 560px; }
     .fm-conflict-quick { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
     .fm-conflict-list {
@@ -799,7 +802,7 @@
       box-shadow: 0 0 0 3px rgba(27,27,179,.12);
     }
 
-    /* ---------- PREVIEW ---------- */
+    /* ================= PREVIEW ================= */
     .fm-preview-overlay {
       position: fixed; inset: 0; background: rgba(10, 12, 30, .82);
       backdrop-filter: blur(10px); z-index: 400;
@@ -945,7 +948,7 @@
        RESPONSIVE BREAKPOINTS — LAPTOP, DESKTOP, TABLET, PHONE
        ========================================================================== */
 
-    /* ---- Large Desktop (1440px+) ---- */
+    /* ---- Large Desktop (1441px+) ---- */
     @media (min-width: 1441px) {
       .content { max-width: 1520px; }
       .main-col-inner { max-width: 1280px; }
@@ -986,7 +989,7 @@
       }
       .layout.side-hidden .sidebar { display: none; }
       .main-col { padding: 18px 14px 30px; }
-      .layout.side-hidden .main-col { padding-top: 70px; }
+      .layout.side-hidden .main-col { padding-top: calc(var(--topbar-h) + 4px); }
       .layout.side-hidden .main-col-inner { transform: none; }
       .side-spacer { display: none; }
       .side-show {
@@ -1167,7 +1170,7 @@
 
     /* ---- Landscape Phone / Small Tablet (height ≤ 500px) ---- */
     @media (max-height: 500px) and (orientation: landscape) {
-      .topbar { min-height: 52px; padding: 6px 16px; padding-top: calc(6px + var(--safe-top)); }
+      .topbar { padding: 6px 16px; padding-top: calc(6px + var(--safe-top)); }
       .nav-logo { height: 30px; }
       .hero { padding: 12px 16px; gap: 8px; }
       .hero-actions { padding-top: 8px; }
@@ -1209,7 +1212,7 @@
       .hero-btn:hover { transform: none; }
     }
 
-    /* ---- High Contrast / Dark Mode Support ---- */
+    /* ---- Dark Mode Support ---- */
     @media (prefers-color-scheme: dark) {
       .fm-preview-body { background: #12121c; }
       .fm-preview-body .text-preview { background: #1a1a2e; color: #e8e8f0; }
@@ -1694,6 +1697,26 @@
     document.title = ROOT_DISPLAY + ' Files \u2014 Lakpue Drug Inc';
   }
   applyBranding();
+
+  /* ============================================================================
+     DYNAMIC TOPBAR HEIGHT SYNC
+     Keeps the sidebar flush against the header at all times.
+     ============================================================================ */
+  function syncTopbarHeight() {
+    const topbar = document.querySelector('.topbar');
+    if (!topbar) return;
+    const h = Math.ceil(topbar.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--topbar-h', h + 'px');
+  }
+  syncTopbarHeight();
+  window.addEventListener('resize', syncTopbarHeight);
+  window.addEventListener('orientationchange', () => setTimeout(syncTopbarHeight, 100));
+  window.addEventListener('load', syncTopbarHeight);
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(syncTopbarHeight);
+    const tb = document.querySelector('.topbar');
+    if (tb) ro.observe(tb);
+  }
 
   // ---------- STATE ----------
   let currentPath      = '';
@@ -3950,11 +3973,13 @@
     const exists = await ensureRootFolderExists();
     if (!exists) {
       refresh();
+      syncTopbarHeight();
       return;
     }
 
     updateStorageInfo().catch(err => console.error(err));
     refresh();
+    syncTopbarHeight();
   })();
 })();
 </script>
