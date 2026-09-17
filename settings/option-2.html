@@ -1,0 +1,2934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Option 2 — LDI Sales Dashboard</title>
+
+<!-- 1) Load centralised host + anon key -->
+<script src="../connect.js"></script>
+
+<!-- 2) Turn HOSTNAME into CSS variables + expose it for later scripts -->
+<script>
+(function(){
+  var H = window.HOSTNAME;
+  var r = document.documentElement.style;
+  r.setProperty('--img-background', "url('" + H + "/storage/v1/object/public/image/background.png')");
+  r.setProperty('--img-ldi1',       "url('" + H + "/storage/v1/object/public/image/ldi1.png')");
+  r.setProperty('--img-logo',       "url('" + H + "/storage/v1/object/public/image/logo.gif')");
+})();
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   LDI Sales Dashboard — Brand Theme
+   ============================================ */
+:root{
+  --royal:#1b1bb3;--royal-2:#2020c8;--royal-deep:#0d0d7a;
+  --red:#e31e24;--red-dark:#b9161b;
+  --amber:#f5a623;--sky:#2e9bd6;
+  --surface:#ffffff;--bg:#f4f6fb;
+  --text:#101425;--text-2:#4a5572;--muted:#8d97b0;
+  --border:#e3e7f2;--border-strong:#cdd4e6;
+  --shadow-sm:0 1px 3px rgba(16,20,37,.07);
+  --shadow-md:0 6px 20px rgba(16,20,37,.09);
+  --shadow-lg:0 16px 48px rgba(16,20,37,.16);
+  --r-sm:8px;--r-md:12px;--r-lg:18px;
+  --fast:150ms ease;--smooth:280ms cubic-bezier(.4,0,.2,1);
+
+  /* fallbacks — overwritten by inline script above once connect.js loads */
+  --img-background: url('');
+  --img-ldi1: url('');
+  --img-logo: url('');
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:'DM Sans',sans-serif;color:var(--text);
+  background:var(--royal-deep);
+  background-image:linear-gradient(180deg,rgba(27,27,179,.42) 0%,rgba(13,13,122,.72) 100%),var(--img-background);
+  background-size:cover,cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed,fixed;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit}
+input,select{font-family:inherit}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- Buttons ---------- */
+.button{border:0;border-radius:var(--r-sm);padding:10px 16px;font:600 13px/1 'DM Sans',sans-serif;cursor:pointer;transition:transform var(--fast),box-shadow var(--fast),background var(--fast);display:inline-flex;align-items:center;gap:6px}
+.button.primary{background:linear-gradient(135deg,var(--royal-2),var(--royal));color:#fff;box-shadow:0 2px 8px rgba(27,27,179,.35)}
+.button.primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(27,27,179,.45)}
+.button.primary:active{transform:translateY(0)}
+.button.secondary{background:rgba(255,255,255,.14);color:#e8ecff;border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(6px)}
+.button.secondary:hover{background:rgba(255,255,255,.24);color:#fff}
+.button.ghost{background:#eef1f9;color:var(--text-2);border:1px solid var(--border-strong)}
+.button.ghost:hover{background:#e2e7f5;color:var(--text)}
+.button.danger{background:var(--red);color:#fff}
+.button.danger:hover{background:var(--red-dark)}
+.button.small{padding:6px 12px;font-size:12px;border-radius:7px}
+.button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* ---------- Topbar ---------- */
+.app{min-height:100vh;display:flex;flex-direction:column}
+.topbar{
+  position:sticky;top:0;z-index:50;min-height:68px;
+  background-image:linear-gradient(90deg,rgba(13,13,122,.88) 0%,rgba(27,27,179,.78) 45%,rgba(13,13,122,.88) 100%),var(--img-ldi1);
+  background-size:cover;background-position:center;
+  border-bottom:3px solid var(--amber);
+  box-shadow:0 4px 18px rgba(13,13,122,.45);
+  padding:10px 22px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  backdrop-filter:blur(8px);
+}
+.brand{display:flex;align-items:center;gap:12px}
+.nav-logo{height:40px;width:auto;border-radius:8px;background:#fff;padding:3px 6px;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.header-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.user-chip{color:#dbe2ff;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);white-space:nowrap}
+.user-chip:empty{display:none}
+
+/* ---------- Layout ---------- */
+.content{flex:1;max-width:1440px;margin:0 auto;padding:28px 22px 40px;width:100%}
+
+/* ---------- Cards / tables ---------- */
+.card{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-sm);border:1px solid var(--border);transition:box-shadow var(--smooth),transform var(--smooth)}
+.card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:14px;flex-wrap:wrap}
+.card-head h2{font-size:17px;margin:0;font-family:'Space Grotesk',sans-serif;letter-spacing:-.2px}
+.panel-hint{margin:6px 0 0;font-size:13px;color:var(--text-2)}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-sm)}
+.monitor-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1500px}
+.monitor-table th,.monitor-table td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle}
+.monitor-table thead th{
+  background:linear-gradient(135deg,var(--royal-2),var(--royal));color:#fff;font-weight:600;font-size:10.5px;
+  text-transform:uppercase;letter-spacing:.6px;
+}
+.monitor-table tbody tr:nth-child(even){background:#f7f9fd}
+.monitor-table tbody tr{cursor:pointer;transition:background var(--fast)}
+.monitor-table tbody tr:hover{background:#eef2ff}
+.monitor-table tbody tr.selected td{background:#e6ebff}
+.monitor-table tbody tr.selected td:first-child{box-shadow:inset 3px 0 0 var(--royal)}
+.monitor-table td.empty{text-align:center;color:var(--muted);padding:28px;cursor:default;white-space:normal}
+.monitor-table tbody tr.empty-row:hover{background:transparent}
+.col-check{width:38px}
+.col-check input{pointer-events:none;accent-color:var(--royal);width:15px;height:15px;cursor:pointer}
+.cell-muted{color:var(--muted)}
+.cell-contact{font-variant-numeric:tabular-nums}
+.cell-email{color:var(--text-2)}
+
+.cell-tags{
+  display:inline-flex;
+  flex-wrap:nowrap;
+  gap:4px;
+  align-items:center;
+  max-width:100%;
+}
+
+/* ---------- Badges ---------- */
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge.active{background:#e2f6ea;color:#0f7a3d}
+.badge.inactive{background:#fde6e7;color:#b9161b}
+.badge.pending{background:#fdf1dc;color:#a36a00}
+.badge.neutral{background:#eceffa;color:var(--text-2)}
+
+.badge.hero,
+.badge.approver,
+.badge.hero-all,
+.badge.hero-none,
+.badge.more{
+  padding:2px 7px;
+  font-size:10px;
+  letter-spacing:.3px;
+  font-weight:600;
+  text-transform:none;
+  max-width:110px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  display:inline-block;
+  vertical-align:middle;
+  line-height:1.4;
+}
+.badge.hero{background:#e6ebff;color:var(--royal)}
+.badge.hero-all{
+  background:linear-gradient(135deg,var(--royal-2),var(--royal));
+  color:#fff;
+  box-shadow:0 1px 3px rgba(27,27,179,.28);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+}
+.badge.hero-none{background:#f1f3f9;color:var(--muted)}
+.badge.approver{background:#e8f4ff;color:#1167a8}
+.badge.more{
+  background:#eef1f9;color:var(--text-2);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+
+a.button{text-decoration:none}
+
+/* ============================================================
+   Settings layout
+   ============================================================ */
+.content.settings-content{max-width:none;margin:0;padding:0;width:100%}
+.layout{display:flex;gap:0;align-items:stretch;min-height:calc(100vh - 68px);position:relative;overflow-x:hidden}
+
+.sidebar{
+  width:230px;flex-shrink:0;
+  background:var(--royal-deep);
+  background-image:linear-gradient(180deg,rgba(27,27,179,.55) 0%,rgba(13,13,122,.8) 100%),var(--img-background);
+  background-size:cover;background-position:center;background-repeat:no-repeat;
+  border-right:3px solid var(--amber);
+  box-shadow:4px 0 18px rgba(13,13,122,.25);
+  padding:24px 18px;display:flex;flex-direction:column;gap:10px;
+  position:sticky;top:68px;height:calc(100vh - 68px);overflow-y:auto;
+  transition:transform var(--smooth),opacity var(--smooth),visibility var(--smooth);
+  will-change:transform;
+}
+.layout.side-hidden .sidebar{
+  transform:translateX(-100%);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+
+.side-title{font-size:11px;font-weight:700;color:#cfd6ff;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px}
+
+.side-show{
+  position:absolute;left:210px;top:18px;z-index:20;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:40px;height:40px;border-radius:50%;flex-shrink:0;
+  background:#fff;color:var(--royal);border:2px solid var(--royal);
+  font-size:17px;font-weight:700;cursor:pointer;
+  box-shadow:0 2px 10px rgba(27,27,179,.3);
+  transition:left var(--smooth),background var(--fast),color var(--fast),transform var(--fast);
+}
+.side-show:hover{background:var(--royal);color:#fff;transform:translateY(-1px)}
+.layout.side-hidden .side-show{left:14px}
+
+.side-btn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:rgba(255,255,255,.12);color:#e8ecff;border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;cursor:pointer;transition:all var(--fast);white-space:nowrap}
+.side-btn:hover{background:rgba(255,255,255,.24);color:#fff}
+.side-btn.active{background:#fff;color:var(--royal);border-color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.side-btn .side-icon{font-size:16px}
+.side-spacer{flex:1;min-height:12px}
+
+.main-col{flex:1;min-width:0;padding:24px 22px 40px}
+.main-col-inner{width:100%;max-width:1180px;min-width:0;margin:0 auto;transition:transform var(--smooth)}
+.layout.side-hidden .main-col-inner{transform:translateX(-80px)}
+
+/* ============================================================
+   PANELS
+   ============================================================ */
+.panel{display:none;background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden}
+.panel.active{display:block;animation:panelIn .26s ease}
+@keyframes panelIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.panel-body{padding:22px 24px 26px}
+.panel-body > .card-head{margin-bottom:16px}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{
+  position:relative;color:#fff;padding:28px 24px 26px;
+  background-image:
+    linear-gradient(115deg,rgba(13,13,122,.95) 0%,rgba(27,27,179,.86) 48%,rgba(227,30,36,.60) 100%),
+    var(--img-ldi1);
+  background-size:cover;background-position:center;
+  border-bottom:3px solid var(--amber);
+}
+.hero::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 150% at 100% 0%,rgba(255,255,255,.20),transparent 55%);
+}
+.hero-inner{
+  position:relative;z-index:1;
+  display:flex;flex-wrap:wrap;gap:20px;
+  align-items:flex-end;justify-content:space-between;
+}
+.hero-eyebrow{margin:0 0 7px;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:#ffd98a;font-weight:700}
+.hero-title{margin:0;font-family:'Space Grotesk',sans-serif;font-size:27px;letter-spacing:-.6px;line-height:1.1}
+.hero-sub{margin:9px 0 0;font-size:13px;line-height:1.5;color:rgba(255,255,255,.80);max-width:62ch}
+
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+.hero-btn{
+  border:0;cursor:pointer;border-radius:999px;
+  padding:12px 20px;font:700 13px/1 'DM Sans',sans-serif;letter-spacing:.2px;
+  display:inline-flex;align-items:center;gap:8px;
+  transition:transform var(--fast),box-shadow var(--fast),background var(--fast),opacity var(--fast),border-color var(--fast);
+  box-shadow:0 8px 20px rgba(0,0,0,.28);
+}
+.hero-btn .hi{font-size:14px;line-height:1}
+.hero-btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(0,0,0,.34)}
+.hero-btn:active{transform:translateY(0)}
+.hero-btn.primary{background:#fff;color:var(--royal)}
+.hero-btn.primary:hover{background:#eef1ff}
+.hero-btn.edit{background:var(--amber);color:#3d2800}
+.hero-btn.edit:hover{background:#ffb845}
+.hero-btn.danger{background:var(--red);color:#fff}
+.hero-btn.danger:hover{background:var(--red-dark)}
+.hero-btn.success{background:#1aa05a;color:#fff}
+.hero-btn.success:hover{background:#148049}
+.hero-btn.ghost{
+  background:rgba(255,255,255,.16);color:#fff;
+  border:1px solid rgba(255,255,255,.42);
+  backdrop-filter:blur(6px);
+  box-shadow:0 4px 14px rgba(0,0,0,.20);
+}
+.hero-btn.ghost:hover{background:rgba(255,255,255,.28)}
+.hero-btn:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* ============================================================
+   Toolbar / search
+   ============================================================ */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.search-input{
+  flex:1;min-width:200px;max-width:340px;
+  border:1px solid var(--border-strong);border-radius:var(--r-sm);
+  padding:9px 12px;font-size:13px;background:#fff;color:var(--text);
+  transition:border-color var(--fast),box-shadow var(--fast);
+}
+.search-input:focus{outline:none;border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.toolbar-info{font-size:12px;color:var(--text-2);font-weight:600;background:#eef1f9;border:1px solid var(--border);padding:7px 12px;border-radius:999px;white-space:nowrap}
+.toolbar-info.highlight{background:#e6ebff;border-color:#c7d1ff;color:var(--royal)}
+
+/* ============================================================
+   Forms
+   ============================================================ */
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+@media(max-width:640px){.field-grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:15px}
+.field > span{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-2)}
+.field > span em{font-style:normal;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px}
+.field input,.field select{
+  border:1px solid var(--border-strong);border-radius:var(--r-sm);
+  padding:10px 12px;font-size:13.5px;color:var(--text);background:#fff;width:100%;
+  transition:border-color var(--fast),box-shadow var(--fast);
+}
+.field input:focus,.field select:focus{outline:none;border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.field input::placeholder{color:#a9b2c8}
+.field input:disabled,.field select:disabled{
+  background:#f1f3f9;color:var(--muted);cursor:not-allowed;
+  border-color:var(--border);
+}
+.form-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+
+/* Lock notice for protected fields */
+.lock-notice{
+  margin:0 0 16px;padding:12px 14px;border-radius:var(--r-sm);
+  background:#fff7e6;border:1px solid #ffe0a3;color:#7a4d00;
+  font-size:12.5px;line-height:1.55;
+}
+.lock-notice strong{color:#a36a00}
+
+/* ============================================================
+   MULTI-SELECT (Approvers)
+   ============================================================ */
+.ms{position:relative}
+.ms-trigger{
+  position:relative;
+  min-height:44px;
+  border:1px solid var(--border-strong);
+  border-radius:var(--r-sm);
+  background:#fff;
+  padding:6px 40px 6px 8px;
+  display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+  cursor:pointer;
+  transition:border-color var(--fast),box-shadow var(--fast);
+}
+.ms-trigger:hover{border-color:var(--royal)}
+.ms.is-open .ms-trigger{border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.ms-placeholder{color:#a9b2c8;font-size:13.5px;padding-left:4px}
+.ms-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  background:#e8f4ff;color:#1167a8;
+  padding:4px 6px 4px 10px;border-radius:999px;
+  font-size:12px;font-weight:600;
+  line-height:1;
+}
+.ms-chip .ms-chip-name{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-chip button{
+  background:rgba(17,103,168,.12);border:0;color:#1167a8;
+  cursor:pointer;font-size:13px;line-height:1;
+  width:18px;height:18px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:0;
+  transition:background var(--fast);
+}
+.ms-chip button:hover{background:#1167a8;color:#fff}
+.ms-caret{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  color:var(--muted);pointer-events:none;font-size:10px;
+  transition:transform var(--fast);
+}
+.ms.is-open .ms-caret{transform:translateY(-50%) rotate(180deg)}
+
+.ms-panel{
+  position:fixed;
+  background:#fff;border:1px solid var(--border-strong);
+  border-radius:var(--r-sm);
+  box-shadow:var(--shadow-lg);
+  z-index:600;
+  max-height:280px;overflow:hidden;
+  display:none;flex-direction:column;
+}
+.ms.is-open .ms-panel{display:flex}
+.ms-search{
+  border:0;border-bottom:1px solid var(--border);
+  padding:11px 13px;font-size:13px;width:100%;
+  outline:none;background:#fff;
+}
+.ms-search:focus{background:#f7f9fd}
+.ms-options{
+  overflow-y:auto;padding:6px;flex:1;
+  display:flex;flex-direction:column;gap:2px;
+}
+.ms-option{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:6px;
+  cursor:pointer;font-size:13px;
+  transition:background var(--fast);
+  user-select:none;
+}
+.ms-option:hover{background:#eef2ff}
+.ms-option input{accent-color:var(--royal);width:15px;height:15px;margin:0;cursor:pointer}
+.ms-option.selected{background:#e8f4ff}
+.ms-option.disabled{opacity:.5;cursor:not-allowed}
+.ms-option.disabled:hover{background:transparent}
+.ms-option .ms-name{font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-empty{padding:18px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.5}
+.ms-hint{font-size:11.5px;color:var(--muted);margin-top:4px;display:flex;justify-content:space-between;gap:8px}
+.ms-hint .ms-count{font-weight:600}
+.ms-hint .ms-count.over{color:var(--red)}
+
+/* ============================================================
+   HERO BUTTON CHECKBOX GROUP (form)
+   ============================================================ */
+.check-group{display:flex;flex-wrap:wrap;gap:8px}
+.check-item{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 14px;border-radius:999px;
+  background:#f2f5fd;border:1px solid var(--border-strong);
+  font-size:12.5px;font-weight:600;color:var(--text-2);
+  cursor:pointer;user-select:none;
+  transition:all var(--fast);
+}
+.check-item:hover{background:#e6ebff;border-color:#c7d1ff}
+.check-item input{accent-color:var(--royal);width:15px;height:15px;cursor:pointer;margin:0}
+.check-item:has(input:checked){background:#e6ebff;border-color:var(--royal);color:var(--royal);box-shadow:0 2px 8px rgba(27,27,179,.18)}
+.check-item .hi-href{font-size:10.5px;color:var(--muted);font-weight:500;margin-left:2px}
+.check-item:has(input:checked) .hi-href{color:var(--royal);opacity:.75}
+
+.check-item.all-item{
+  background:linear-gradient(135deg,#eef1ff,#e0e6ff);
+  border:1px dashed var(--royal);
+  color:var(--royal);
+  font-weight:700;
+}
+.check-item.all-item:hover{background:linear-gradient(135deg,#e3e8ff,#d5ddff)}
+.check-item.all-item:has(input:checked){
+  background:linear-gradient(135deg,var(--royal-2),var(--royal));
+  border:1px solid var(--royal);
+  color:#fff;
+  box-shadow:0 4px 14px rgba(27,27,179,.35);
+}
+.check-item.all-item:has(input:checked) .hi-href{color:#cfd6ff;opacity:1}
+
+.check-item.is-locked{opacity:.85}
+.check-item.is-locked input{cursor:not-allowed}
+.check-item.is-locked:hover{background:#e6ebff;border-color:var(--royal)}
+.check-item.all-item.is-locked:hover{background:linear-gradient(135deg,var(--royal-2),var(--royal))}
+
+.check-empty{padding:10px 14px;border-radius:var(--r-sm);background:#fff7e6;border:1px solid #ffe0a3;color:#a36a00;font-size:12.5px;font-weight:600}
+
+/* ============================================================
+   Modal
+   ============================================================ */
+.modal-backdrop{
+  position:fixed;inset:0;z-index:200;padding:20px;
+  background:rgba(9,11,26,.62);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;
+}
+.modal-backdrop.open{display:flex;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:#fff;border-radius:var(--r-lg);width:100%;max-width:720px;
+  max-height:90vh;overflow:auto;box-shadow:var(--shadow-lg);
+  border-top:4px solid var(--amber);
+  animation:modalIn .24s cubic-bezier(.4,0,.2,1);
+}
+@keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 22px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:5;border-radius:var(--r-lg) var(--r-lg) 0 0}
+.modal-head h3{margin:0;font-family:'Space Grotesk',sans-serif;font-size:16.5px;letter-spacing:-.2px}
+.modal-close{border:0;background:#eef1f9;color:var(--text-2);width:32px;height:32px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer;transition:all var(--fast)}
+.modal-close:hover{background:var(--red);color:#fff}
+.modal-body{padding:20px 22px}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px 20px;border-top:1px solid var(--border);flex-wrap:wrap;position:sticky;bottom:0;background:#fff;border-radius:0 0 var(--r-lg) var(--r-lg)}
+.modal-text{margin:0;font-size:13.5px;color:var(--text-2);line-height:1.65}
+.modal-text strong{color:var(--text)}
+
+/* ---------- Confirm-danger block ---------- */
+.danger-card{
+  margin-top:14px;padding:12px 14px;border-radius:var(--r-sm);
+  background:#fdeeee;border:1px solid #f6bcc0;color:#8a1216;
+  font-size:12.5px;line-height:1.6;
+}
+.danger-card ul{margin:8px 0 0;padding-left:18px}
+.danger-card li{margin:2px 0}
+
+/* Strong final-confirm card */
+.danger-card.final{
+  margin-top:0;padding:16px 18px;
+  background:linear-gradient(160deg,#fdeaea,#fbdcde);
+  border:1px solid #f2a8ad;
+  color:#7a0b10;
+}
+.danger-card.final .dc-title{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:16px;font-weight:700;letter-spacing:-.2px;
+  color:#b9161b;margin:0 0 8px;
+  display:flex;align-items:center;gap:8px;
+}
+.danger-card.final .dc-loud{
+  margin:12px 0 0;padding:10px 12px;
+  background:#fff;border-radius:6px;
+  color:#b9161b;font-weight:700;
+  font-size:12.5px;letter-spacing:.2px;
+  border:1px dashed #e97b81;
+}
+
+/* Ack checkbox */
+.ack-row{
+  display:flex;align-items:flex-start;gap:10px;
+  margin-top:14px;padding:12px 14px;
+  border-radius:var(--r-sm);
+  background:#fff7e6;border:1px solid #ffe0a3;
+  font-size:12.5px;line-height:1.55;color:#7a4d00;
+  cursor:pointer;user-select:none;
+}
+.ack-row input{
+  accent-color:var(--red);
+  width:16px;height:16px;margin:2px 0 0;cursor:pointer;flex-shrink:0;
+}
+.ack-row:hover{background:#fff3da}
+.ack-row:has(input:checked){background:#e2f6ea;border-color:#a9e0c1;color:#0f7a3d}
+
+/* ============================================================
+   Toast
+   ============================================================ */
+.toast-wrap{position:fixed;right:18px;bottom:18px;z-index:800;display:flex;flex-direction:column;gap:10px;max-width:min(420px,calc(100vw - 36px))}
+.toast{
+  background:#101425;color:#fff;padding:12px 16px;border-radius:10px;
+  font-size:12.5px;font-weight:500;box-shadow:var(--shadow-lg);
+  border-left:4px solid var(--royal);
+  transition:opacity .22s ease,transform .22s ease;
+  white-space:pre-wrap;word-break:break-word;line-height:1.45;
+}
+.toast.ok{border-left-color:#1aa05a}
+.toast.error{border-left-color:var(--red)}
+.toast.warn{border-left-color:var(--amber)}
+
+/* ============================================================
+   FOLDER STORAGE MONITOR (Option 2)
+   ============================================================ */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:linear-gradient(160deg,#f8faff,#eef2fd);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px}
+.stat .stat-label{font-size:10.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)}
+.stat .stat-value{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-top:6px;letter-spacing:-.5px;color:var(--text);line-height:1.1}
+.stat .stat-sub{font-size:11.5px;color:var(--text-2);margin-top:4px}
+.stat.warn{background:linear-gradient(160deg,#fff8ec,#fdeed3);border-color:#ffdda1}
+.stat.danger{background:linear-gradient(160deg,#fdeeee,#fbdcdd);border-color:#f6bcc0}
+
+.monitor-table.folder-table{min-width:1040px}
+
+.bar{position:relative;display:block;height:8px;border-radius:999px;background:#e6eaf5;overflow:hidden;width:100%;min-width:110px}
+.bar > i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--royal-2),var(--royal));transition:width var(--smooth)}
+.bar.ok > i{background:linear-gradient(90deg,#2fbe78,#0f7a3d)}
+.bar.warn > i{background:linear-gradient(90deg,#ffc44d,var(--amber))}
+.bar.over > i{background:linear-gradient(90deg,#f0555b,var(--red))}
+.bar-cell{display:flex;flex-direction:column;gap:5px;min-width:140px}
+.bar-cell .bar-text{font-size:11px;font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums}
+
+.warning-box{
+  display:none;margin-bottom:16px;padding:14px 16px;border-radius:var(--r-sm);
+  background:#fff7e6;border:1px solid #ffe0a3;color:#7a4d00;
+  font-size:12.5px;line-height:1.6;
+}
+.warning-box strong{color:#a36a00}
+.warning-box pre{
+  margin:10px 0 0;padding:10px 12px;border-radius:6px;background:#101425;color:#d7e2ff;
+  font-size:11px;line-height:1.55;overflow-x:auto;white-space:pre;
+}
+
+/* ---------- Responsive ---------- */
+@media(max-width:900px){
+  .layout{flex-direction:column;min-height:0;overflow-x:visible}
+  .sidebar{width:100%;position:static;height:auto;flex-direction:column;border-right:0;border-bottom:3px solid var(--amber)}
+  .layout.side-hidden .sidebar{display:none}
+  .main-col{padding:18px 14px 30px}
+  .layout.side-hidden .main-col{padding-top:70px}
+  .layout.side-hidden .main-col-inner{transform:none}
+  .side-spacer{display:none}
+  .side-show{left:auto;right:14px;top:14px}
+  .layout.side-hidden .side-show{left:auto;right:14px}
+  .hero{padding:22px 18px}
+  .hero-title{font-size:22px}
+  .hero-inner{align-items:flex-start}
+  .hero-actions{width:100%}
+  .hero-btn{flex:1;justify-content:center;padding:11px 14px}
+}
+@media(max-width:560px){
+  .content{padding:18px 14px 30px}
+  .topbar{padding:10px 14px}
+  .header-actions{width:100%}
+  .panel-body{padding:18px 16px 22px}
+  .search-input{max-width:none}
+  .modal-backdrop{padding:0}
+  .modal{max-height:100vh;border-radius:0;min-height:100vh}
+  .modal-head{border-radius:0}
+  .modal-foot{border-radius:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand">
+    <!-- src set from HOSTNAME via data-img -->
+    <img data-img="logo.gif" alt="LDI" class="nav-logo">
+  </div>
+  <div class="header-actions">
+    <span class="user-chip" id="current-user"></span>
+    <a class="button secondary" href="../dashboard.html">&#8592; Back</a>
+  </div>
+</header>
+
+<main class="content settings-content">
+  <div class="layout" id="settings-layout">
+
+    <aside class="sidebar" id="settings-sidebar">
+      <p class="side-title">Settings Menu</p>
+      <button class="side-btn active" type="button" data-target="option-1"><span class="side-icon">&#9881;</span>User Details</button>
+      <button class="side-btn" type="button" data-target="option-2"><span class="side-icon">&#9881;</span>Folder Setting</button>
+      <button class="side-btn" type="button"  data-target="option-3"><span class="side-icon">&#9881;</span>Option 3</button>
+      <button class="side-btn" type="button" data-target="option-4"><span class="side-icon">&#9881;</span>Option 4</button>
+      <button class="side-btn" type="button" data-target="option-5"><span class="side-icon">&#9881;</span>Option 5</button>
+    </aside>
+
+    <button class="side-show" id="side-toggle" type="button" title="Hide sidebar">&#10094;</button>
+
+    <div class="main-col">
+      <div class="main-col-inner">
+
+        <!-- ============================ OPTION 1 — USER DETAILS ============================ -->
+        <section class="panel active" id="panel-option-1">
+
+          <div class="hero">
+            <div class="hero-inner">
+              <div>
+                <p class="hero-eyebrow">Settings &middot; User Management</p>
+                <h2 class="hero-title">User Details</h2>
+                <p class="hero-sub">
+                  Review every account in the system, then add, edit or remove a user.
+                  Select a row in the table below to enable <strong>Edit</strong> and <strong>Delete</strong>.
+                </p>
+              </div>
+              <div class="hero-actions">
+                <button class="hero-btn primary" id="btn-add" type="button">
+                  <span class="hi">&#43;</span> Add User
+                </button>
+                <button class="hero-btn edit" id="btn-edit" type="button" disabled>
+                  <span class="hi">&#9998;</span> Edit User
+                </button>
+                <button class="hero-btn danger" id="btn-delete" type="button" disabled>
+                  <span class="hi">&#128465;</span> Delete User
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <div class="toolbar">
+              <input id="user-search" class="search-input" type="search" placeholder="Search name, username, email, contact, approver, role&hellip;">
+              <button class="button primary small" id="btn-refresh" type="button">&#8635; Refresh</button>
+              <span class="toolbar-info" id="user-count">0 users</span>
+              <span class="toolbar-info highlight" id="selected-info">No user selected</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="monitor-table">
+                <thead>
+                  <tr>
+                    <th class="col-check"></th>
+                    <th>ID</th>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Email Address</th>
+                    <th>Contact Number</th>
+                    <th>Approvers</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Allowed Hero Buttons</th>
+                    <th>Assigned Companies</th>
+                    <th>Sales Rep Codes</th>
+                    <th>Assigned Areas</th>
+                  </tr>
+                </thead>
+                <tbody id="users-tbody">
+                  <tr class="empty-row"><td class="empty" colspan="13">Loading users&hellip;</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================ OPTION 2 ============================ -->
+        <section class="panel" id="panel-option-2">
+          <div class="hero">
+            <div class="hero-inner">
+              <div>
+                <p class="hero-eyebrow">Settings &middot; Storage</p>
+                <h2 class="hero-title">Folder Setting — Department Storage</h2>
+                <p class="hero-sub">
+                  Monitor how much space each folder inside the <strong>department</strong> bucket is using.
+                  Create new folders, set per-folder limits, or delete a folder entirely.
+                  Rows that exceed their limit are flagged in red.
+                </p>
+              </div>
+              <div class="hero-actions">
+                <button class="hero-btn success" id="btn-new-folder" type="button">
+                  <span class="hi">&#43;</span> New Folder
+                </button>
+                <button class="hero-btn primary" id="btn-scan" type="button">
+                  <span class="hi">&#8635;</span> Rescan Storage
+                </button>
+                <button class="hero-btn edit" id="btn-set-limit" type="button" disabled>
+                  <span class="hi">&#9998;</span> Set Limit
+                </button>
+                <button class="hero-btn ghost" id="btn-clear-limit" type="button" disabled>
+                  <span class="hi">&#10005;</span> Remove Limit
+                </button>
+                <button class="hero-btn danger" id="btn-delete-folder" type="button" disabled>
+                  <span class="hi">&#128465;</span> Delete Folder
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <div class="warning-box" id="folder-db-warning"></div>
+
+            <div class="stat-row" id="storage-stats"></div>
+
+            <div class="toolbar">
+              <input id="folder-search" class="search-input" type="search" placeholder="Search folder name&hellip;">
+              <button class="button ghost small" id="btn-scan-2" type="button">&#8635; Rescan</button>
+              <button class="button ghost small" id="btn-new-folder-2" type="button">&#43; New Folder</button>
+              <span class="toolbar-info" id="folder-count">0 folders</span>
+              <span class="toolbar-info highlight" id="folder-selected-info">No folder selected</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="monitor-table folder-table">
+                <thead>
+                  <tr>
+                    <th class="col-check"></th>
+                    <th>Folder</th>
+                    <th>Files</th>
+                    <th>Size Used</th>
+                    <th>Limit</th>
+                    <th>Usage</th>
+                    <th>Status</th>
+                    <th>Note</th>
+                  </tr>
+                </thead>
+                <tbody id="folders-tbody">
+                  <tr class="empty-row"><td class="empty" colspan="8">Open this panel to scan the bucket&hellip;</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================ OPTION 3 ============================ -->
+        <section class="panel" id="panel-option-3">
+          <div class="panel-body">
+            <div class="card-head"><h2>Option 3</h2></div>
+            <p class="panel-hint">Content for Option 3 goes here.</p>
+          </div>
+        </section>
+
+        <!-- ============================ OPTION 4 ============================ -->
+        <section class="panel" id="panel-option-4">
+          <div class="panel-body">
+            <div class="card-head"><h2>Option 4</h2></div>
+            <p class="panel-hint">Content for Option 4 goes here.</p>
+          </div>
+        </section>
+
+        <!-- ============================ OPTION 5 ============================ -->
+        <section class="panel" id="panel-option-5">
+          <div class="panel-body">
+            <div class="card-head"><h2>Option 5</h2></div>
+            <p class="panel-hint">Content for Option 5 goes here.</p>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ============================ MODAL ============================ -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <h3 id="modal-title">Modal</h3>
+      <button class="modal-close" id="modal-close" type="button" title="Close">&#215;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- Resolve data-img placeholders using HOSTNAME -->
+<script>
+document.querySelectorAll('[data-img]').forEach(function(el){
+  el.src = window.HOSTNAME + '/storage/v1/object/public/image/' + el.dataset.img;
+});
+</script>
+
+<script>
+(async () => {
+/* ============================================================
+   Inlined Supabase client — uses window.HOSTNAME / window.ANON_KEY
+   ============================================================ */
+const SUPABASE_URL      = window.HOSTNAME;
+const SUPABASE_ANON_KEY = window.ANON_KEY;
+
+class QB {
+  constructor(t){
+    this.t = t;
+    this.url = SUPABASE_URL + '/rest/v1/' + t;
+    this.p = [];
+    this.m = 'GET';
+    this.b = null;
+    this.rr = false;
+  }
+  select(f='*'){ this.p.push('select=' + encodeURIComponent(f)); return this; }
+  eq(f,v){ this.p.push(f + '=eq.' + encodeURIComponent(v)); return this; }
+  neq(f,v){ this.p.push(f + '=not.' + encodeURIComponent(v)); return this; }
+  gt(f,v){ this.p.push(f + '=gt.' + encodeURIComponent(v)); return this; }
+  lt(f,v){ this.p.push(f + '=lt.' + encodeURIComponent(v)); return this; }
+  gte(f,v){ this.p.push(f + '=gte.' + encodeURIComponent(v)); return this; }
+  lte(f,v){ this.p.push(f + '=lte.' + encodeURIComponent(v)); return this; }
+  like(f,v){ this.p.push(f + '=like.' + encodeURIComponent(v)); return this; }
+  ilike(f,v){ this.p.push(f + '=ilike.' + encodeURIComponent(v)); return this; }
+  in(f,vs){ this.p.push(f + '=in.(' + vs.map(encodeURIComponent).join(',') + ')'); return this; }
+  order(f,o={}){ this.p.push('order=' + f + '.' + (o.ascending === false ? 'desc' : 'asc')); return this; }
+  limit(n){ this.p.push('limit=' + n); return this; }
+  offset(n){ this.p.push('offset=' + n); return this; }
+
+  _url(){ return this.p.length ? this.url + '?' + this.p.join('&') : this.url; }
+
+  _h(e={}){
+    const h = {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...e
+    };
+    if (this.rr) h.Prefer = 'return=representation';
+    return h;
+  }
+
+  _build(){
+    const init = { method: this.m, headers: this._h() };
+    if (this.b != null) init.body = JSON.stringify(this.b);
+    return init;
+  }
+
+  async _run(){
+    const r = await fetch(this._url(), this._build());
+    const text = await r.text();
+    if (!r.ok) throw new Error('API Error: ' + text);
+    if (!text) return [];
+    try { return JSON.parse(text); }
+    catch(e){ return text; }
+  }
+
+  then(onF, onR){ return this._run().then(onF, onR); }
+  catch(onR){ return this._run().catch(onR); }
+
+  async single(){
+    this.p.push('limit=1');
+    const r = await this._run();
+    return (r && r.length) ? r[0] : null;
+  }
+  async insert(rows){
+    this.m = 'POST';
+    this.b = Array.isArray(rows) ? rows : [rows];
+    this.rr = true;
+    return await this._run();
+  }
+  async update(changes){
+    this.m = 'PATCH';
+    this.b = changes;
+    this.rr = true;
+    return await this._run();
+  }
+  async delete(){
+    this.m = 'DELETE';
+    this.rr = true;
+    return await this._run();
+  }
+}
+
+const supabase = {
+  from(t){ return new QB(t); },
+  auth:{
+    currentUser: null,
+    session: null,
+    async signInWithPassword({ email, password }){
+      try {
+        const u = await supabase.from('users').select('*').eq('username', email).single();
+        if (!u) return { data: null, error: { message: 'User not found' } };
+        if (u.password !== password) return { data: null, error: { message: 'Wrong password' } };
+        if (u.status === 'pending') return { data: null, error: { message: 'Account pending admin approval' } };
+        if (u.status === 'inactive') return { data: null, error: { message: 'Account is inactive' } };
+        supabase.auth.currentUser = u;
+        supabase.auth.session = { user: u };
+        try { sessionStorage.setItem('ldi_session', JSON.stringify(u)); } catch(e){}
+        return { data: { user: u, session: supabase.auth.session }, error: null };
+      } catch(e){
+        console.error('Login error:', e);
+        return { data: null, error: { message: e.message || 'Login failed' } };
+      }
+    },
+    async signUp({ email, password }){
+      try {
+        const ex = await supabase.from('users').select('id').eq('username', email).single();
+        if (ex) return { data: null, error: { message: 'Username already exists' } };
+        const c = await supabase.from('users').insert({
+          username: email, password, role: 'sales_rep', status: 'pending',
+          assigned_companies: [], assigned_sales_rep_codes: [], assigned_areas: []
+        });
+        const user = Array.isArray(c) ? c[0] : c;
+        return { data: { user }, error: null };
+      } catch(e){
+        console.error('SignUp error:', e);
+        return { data: null, error: { message: e.message || 'Sign up failed' } };
+      }
+    },
+    async signOut(){
+      supabase.auth.currentUser = null;
+      supabase.auth.session = null;
+      try { sessionStorage.removeItem('ldi_session'); } catch(e){}
+      return { error: null };
+    },
+    async getSession(){
+      try {
+        const raw = sessionStorage.getItem('ldi_session');
+        if (raw){
+          const u = JSON.parse(raw);
+          supabase.auth.currentUser = u;
+          supabase.auth.session = { user: u };
+        }
+      } catch(e){}
+      return { data: { session: supabase.auth.session }, error: null };
+    }
+  },
+  async init(){}
+};
+
+await supabase.init();
+const session = await supabase.auth.getSession();
+if (!session?.data?.session?.user){
+  location.replace('../index.html');
+  return;
+}
+
+/* ============================================================
+   SETTINGS APP
+   ============================================================ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+const state = {
+  users: [],
+  activeUsers: [],
+  selectedId: null,
+  heroButtons: [],
+  hasHeroButtonsColumn: true
+};
+
+const HERO_ALL = 'all';
+const MAX_APPROVERS = 3;
+const MAX_HERO_BADGES = 2;
+const STRIPPABLE_COLUMNS = ['allowed_hero_buttons','full_name','approver','contact','email'];
+
+/* ============================================================
+   ROLE HELPERS
+   ============================================================ */
+function normalizeRole(r){
+  return String(r ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_\-]+/g, '');
+}
+
+function currentUserRole(){
+  const u = session?.data?.session?.user;
+  return normalizeRole(u?.role);
+}
+
+function currentUser(){
+  return session?.data?.session?.user || null;
+}
+
+const SUPERADMIN_ROLES = ['superadmin','super','root','sysadmin','system','owner'];
+function isSuperadmin(u){
+  if (!u) return false;
+  const r = normalizeRole(u.role);
+  if (!r) return false;
+  if (SUPERADMIN_ROLES.includes(r)) return true;
+  if (r.includes('super')) return true;
+  return false;
+}
+
+function canSeeUser(targetUser){ return true; }
+
+function canEditUserPassword(targetUser){
+  if (!targetUser) return true;
+  if (!isSuperadmin(targetUser)) return true;
+  return isSuperadmin(currentUser());
+}
+
+function canDeleteUser(targetUser){
+  if (!targetUser) return false;
+  if (!isSuperadmin(targetUser)) return true;
+  return isSuperadmin(currentUser());
+}
+
+function canChangeRoleStatus(targetUser){
+  if (!targetUser) return true;
+  if (!isSuperadmin(targetUser)) return true;
+  return isSuperadmin(currentUser());
+}
+
+/* ---------- helpers ---------- */
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => (
+  { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+));
+
+function arrToText(v){
+  if (Array.isArray(v)) return v.join(', ');
+  if (typeof v === 'string' && v.trim()){
+    try { const p = JSON.parse(v); return Array.isArray(p) ? p.join(', ') : v; }
+    catch(e){ return v; }
+  }
+  return '';
+}
+function textToArr(t){
+  return String(t || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function heroSelection(v){
+  let arr = [];
+  if (Array.isArray(v)) arr = v;
+  else if (typeof v === 'string' && v.trim()){
+    try {
+      const p = JSON.parse(v);
+      if (Array.isArray(p)) arr = p;
+    } catch(e){}
+  }
+  const all = arr.some(x => String(x).toLowerCase() === HERO_ALL);
+  const ids = arr.map(x => Number(x)).filter(n => Number.isFinite(n));
+  return { all, ids };
+}
+
+function parseApprovers(v){
+  if (Array.isArray(v)) return v.map(x => String(x)).filter(Boolean);
+  if (typeof v === 'string' && v.trim()){
+    try {
+      const p = JSON.parse(v);
+      if (Array.isArray(p)) return p.map(x => String(x)).filter(Boolean);
+    } catch(e){}
+    return v.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+const ALLOWED_STATUSES = ['active','inactive','pending'];
+
+function statusClass(s){
+  return ALLOWED_STATUSES.includes(s) ? s : 'neutral';
+}
+function heroButtonById(id){
+  return state.heroButtons.find(h => String(h.id) === String(id)) || null;
+}
+function userByUsername(username){
+  return state.activeUsers.find(x => x.username === username) || null;
+}
+function approverLabel(username){
+  const u = userByUsername(username);
+  if (!u) return username;
+  const fn = String(u.full_name || '').trim();
+  return fn ? fn : username;
+}
+function isMissingColumn(err, col){
+  const msg = String(err?.message || '');
+  return msg.includes('PGRST204') && msg.includes(col);
+}
+
+function friendlyError(err){
+  const raw = String(err?.message || err || '');
+  const jsonStart = raw.indexOf('{');
+  if (jsonStart >= 0){
+    try {
+      const obj = JSON.parse(raw.slice(jsonStart));
+      if (obj.message) return obj.message + (obj.code ? ' [' + obj.code + ']' : '');
+    } catch(e){}
+  }
+  return raw;
+}
+
+async function safeWrite(builder, payload){
+  let working = { ...payload };
+  const stripped = [];
+
+  for (let attempt = 0; attempt <= STRIPPABLE_COLUMNS.length; attempt++){
+    try {
+      const result = await builder(working);
+      if (stripped.length){
+        toast('Saved without: ' + stripped.join(', ') + ' — column(s) missing from the DB.', 'warn');
+      }
+      return result;
+    } catch (err){
+      const missing = STRIPPABLE_COLUMNS.find(col => (col in working) && isMissingColumn(err, col));
+      if (!missing) throw err;
+
+      if (missing === 'allowed_hero_buttons') state.hasHeroButtonsColumn = false;
+      delete working[missing];
+      stripped.push(missing);
+    }
+  }
+
+  throw new Error('Could not save — missing columns: ' + stripped.join(', '));
+}
+
+function toast(msg, kind = 'ok'){
+  let wrap = $('#toast-wrap');
+  if (!wrap){
+    wrap = document.createElement('div');
+    wrap.id = 'toast-wrap';
+    wrap.className = 'toast-wrap';
+    document.body.appendChild(wrap);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(8px)';
+    setTimeout(() => el.remove(), 240);
+  }, 4200);
+}
+
+/* ============================================================
+   MULTI-SELECT — Approvers picker
+   ============================================================ */
+const msRegistry = new Set();
+
+function anyMsOpen(){
+  return Array.from(msRegistry).some(ms => ms.classList.contains('is-open'));
+}
+function closeAllMs(){
+  msRegistry.forEach(ms => ms.classList.remove('is-open'));
+}
+function closeOtherMs(keep){
+  msRegistry.forEach(ms => { if (ms !== keep) ms.classList.remove('is-open'); });
+}
+
+document.addEventListener('mousedown', e => {
+  if (!anyMsOpen()) return;
+  msRegistry.forEach(ms => {
+    if (!ms.contains(e.target)) ms.classList.remove('is-open');
+  });
+});
+
+window.addEventListener('scroll', repositionOpenMs, true);
+window.addEventListener('resize', repositionOpenMs);
+
+function repositionOpenMs(){
+  msRegistry.forEach(ms => {
+    if (ms.classList.contains('is-open')) positionMsPanel(ms);
+  });
+}
+
+function positionMsPanel(ms){
+  const trigger = ms.querySelector('.ms-trigger');
+  const panel = ms.querySelector('.ms-panel');
+  if (!trigger || !panel) return;
+  const rect = trigger.getBoundingClientRect();
+  const panelHeight = 280;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const openAbove = spaceBelow < panelHeight && rect.top > panelHeight;
+
+  panel.style.left = rect.left + 'px';
+  panel.style.width = rect.width + 'px';
+
+  if (openAbove){
+    panel.style.top = 'auto';
+    panel.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+  } else {
+    panel.style.bottom = 'auto';
+    panel.style.top = (rect.bottom + 6) + 'px';
+  }
+}
+
+function msTemplateHTML(prefix){
+  return `
+    <div class="ms" data-ms="${prefix}">
+      <div class="ms-trigger" id="${prefix}-approver-trigger" tabindex="0">
+        <span class="ms-placeholder">Select 2&ndash;3 approvers&hellip;</span>
+        <span class="ms-caret">&#9660;</span>
+      </div>
+      <div class="ms-panel" id="${prefix}-approver-panel">
+        <input class="ms-search" id="${prefix}-approver-search" type="text" placeholder="Search by full name or username&hellip;" autocomplete="off">
+        <div class="ms-options" id="${prefix}-approver-options"></div>
+      </div>
+    </div>
+    <div class="ms-hint">
+      <span>Pick 2&ndash;3 active users. Selected: <span class="ms-count" id="${prefix}-approver-count">0</span></span>
+      <span>Max ${MAX_APPROVERS}</span>
+    </div>
+  `;
+}
+
+function renderMsOptions(prefix, filterText = ''){
+  const ms = document.querySelector('[data-ms="' + prefix + '"]');
+  if (!ms) return;
+
+  const optionsEl = document.getElementById(prefix + '-approver-options');
+  if (!optionsEl) return;
+
+  const selected = new Set(ms._selected || []);
+  const q = (filterText || '').trim().toLowerCase();
+  const atMax = selected.size >= MAX_APPROVERS;
+
+  const eligible = state.activeUsers;
+
+  const list = eligible.filter(u => {
+    if (!q) return true;
+    const hay = (u.full_name || '') + ' ' + u.username;
+    return hay.toLowerCase().includes(q);
+  });
+
+  if (!list.length){
+    const msg = eligible.length
+      ? 'No matching active users for "' + esc(q) + '".'
+      : 'No active users in the database. Set at least one user to status = "active" first.';
+    optionsEl.innerHTML = '<div class="ms-empty">' + msg + '</div>';
+    return;
+  }
+
+  optionsEl.innerHTML = list.map(u => {
+    const username = u.username;
+    const isSel = selected.has(username);
+    const disabled = !isSel && atMax;
+    const label = String(u.full_name || '').trim() || username;
+    return `
+      <label class="ms-option ${isSel ? 'selected' : ''} ${disabled ? 'disabled' : ''}" data-username="${esc(username)}">
+        <input type="checkbox" ${isSel ? 'checked' : ''} ${disabled ? 'disabled' : ''} tabindex="-1">
+        <span class="ms-name" title="${esc(label)}">${esc(label)}</span>
+      </label>`;
+  }).join('');
+}
+
+function updateMsChips(prefix){
+  const ms = document.querySelector('[data-ms="' + prefix + '"]');
+  if (!ms) return;
+
+  const trigger = document.getElementById(prefix + '-approver-trigger');
+  const countEl = document.getElementById(prefix + '-approver-count');
+  if (!trigger) return;
+
+  const selected = ms._selected || [];
+
+  const caret = trigger.querySelector('.ms-caret');
+  trigger.innerHTML = '';
+  if (caret) trigger.appendChild(caret);
+
+  if (!selected.length){
+    const placeholder = document.createElement('span');
+    placeholder.className = 'ms-placeholder';
+    placeholder.textContent = 'Select 2–3 approvers…';
+    trigger.insertBefore(placeholder, caret);
+  } else {
+    selected.forEach(username => {
+      const chip = document.createElement('span');
+      chip.className = 'ms-chip';
+      chip.innerHTML = `
+        <span class="ms-chip-name">${esc(approverLabel(username))}</span>
+        <button type="button" title="Remove" aria-label="Remove">&#215;</button>
+      `;
+      chip.querySelector('button').addEventListener('click', ev => {
+        ev.stopPropagation();
+        ms._selected = (ms._selected || []).filter(x => x !== username);
+        updateMsChips(prefix);
+        renderMsOptions(prefix, document.getElementById(prefix + '-approver-search')?.value || '');
+      });
+      trigger.insertBefore(chip, caret);
+    });
+  }
+
+  if (countEl){
+    countEl.textContent = selected.length;
+    countEl.classList.toggle('over', selected.length > MAX_APPROVERS);
+  }
+}
+
+function wireApproverMs(prefix, initialSelected){
+  const ms = document.querySelector('[data-ms="' + prefix + '"]');
+  if (!ms) return;
+
+  msRegistry.add(ms);
+  ms._selected = Array.isArray(initialSelected) ? initialSelected.slice() : [];
+
+  const trigger = document.getElementById(prefix + '-approver-trigger');
+  const search  = document.getElementById(prefix + '-approver-search');
+  const options = document.getElementById(prefix + '-approver-options');
+
+  trigger.addEventListener('click', () => {
+    const willOpen = !ms.classList.contains('is-open');
+    closeOtherMs(ms);
+    ms.classList.toggle('is-open', willOpen);
+    if (willOpen){
+      positionMsPanel(ms);
+      renderMsOptions(prefix, search.value || '');
+      setTimeout(() => search.focus(), 30);
+    }
+  });
+
+  trigger.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      trigger.click();
+    }
+  });
+
+  search.addEventListener('input', () => renderMsOptions(prefix, search.value));
+
+  options.addEventListener('click', e => {
+    const optEl = e.target.closest('.ms-option');
+    if (!optEl || optEl.classList.contains('disabled')) return;
+    e.preventDefault();
+
+    const username = optEl.dataset.username;
+    const sel = new Set(ms._selected || []);
+
+    if (sel.has(username)){
+      sel.delete(username);
+    } else {
+      if (sel.size >= MAX_APPROVERS){
+        toast('Maximum ' + MAX_APPROVERS + ' approvers allowed.', 'warn');
+        return;
+      }
+      sel.add(username);
+    }
+
+    ms._selected = Array.from(sel);
+    updateMsChips(prefix);
+    renderMsOptions(prefix, search.value || '');
+  });
+
+  updateMsChips(prefix);
+  renderMsOptions(prefix, '');
+}
+
+/* ---------- modal ---------- */
+const backdrop = $('#modal-backdrop');
+
+function openModal({ title, bodyHTML, footHTML }){
+  $('#modal-title').textContent = title;
+  $('#modal-body').innerHTML = bodyHTML;
+  $('#modal-foot').innerHTML = footHTML;
+  backdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(){
+  closeAllMs();
+  msRegistry.forEach(ms => { if (!document.body.contains(ms)) msRegistry.delete(ms); });
+  backdrop.classList.remove('open');
+  document.body.style.overflow = '';
+  $('#modal-body').innerHTML = '';
+  $('#modal-foot').innerHTML = '';
+}
+$('#modal-close').addEventListener('click', closeModal);
+backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){
+    if (anyMsOpen()){ closeAllMs(); return; }
+    if (backdrop.classList.contains('open')) closeModal();
+  }
+});
+
+/* ============================================================
+   PANEL SWITCHING
+   ============================================================ */
+const panels = $$('.panel');
+
+function showPanel(target){
+  const btn = document.querySelector('.side-btn[data-target="' + target + '"]');
+  if (btn) btn.click();
+}
+
+$$('.side-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (!btn.dataset.target) return;
+
+    $$('.side-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.target;
+    panels.forEach(p => p.classList.toggle('active', p.id === 'panel-' + target));
+    closeAllMs();
+
+    if (target === 'option-2' && !storage.loaded && !storage.loading){
+      loadFolderSettings();
+    }
+  });
+});
+
+const layout = document.getElementById('settings-layout');
+const toggle = document.getElementById('side-toggle');
+if (toggle && layout){
+  toggle.addEventListener('click', () => {
+    const hidden = layout.classList.toggle('side-hidden');
+    toggle.innerHTML = hidden ? '&#10095;' : '&#10094;';
+    toggle.title = hidden ? 'Show sidebar' : 'Hide sidebar';
+    closeAllMs();
+  });
+}
+
+/* ============================================================
+   LOAD DATA
+   ============================================================ */
+async function loadHeroButtons(){
+  try {
+    const rows = await supabase.from('hero_buttons')
+      .select('id,label,href,sort_order')
+      .order('sort_order', { ascending: true });
+    state.heroButtons = Array.isArray(rows) ? rows : [];
+  } catch (err) {
+    console.error('Failed to load hero_buttons:', err);
+    state.heroButtons = [];
+  }
+}
+
+async function loadActiveUsers(){
+  try {
+    const rows = await supabase.from('users')
+      .select('*')
+      .order('username', { ascending: true });
+
+    const all = Array.isArray(rows) ? rows : [];
+
+    state.activeUsers = all.filter(u =>
+      String(u.status || '').trim().toLowerCase() === 'active'
+    );
+
+    console.log('[loadActiveUsers] ' + state.activeUsers.length + ' active user(s):',
+                state.activeUsers.map(u => (u.full_name || u.username) + ' / ' + u.role));
+  } catch (err) {
+    console.error('Failed to load active users:', err);
+    state.activeUsers = [];
+  }
+}
+
+/* ============================================================
+   USER FORM
+   ============================================================ */
+const ROLES    = ['superadmin','admin','user'];
+const STATUSES = ['active','inactive','pending'];
+
+function heroButtonsCheckboxesHTML(prefix, u = {}){
+  const sel = heroSelection(u.allowed_hero_buttons);
+
+  if (!state.heroButtons.length){
+    return `
+      <div class="field">
+        <span>Allowed Hero Buttons <em>from the hero_buttons table</em></span>
+        <div class="check-empty">No hero buttons found in the database.</div>
+      </div>`;
+  }
+
+  return `
+    <div class="field">
+      <span>Allowed Hero Buttons <em>choose which dashboard buttons this user can see</em></span>
+      <div class="check-group">
+
+        <label class="check-item all-item" title="Grant access to every hero button, including any added later">
+          <input type="checkbox" id="${prefix}-hb-all" value="${HERO_ALL}" ${sel.all ? 'checked' : ''}>
+          <span>All</span>
+        </label>
+
+        ${state.heroButtons.map(h => {
+          const idNum = Number(h.id);
+          const checked = sel.all || sel.ids.includes(idNum);
+          return `
+            <label class="check-item" title="${esc(h.href || '')}">
+              <input type="checkbox" id="${prefix}-hb-${esc(h.id)}" value="${esc(h.id)}"
+                     ${checked ? 'checked' : ''}>
+              <span>${esc(h.label || ('#' + h.id))}</span>
+              ${h.href ? `<span class="hi-href">(${esc(h.href)})</span>` : ''}
+            </label>`;
+        }).join('')}
+
+      </div>
+    </div>`;
+}
+
+function wireHeroCheckboxes(prefix){
+  const allCb = document.getElementById(prefix + '-hb-all');
+  if (!allCb) return;
+
+  const itemCbs = state.heroButtons
+    .map(h => document.getElementById(prefix + '-hb-' + h.id))
+    .filter(Boolean);
+
+  function applyAllState(){
+    const isAll = allCb.checked;
+    itemCbs.forEach(cb => {
+      cb.checked = isAll;
+      cb.disabled = isAll;
+      const wrap = cb.closest('.check-item');
+      if (wrap) wrap.classList.toggle('is-locked', isAll);
+    });
+  }
+
+  allCb.addEventListener('change', applyAllState);
+
+  itemCbs.forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (!cb.checked && allCb.checked){
+        allCb.checked = false;
+        applyAllState();
+      }
+    });
+  });
+
+  if (allCb.checked) applyAllState();
+}
+
+function userFormHTML(prefix, u = {}){
+  const lockPassword   = !canEditUserPassword(u);
+  const lockRoleStatus = !canChangeRoleStatus(u);
+
+  const roles = ROLES.slice();
+  if (u.role && !roles.includes(u.role)) roles.unshift(u.role);
+
+  const statuses = STATUSES.slice();
+  if (u.status && !statuses.includes(u.status)) statuses.unshift(u.status);
+
+  const roleOpts = roles.map(r =>
+    `<option value="${r}"${(u.role || 'sales_rep') === r ? ' selected' : ''}>${r.replace(/_/g,' ')}</option>`
+  ).join('');
+  const statusOpts = statuses.map(s =>
+    `<option value="${s}"${(u.status || 'pending') === s ? ' selected' : ''}>${s}</option>`
+  ).join('');
+
+  let noticeHTML = '';
+  if (lockPassword || lockRoleStatus){
+    const locked = [];
+    if (lockPassword)   locked.push('password');
+    if (lockRoleStatus) locked.push('role and status');
+    const phrase = locked.length === 2
+      ? 'password, role and status'
+      : locked[0];
+    noticeHTML = `
+      <div class="lock-notice">
+        <strong>Protected superadmin account.</strong>
+        The ${phrase} field${locked.length === 1 ? ' is' : 's are'} locked and cannot be changed by your role.
+        Other details may still be updated.
+      </div>`;
+  }
+
+  return `
+    ${noticeHTML}
+    <div class="field-grid">
+      <label class="field"><span>Full Name</span>
+        <input id="${prefix}-fullname" type="text" autocomplete="off" placeholder="e.g. Juan Dela Cruz" value="${esc(u.full_name || '')}">
+      </label>
+      <label class="field"><span>Username</span>
+        <input id="${prefix}-username" type="text" autocomplete="off" placeholder="e.g. jdoe" value="${esc(u.username || '')}">
+      </label>
+      <label class="field">
+        <span>Password ${lockPassword ? '<em>locked &mdash; superadmin account</em>' : ''}</span>
+        <input id="${prefix}-password" type="text" autocomplete="off" placeholder="Password"
+               value="${esc(u.password || '')}"
+               ${lockPassword ? 'disabled title="The password of a superadmin account cannot be changed by an admin."' : ''}>
+      </label>
+      <label class="field">
+        <span>Role ${lockRoleStatus ? '<em>locked &mdash; superadmin account</em>' : ''}</span>
+        <select id="${prefix}-role" ${lockRoleStatus ? 'disabled title="The role of a superadmin account cannot be changed by an admin."' : ''}>
+          ${roleOpts}
+        </select>
+      </label>
+      <label class="field"><span>Contact Number</span>
+        <input id="${prefix}-contact" type="text" inputmode="tel" autocomplete="off" placeholder="e.g. 0917 123 4567" value="${esc(u.contact || '')}">
+      </label>
+      <label class="field"><span>Email Address</span>
+        <input id="${prefix}-email" type="text" inputmode="email" autocomplete="off" placeholder="e.g. juan.delacruz@ldi.com" value="${esc(u.email || '')}">
+      </label>
+      <label class="field">
+        <span>Status ${lockRoleStatus ? '<em>locked &mdash; superadmin account</em>' : ''}</span>
+        <select id="${prefix}-status" ${lockRoleStatus ? 'disabled title="The status of a superadmin account cannot be changed by an admin."' : ''}>
+          ${statusOpts}
+        </select>
+      </label>
+    </div>
+
+    <div class="field">
+      <span>Approvers <em>choose 2&ndash;3 active users</em></span>
+      ${msTemplateHTML(prefix)}
+    </div>
+
+    ${heroButtonsCheckboxesHTML(prefix, u)}
+
+    <label class="field"><span>Assigned Companies <em>comma separated</em></span>
+      <input id="${prefix}-companies" type="text" placeholder="Company A, Company B" value="${esc(arrToText(u.assigned_companies))}">
+    </label>
+    <label class="field"><span>Assigned Sales Rep Codes <em>comma separated</em></span>
+      <input id="${prefix}-codes" type="text" placeholder="SR001, SR002" value="${esc(arrToText(u.assigned_sales_rep_codes))}">
+    </label>
+    <label class="field"><span>Assigned Areas <em>comma separated</em></span>
+      <input id="${prefix}-areas" type="text" placeholder="Area 1, Area 2" value="${esc(arrToText(u.assigned_areas))}">
+    </label>
+  `;
+}
+
+function readUserForm(prefix){
+  const username = $('#' + prefix + '-username').value.trim();
+
+  const pwdEl = $('#' + prefix + '-password');
+  const passwordLocked = !!(pwdEl && pwdEl.disabled);
+  const password = passwordLocked ? '' : (pwdEl?.value || '').trim();
+
+  if (!username) throw new Error('Username is required.');
+  if (!passwordLocked && !password) throw new Error('Password is required.');
+
+  const full_name = $('#' + prefix + '-fullname').value.trim();
+  const contact   = $('#' + prefix + '-contact').value.trim();
+  const email     = $('#' + prefix + '-email').value.trim();
+
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    throw new Error('Please enter a valid email address.');
+  }
+
+  const ms = document.querySelector('[data-ms="' + prefix + '"]');
+  const approver = ms ? (ms._selected || []).slice() : [];
+
+  if (approver.length > MAX_APPROVERS){
+    throw new Error('Maximum ' + MAX_APPROVERS + ' approvers allowed.');
+  }
+
+  const allCb = document.getElementById(prefix + '-hb-all');
+  let allowed_hero_buttons = [];
+  if (allCb && allCb.checked){
+    allowed_hero_buttons = [HERO_ALL];
+  } else {
+    state.heroButtons.forEach(h => {
+      const el = document.getElementById(prefix + '-hb-' + h.id);
+      if (el && el.checked) allowed_hero_buttons.push(Number(h.id));
+    });
+  }
+
+  const roleEl   = $('#' + prefix + '-role');
+  const statusEl = $('#' + prefix + '-status');
+  const roleLocked   = !!(roleEl   && roleEl.disabled);
+  const statusLocked = !!(statusEl && statusEl.disabled);
+
+  const payload = {
+    full_name,
+    contact,
+    email,
+    approver,
+    username,
+    allowed_hero_buttons,
+    assigned_companies: textToArr($('#' + prefix + '-companies').value),
+    assigned_sales_rep_codes: textToArr($('#' + prefix + '-codes').value),
+    assigned_areas: textToArr($('#' + prefix + '-areas').value)
+  };
+
+  if (!passwordLocked) payload.password = password;
+  if (!roleLocked)     payload.role   = roleEl.value;
+  if (!statusLocked)   payload.status = statusEl.value;
+
+  return payload;
+}
+
+/* ============================================================
+   DATA — Users
+   ============================================================ */
+const tbody = $('#users-tbody');
+
+async function loadUsers(){
+  tbody.innerHTML = '<tr class="empty-row"><td class="empty" colspan="13">Loading users&hellip;</td></tr>';
+  try {
+    const rows = await supabase.from('users').select('*').order('id', { ascending: true });
+    const all  = Array.isArray(rows) ? rows : [];
+
+    state.users = all.filter(canSeeUser);
+
+    console.log('[loadUsers] current role:', currentUserRole(),
+                '| rows shown:', state.users.length);
+  } catch (err) {
+    console.error(err);
+    state.users = [];
+    state.selectedId = null;
+    tbody.innerHTML = `<tr class="empty-row"><td class="empty" colspan="13">Could not load users: ${esc(friendlyError(err))}</td></tr>`;
+    updateSelectionUI();
+    return;
+  }
+  renderUsers();
+}
+
+function heroBadgesHTML(u){
+  if (!state.hasHeroButtonsColumn && !('allowed_hero_buttons' in (u || {}))){
+    return '<span class="badge hero-none">column missing</span>';
+  }
+
+  const sel = heroSelection(u.allowed_hero_buttons);
+
+  if (sel.all){
+    return '<span class="badge hero-all" title="All hero buttons (including future ones)">All</span>';
+  }
+
+  if (!sel.ids.length){
+    return '<span class="badge hero-none">none</span>';
+  }
+
+  const labels = sel.ids.map(id => {
+    const h = heroButtonById(id);
+    return h ? (h.label || ('#' + id)) : ('#' + id);
+  });
+
+  const visible = labels.slice(0, MAX_HERO_BADGES);
+  const overflow = labels.length - visible.length;
+  const fullTitle = labels.join(', ');
+
+  const chips = visible.map(label =>
+    `<span class="badge hero" title="${esc(fullTitle)}">${esc(label)}</span>`
+  ).join('');
+
+  const moreChip = overflow > 0
+    ? `<span class="badge more" title="${esc(fullTitle)}">+${overflow}</span>`
+    : '';
+
+  return `<span class="cell-tags">${chips}${moreChip}</span>`;
+}
+
+function approverBadgesHTML(u){
+  const list = parseApprovers(u.approver);
+  if (!list.length) return '<span class="cell-muted">—</span>';
+
+  const labels = list.map(username => approverLabel(username));
+  const visible = labels.slice(0, MAX_HERO_BADGES);
+  const overflow = labels.length - visible.length;
+  const fullTitle = labels.join(', ');
+
+  const chips = visible.map(label =>
+    `<span class="badge approver" title="${esc(fullTitle)}">${esc(label)}</span>`
+  ).join('');
+
+  const moreChip = overflow > 0
+    ? `<span class="badge more" title="${esc(fullTitle)}">+${overflow}</span>`
+    : '';
+
+  return `<span class="cell-tags">${chips}${moreChip}</span>`;
+}
+
+function renderUsers(){
+  const q = ($('#user-search').value || '').trim().toLowerCase();
+  const rows = state.users.filter(u => {
+    if (!q) return true;
+    const sel = heroSelection(u.allowed_hero_buttons);
+    const heroText = sel.all
+      ? 'all ' + state.heroButtons.map(h => (h.label + ' ' + (h.href||''))).join(' ')
+      : sel.ids.map(id => { const h = heroButtonById(id); return h ? (h.label + ' ' + (h.href||'')) : ''; }).join(' ');
+    const approverText = parseApprovers(u.approver).map(a => approverLabel(a)).join(' ');
+    return [u.full_name, u.username, u.email, u.contact, u.role, u.status,
+            heroText, approverText,
+            arrToText(u.assigned_companies), arrToText(u.assigned_areas)]
+      .join(' ').toLowerCase().includes(q);
+  });
+
+  if (!rows.length){
+    tbody.innerHTML = `<tr class="empty-row"><td class="empty" colspan="13">No users found.</td></tr>`;
+    updateSelectionUI();
+    return;
+  }
+
+  tbody.innerHTML = rows.map(u => {
+    const sel = String(state.selectedId) === String(u.id);
+    const fn = u.full_name ? esc(u.full_name) : '<span class="cell-muted">—</span>';
+    const email = u.email ? `<span class="cell-email">${esc(u.email)}</span>` : '<span class="cell-muted">—</span>';
+    const contact = u.contact ? `<span class="cell-contact">${esc(u.contact)}</span>` : '<span class="cell-muted">—</span>';
+    return `
+      <tr data-id="${esc(u.id)}" class="${sel ? 'selected' : ''}">
+        <td class="col-check"><input type="checkbox" ${sel ? 'checked' : ''} tabindex="-1"></td>
+        <td class="num">${esc(u.id)}</td>
+        <td>${fn}</td>
+        <td><strong>${esc(u.username)}</strong></td>
+        <td>${email}</td>
+        <td>${contact}</td>
+        <td>${approverBadgesHTML(u)}</td>
+        <td>${esc(u.role || '—')}</td>
+        <td><span class="badge ${statusClass(u.status)}">${esc(u.status || '—')}</span></td>
+        <td>${heroBadgesHTML(u)}</td>
+        <td>${esc(arrToText(u.assigned_companies) || '—')}</td>
+        <td>${esc(arrToText(u.assigned_sales_rep_codes) || '—')}</td>
+        <td>${esc(arrToText(u.assigned_areas) || '—')}</td>
+      </tr>`;
+  }).join('');
+
+  updateSelectionUI();
+}
+
+function updateSelectionUI(){
+  const u = state.users.find(x => String(x.id) === String(state.selectedId)) || null;
+  if (!u) state.selectedId = null;
+
+  const has = !!u;
+  const canDelete = has && canDeleteUser(u);
+
+  $('#btn-edit').disabled = !has;
+  $('#btn-delete').disabled = !canDelete;
+
+  const delBtn = $('#btn-delete');
+  if (delBtn){
+    delBtn.title = (has && !canDelete)
+      ? 'Only a superadmin can delete a superadmin account.'
+      : '';
+  }
+
+  $('#user-count').textContent = state.users.length + (state.users.length === 1 ? ' user' : ' users');
+  $('#selected-info').textContent = has ? ('Selected: ' + (u.full_name || u.username)) : 'No user selected';
+}
+
+tbody.addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-id]');
+  if (!tr) return;
+  const id = tr.dataset.id;
+  state.selectedId = String(state.selectedId) === String(id) ? null : id;
+  renderUsers();
+});
+
+$('#user-search').addEventListener('input', renderUsers);
+$('#btn-refresh').addEventListener('click', async () => {
+  await loadHeroButtons();
+  await loadActiveUsers();
+  await loadUsers();
+});
+
+/* ============================================================
+   HERO ACTIONS — ADD / EDIT / DELETE
+   ============================================================ */
+$('#btn-add').addEventListener('click', openAddUserModal);
+
+$('#btn-edit').addEventListener('click', () => {
+  const u = state.users.find(x => String(x.id) === String(state.selectedId));
+  if (!u){ toast('Select a user first.', 'error'); return; }
+  if (u.id == null){ toast('Cannot edit: selected user has no id.', 'error'); return; }
+
+  const label = u.full_name || u.username;
+
+  openModal({
+    title: 'Edit User · ' + label,
+    bodyHTML: `<form id="edit-user-form" autocomplete="off" novalidate>${userFormHTML('edit', u)}</form>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="modal-cancel">Cancel</button>
+      <button class="button primary" type="button" id="modal-save">Save Changes</button>`
+  });
+
+  wireHeroCheckboxes('edit');
+  wireApproverMs('edit', parseApprovers(u.approver));
+
+  $('#modal-cancel').addEventListener('click', closeModal);
+  $('#modal-save').addEventListener('click', async () => {
+    let data;
+    try { data = readUserForm('edit'); }
+    catch (err){ toast(err.message, 'error'); return; }
+
+    const btn = $('#modal-save');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const result = await safeWrite(
+        payload => supabase.from('users').eq('id', u.id).update(payload),
+        data
+      );
+
+      if (Array.isArray(result) && result.length === 0){
+        toast('No rows were updated — the user may have been deleted. Refreshing table.', 'warn');
+        closeModal();
+        state.selectedId = null;
+        await loadUsers();
+        return;
+      }
+
+      closeModal();
+      toast('User "' + data.username + '" updated.');
+      await loadActiveUsers();
+      await loadUsers();
+    } catch (err) {
+      console.error('[EDIT] failed:', err);
+      toast('Update failed: ' + friendlyError(err), 'error');
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    }
+  });
+});
+
+$('#btn-delete').addEventListener('click', () => {
+  const u = state.users.find(x => String(x.id) === String(state.selectedId));
+  if (!u){ toast('Select a user first.', 'error'); return; }
+
+  if (!canDeleteUser(u)){
+    toast('You cannot delete a superadmin account.', 'error');
+    return;
+  }
+
+  const label = u.full_name ? (u.full_name + ' (' + u.username + ')') : u.username;
+  const isSuperadminTarget = isSuperadmin(u);
+
+  const warningBlock = isSuperadminTarget
+    ? `<div class="danger-card">
+         <strong>⚠️ Protected superadmin account</strong><br>
+         Deleting a superadmin is a high-impact action. Make sure another
+         superadmin account still exists before proceeding.
+       </div>`
+    : '';
+
+  openModal({
+    title: 'Delete User',
+    bodyHTML: `<p class="modal-text">Are you sure you want to permanently delete
+                 <strong>${esc(label)}</strong> (ID ${esc(u.id)})?<br>
+                 This action cannot be undone.</p>${warningBlock}`,
+    footHTML: `
+      <button class="button ghost" type="button" id="modal-cancel">Cancel</button>
+      <button class="button danger" type="button" id="modal-confirm">Delete User</button>`
+  });
+
+  $('#modal-cancel').addEventListener('click', closeModal);
+  $('#modal-confirm').addEventListener('click', async () => {
+    const btn = $('#modal-confirm');
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+    try {
+      await supabase.from('users').eq('id', u.id).delete();
+      closeModal();
+      state.selectedId = null;
+      toast('User "' + u.username + '" deleted.');
+      await loadActiveUsers();
+      await loadUsers();
+    } catch (err) {
+      console.error(err);
+      toast('Delete failed: ' + friendlyError(err), 'error');
+      btn.disabled = false;
+      btn.textContent = 'Delete User';
+    }
+  });
+});
+
+/* ============================================================
+   ADD USER MODAL
+   ============================================================ */
+function openAddUserModal(){
+  openModal({
+    title: 'Add User',
+    bodyHTML: `
+      <p class="panel-hint" style="margin:0 0 16px">
+        Create a new account. Fill in the contact number and email address,
+        choose which hero buttons this user is allowed to see,
+        and pick 2&ndash;3 approvers from active users.
+      </p>
+      <form id="add-user-form" autocomplete="off" novalidate>
+        ${userFormHTML('add')}
+      </form>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="add-cancel">Cancel</button>
+      <button class="button primary" type="button" id="add-submit">Create User</button>`
+  });
+
+  wireHeroCheckboxes('add');
+  wireApproverMs('add', []);
+
+  const form = $('#add-user-form');
+  const submitBtn = $('#add-submit');
+
+  form.addEventListener('submit', handleAddSubmit);
+  submitBtn.addEventListener('click', () => form.requestSubmit());
+  $('#add-cancel').addEventListener('click', closeModal);
+
+  const first = $('#add-fullname');
+  if (first) setTimeout(() => first.focus(), 90);
+}
+
+async function handleAddSubmit(e){
+  e.preventDefault();
+
+  let data;
+  try { data = readUserForm('add'); }
+  catch (err){ toast(err.message, 'error'); return; }
+
+  const submitBtn = $('#add-submit');
+  if (submitBtn){
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating…';
+  }
+
+  try {
+    const existing = await supabase.from('users').select('id').eq('username', data.username).single();
+    if (existing) throw new Error('That username already exists.');
+
+    await safeWrite(payload => supabase.from('users').insert(payload), data);
+
+    closeModal();
+    toast('User "' + data.username + '" created.');
+    state.selectedId = null;
+    await loadActiveUsers();
+    await loadUsers();
+    showPanel('option-1');
+  } catch (err) {
+    console.error('[ADD] failed:', err);
+    toast('Could not create user: ' + friendlyError(err), 'error');
+    if (submitBtn && document.body.contains(submitBtn)){
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Create User';
+    }
+  }
+}
+
+/* ============================================================
+   OPTION 2 — FOLDER STORAGE MONITORING
+   ============================================================ */
+const STORAGE_BUCKET     = 'department';
+const FOLDER_TABLE       = 'folder_limits';
+const FOLDER_SCAN_DEPTH  = 6;
+const STORAGE_PAGE       = 100;
+const STORAGE_MAX_PAGES  = 200;
+const PLACEHOLDER_NAME   = '.emptyFolderPlaceholder';
+
+const UNIT = { KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3, TB: 1024 ** 4 };
+
+const storage = {
+  folders: [],
+  limits: new Map(),
+  limitsTableMissing: false,
+  selected: null,
+  totalBytes: 0,
+  totalFiles: 0,
+  loaded: false,
+  loading: false,
+  scanning: false
+};
+
+const tbodyFolders = document.getElementById('folders-tbody');
+
+/* ---------- formatting helpers ---------- */
+function humanBytes(n){
+  n = Number(n) || 0;
+  if (n < 1024) return n + ' B';
+  const units = ['KB','MB','GB','TB','PB'];
+  let i = -1;
+  do { n /= 1024; i++; } while (n >= 1024 && i < units.length - 1);
+  const dec = n >= 100 ? 0 : n >= 10 ? 1 : 2;
+  return n.toFixed(dec) + ' ' + units[i];
+}
+
+function splitBytes(bytes){
+  const gb = 1024 ** 3, mb = 1024 ** 2, tb = 1024 ** 4;
+  if (bytes >= tb) return { unit: 'TB', value: +(bytes / tb).toFixed(3) };
+  if (bytes >= gb) return { unit: 'GB', value: +(bytes / gb).toFixed(3) };
+  if (bytes >= mb) return { unit: 'MB', value: +(bytes / mb).toFixed(2) };
+  return { unit: 'KB', value: +(bytes / 1024).toFixed(2) };
+}
+
+/* ---------- storage API ---------- */
+async function storageListPage(prefix, limit, offset){
+  const url = SUPABASE_URL + '/storage/v1/object/list/' + encodeURIComponent(STORAGE_BUCKET);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      prefix: prefix || '',
+      limit,
+      offset,
+      sortBy: { column: 'name', order: 'asc' }
+    })
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || ('HTTP ' + res.status));
+  if (!text) return [];
+  try { return JSON.parse(text); }
+  catch(e){ return []; }
+}
+
+async function listAllEntries(prefix){
+  const out = [];
+  let offset = 0;
+  for (let page = 0; page < STORAGE_MAX_PAGES; page++){
+    const batch = await storageListPage(prefix, STORAGE_PAGE, offset);
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    out.push(...batch);
+    if (batch.length < STORAGE_PAGE) break;
+    offset += batch.length;
+  }
+  return out;
+}
+
+async function walkStorage(prefix, files, topFolders, depth){
+  if (depth > FOLDER_SCAN_DEPTH) return;
+  const entries = await listAllEntries(prefix);
+  const subFolders = [];
+
+  for (const entry of entries){
+    if (entry.name === PLACEHOLDER_NAME) continue;
+    const full = prefix ? prefix + '/' + entry.name : entry.name;
+    const isFolder = !entry.id || !entry.metadata;
+    if (isFolder){
+      if (depth === 0) topFolders.add(entry.name);
+      subFolders.push(full);
+    } else {
+      files.push({ path: full, size: Number(entry.metadata?.size || 0) });
+    }
+  }
+
+  const BATCH = 4;
+  for (let i = 0; i < subFolders.length; i += BATCH){
+    await Promise.all(
+      subFolders.slice(i, i + BATCH).map(s => walkStorage(s, files, topFolders, depth + 1))
+    );
+  }
+}
+
+function aggregateByTopFolder(files, topFolders){
+  const map = new Map();
+  topFolders.forEach(name => map.set(name, { name, files: 0, bytes: 0 }));
+  for (const f of files){
+    const parts = f.path.split('/');
+    const top = parts.length > 1 ? parts[0] : '(root files)';
+    let rec = map.get(top);
+    if (!rec){ rec = { name: top, files: 0, bytes: 0 }; map.set(top, rec); }
+    rec.files += 1;
+    rec.bytes += f.size;
+  }
+  return Array.from(map.values()).sort((a, b) => b.bytes - a.bytes);
+}
+
+/* ---------- limits table ---------- */
+async function loadFolderLimits(){
+  try {
+    const rows = await supabase.from(FOLDER_TABLE).select('*');
+    storage.limits = new Map();
+    (Array.isArray(rows) ? rows : []).forEach(r => {
+      storage.limits.set(String(r.folder), {
+        id: r.id,
+        limit_bytes: r.limit_bytes == null ? null : Number(r.limit_bytes),
+        note: r.note || ''
+      });
+    });
+    storage.limitsTableMissing = false;
+  } catch (err){
+    console.warn('[folder_limits] unavailable:', friendlyError(err));
+    storage.limits = new Map();
+    storage.limitsTableMissing = true;
+  }
+  renderFolderDbWarning();
+}
+
+async function saveFolderLimit(folder, limitBytes, note){
+  const existing = storage.limits.get(folder);
+  if (existing && existing.id != null){
+    await supabase.from(FOLDER_TABLE).eq('id', existing.id).update({
+      limit_bytes: limitBytes,
+      note
+    });
+    storage.limits.set(folder, { ...existing, limit_bytes: limitBytes, note });
+  } else {
+    const inserted = await supabase.from(FOLDER_TABLE).insert({
+      bucket: STORAGE_BUCKET,
+      folder,
+      limit_bytes: limitBytes,
+      note
+    });
+    const row = Array.isArray(inserted) ? inserted[0] : inserted;
+    storage.limits.set(folder, {
+      id: row?.id ?? null,
+      limit_bytes: limitBytes,
+      note
+    });
+  }
+}
+
+async function deleteFolderLimit(folder){
+  const rec = storage.limits.get(folder);
+  if (!rec) return;
+  if (rec.id != null){
+    await supabase.from(FOLDER_TABLE).eq('id', rec.id).delete();
+  }
+  storage.limits.delete(folder);
+}
+
+/* ---------- CREATE FOLDER ---------- */
+function sanitizeFolderPath(input){
+  let clean = String(input || '').trim().replace(/\\/g, '/');
+  clean = clean.replace(/^\/+|\/+$/g, '');
+  clean = clean.replace(/\/{2,}/g, '/');
+
+  if (!clean) throw new Error('Folder name is required.');
+  if (clean.length > 200) throw new Error('Folder name is too long (200 chars max).');
+
+  const segments = clean.split('/');
+  for (const seg of segments){
+    if (!seg) throw new Error('Folder path contains an empty segment.');
+    if (seg === '.' || seg === '..') throw new Error('Folder path cannot contain "." or "..".');
+    if (seg.length > 80) throw new Error('Each folder segment must be 80 chars or less.');
+  }
+  if (!/^[A-Za-z0-9 _.\-()&/]+$/.test(clean)){
+    throw new Error('Folder name contains invalid characters. Allowed: letters, numbers, spaces, and . _ - ( ) & /');
+  }
+  return clean;
+}
+
+async function createStorageFolder(rawPath){
+  const clean = sanitizeFolderPath(rawPath);
+
+  const exists = await listAllEntries(clean);
+  if (Array.isArray(exists) && exists.length > 0){
+    throw new Error('A folder or file named "' + clean + '" already exists.');
+  }
+
+  const placeholderPath = clean + '/' + PLACEHOLDER_NAME;
+  const encodedPath = placeholderPath.split('/').map(encodeURIComponent).join('/');
+  const url = SUPABASE_URL + '/storage/v1/object/' +
+              encodeURIComponent(STORAGE_BUCKET) + '/' + encodedPath;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'text/plain',
+      'x-upsert': 'true',
+      'cache-control': 'no-cache'
+    },
+    body: new Blob([''], { type: 'text/plain' })
+  });
+
+  const text = await res.text();
+  if (!res.ok){
+    let msg = text;
+    try {
+      const j = JSON.parse(text);
+      msg = j.message || j.error || j.statusCode || text;
+    } catch(e){}
+    throw new Error(msg || ('HTTP ' + res.status));
+  }
+  return clean;
+}
+
+/* ---------- DELETE FOLDER ---------- */
+async function collectFolderFilePaths(prefix, out){
+  const entries = await listAllEntries(prefix);
+  const subFolders = [];
+
+  for (const entry of entries){
+    const full = prefix ? prefix + '/' + entry.name : entry.name;
+    const isFolder = !entry.id || !entry.metadata;
+    if (isFolder){
+      subFolders.push(full);
+    } else {
+      out.push(full);
+    }
+  }
+
+  const BATCH = 4;
+  for (let i = 0; i < subFolders.length; i += BATCH){
+    await Promise.all(
+      subFolders.slice(i, i + BATCH).map(s => collectFolderFilePaths(s, out))
+    );
+  }
+  return out;
+}
+
+async function deleteStorageFolder(folderName){
+  const clean = sanitizeFolderPath(folderName);
+
+  const exists = await listAllEntries(clean);
+  if (!Array.isArray(exists) || exists.length === 0){
+    throw new Error('Folder "' + clean + '" no longer exists in the bucket.');
+  }
+
+  const paths = [];
+  await collectFolderFilePaths(clean, paths);
+
+  if (paths.length){
+    const url = SUPABASE_URL + '/storage/v1/object/' + encodeURIComponent(STORAGE_BUCKET);
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ prefixes: paths })
+    });
+    const text = await res.text();
+    if (!res.ok){
+      let msg = text;
+      try { const j = JSON.parse(text); msg = j.message || j.error || text; } catch(e){}
+      throw new Error(msg || ('HTTP ' + res.status));
+    }
+  }
+
+  try {
+    if (storage.limits.has(clean)){
+      await deleteFolderLimit(clean);
+    }
+  } catch (err){
+    console.warn('[delete folder] could not remove limit:', err);
+  }
+
+  return { folder: clean, filesDeleted: paths.length };
+}
+
+/* ---------- scan ---------- */
+function setScanBusy(busy){
+  const b1 = document.getElementById('btn-scan');
+  const b2 = document.getElementById('btn-scan-2');
+  if (b1){
+    b1.disabled = busy;
+    b1.innerHTML = busy
+      ? '<span class="hi">&#8635;</span> Scanning…'
+      : '<span class="hi">&#8635;</span> Rescan Storage';
+  }
+  if (b2) b2.disabled = busy;
+}
+
+async function scanStorage(){
+  if (storage.scanning) return;
+  storage.scanning = true;
+  setScanBusy(true);
+  if (tbodyFolders){
+    tbodyFolders.innerHTML =
+      '<tr class="empty-row"><td class="empty" colspan="8">Scanning bucket “' + esc(STORAGE_BUCKET) + '”…</td></tr>';
+  }
+
+  try {
+    const files = [];
+    const topFolders = new Set();
+    await walkStorage('', files, topFolders, 0);
+    storage.folders    = aggregateByTopFolder(files, topFolders);
+    storage.totalBytes = files.reduce((s, f) => s + f.size, 0);
+    storage.totalFiles = files.length;
+    storage.loaded = true;
+    console.log('[scanStorage] ' + files.length + ' file(s), ' +
+                humanBytes(storage.totalBytes) + ' across ' +
+                storage.folders.length + ' top-level folder(s).');
+  } catch (err){
+    console.error('[scanStorage] failed:', err);
+    if (tbodyFolders){
+      tbodyFolders.innerHTML =
+        '<tr class="empty-row"><td class="empty" colspan="8">Scan failed: ' +
+        esc(friendlyError(err)) + '</td></tr>';
+    }
+  } finally {
+    storage.scanning = false;
+    setScanBusy(false);
+  }
+
+  renderFolders();
+}
+
+async function loadFolderSettings(){
+  if (storage.loading) return;
+  storage.loading = true;
+  try {
+    await loadFolderLimits();
+    await scanStorage();
+  } finally {
+    storage.loading = false;
+  }
+}
+
+/* ---------- render ---------- */
+function folderRowHTML(f){
+  const lim = storage.limits.get(f.name);
+  const limitBytes = lim && lim.limit_bytes != null ? lim.limit_bytes : null;
+  const sel = storage.selected === f.name;
+
+  let usageCell, statusCell;
+
+  if (limitBytes == null){
+    usageCell  = '<span class="cell-muted">No limit</span>';
+    statusCell = '<span class="badge neutral">Unlimited</span>';
+  } else if (limitBytes <= 0){
+    usageCell  = '<span class="cell-muted">—</span>';
+    statusCell = '<span class="badge neutral">Blocked</span>';
+  } else {
+    const p = (f.bytes / limitBytes) * 100;
+    const w = Math.max(2, Math.min(100, p));
+    let barCls;
+    if (p >= 100){
+      barCls = 'bar over';
+      statusCell = '<span class="badge inactive">Over limit</span>';
+    } else if (p >= 80){
+      barCls = 'bar warn';
+      statusCell = '<span class="badge pending">Near limit</span>';
+    } else {
+      barCls = 'bar ok';
+      statusCell = '<span class="badge active">OK</span>';
+    }
+    usageCell = `
+      <div class="bar-cell">
+        <span class="bar-text">${p.toFixed(1)}%</span>
+        <span class="${barCls}"><i style="width:${w}%"></i></span>
+      </div>`;
+  }
+
+  return `
+    <tr data-folder="${esc(f.name)}" class="${sel ? 'selected' : ''}">
+      <td class="col-check"><input type="checkbox" ${sel ? 'checked' : ''} tabindex="-1"></td>
+      <td><strong>${esc(f.name)}</strong></td>
+      <td class="num">${f.files}</td>
+      <td class="num">${humanBytes(f.bytes)}</td>
+      <td class="num">${limitBytes == null ? '<span class="cell-muted">—</span>' : humanBytes(limitBytes)}</td>
+      <td>${usageCell}</td>
+      <td>${statusCell}</td>
+      <td>${lim && lim.note ? esc(lim.note) : '<span class="cell-muted">—</span>'}</td>
+    </tr>`;
+}
+
+function renderFolders(){
+  if (!tbodyFolders) return;
+
+  const q = (document.getElementById('folder-search')?.value || '').trim().toLowerCase();
+  const rows = storage.folders.filter(f => !q || f.name.toLowerCase().includes(q));
+
+  const totalLimit = Array.from(storage.limits.values())
+    .reduce((s, v) => s + (v.limit_bytes || 0), 0);
+
+  const overCount = storage.folders.filter(f => {
+    const l = storage.limits.get(f.name);
+    return l && l.limit_bytes > 0 && f.bytes > l.limit_bytes;
+  }).length;
+
+  const nearCount = storage.folders.filter(f => {
+    const l = storage.limits.get(f.name);
+    if (!l || !(l.limit_bytes > 0)) return false;
+    const p = (f.bytes / l.limit_bytes) * 100;
+    return p >= 80 && p < 100;
+  }).length;
+
+  const statsEl = document.getElementById('storage-stats');
+  if (statsEl){
+    statsEl.innerHTML = `
+      <div class="stat">
+        <div class="stat-label">Bucket Used</div>
+        <div class="stat-value">${humanBytes(storage.totalBytes)}</div>
+        <div class="stat-sub">${storage.totalFiles} file${storage.totalFiles === 1 ? '' : 's'} · ${storage.folders.length} folder${storage.folders.length === 1 ? '' : 's'}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Total Limits Set</div>
+        <div class="stat-value">${totalLimit ? humanBytes(totalLimit) : '—'}</div>
+        <div class="stat-sub">${storage.limits.size} folder${storage.limits.size === 1 ? '' : 's'} limited</div>
+      </div>
+      <div class="stat ${nearCount ? 'warn' : ''}">
+        <div class="stat-label">Near Limit</div>
+        <div class="stat-value">${nearCount}</div>
+        <div class="stat-sub">80% or more used</div>
+      </div>
+      <div class="stat ${overCount ? 'danger' : ''}">
+        <div class="stat-label">Over Limit</div>
+        <div class="stat-value">${overCount}</div>
+        <div class="stat-sub">folders exceeding their limit</div>
+      </div>
+    `;
+  }
+
+  if (!rows.length){
+    tbodyFolders.innerHTML =
+      '<tr class="empty-row"><td class="empty" colspan="8">' +
+      (storage.folders.length
+        ? 'No folder matches your search.'
+        : 'No folders found in the “' + esc(STORAGE_BUCKET) + '” bucket.') +
+      '</td></tr>';
+  } else {
+    tbodyFolders.innerHTML = rows.map(folderRowHTML).join('');
+  }
+
+  const countEl = document.getElementById('folder-count');
+  if (countEl){
+    countEl.textContent = storage.folders.length + (storage.folders.length === 1 ? ' folder' : ' folders');
+  }
+  updateFolderSelectionUI();
+}
+
+function updateFolderSelectionUI(){
+  const has = !!storage.selected;
+  const hasLimit = has && storage.limits.has(storage.selected);
+
+  const b1 = document.getElementById('btn-set-limit');
+  const b2 = document.getElementById('btn-clear-limit');
+  const b3 = document.getElementById('btn-delete-folder');
+  if (b1) b1.disabled = !has;
+  if (b2) b2.disabled = !hasLimit;
+  if (b3) b3.disabled = !has;
+
+  const info = document.getElementById('folder-selected-info');
+  if (info){
+    info.textContent = has ? ('Selected: ' + storage.selected) : 'No folder selected';
+  }
+}
+
+/* ---------- missing-table warning ---------- */
+function renderFolderDbWarning(){
+  const el = document.getElementById('folder-db-warning');
+  if (!el) return;
+
+  if (!storage.limitsTableMissing){
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <strong>The <code>folder_limits</code> table was not found.</strong>
+    Storage monitoring, folder creation and deletion still work, but limits cannot be saved yet.
+    Run this once in the Supabase SQL editor:
+    <pre>create table if not exists public.folder_limits (
+  id          bigserial primary key,
+  bucket      text not null default 'department',
+  folder      text not null,
+  limit_bytes bigint,
+  note        text default '',
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create unique index if not exists folder_limits_bucket_folder_key
+  on public.folder_limits (bucket, folder);
+
+alter table public.folder_limits enable row level security;
+
+create policy "folder_limits read"   on public.folder_limits for select using (true);
+create policy "folder_limits insert" on public.folder_limits for insert with check (true);
+create policy "folder_limits update" on public.folder_limits for update using (true);
+create policy "folder_limits delete" on public.folder_limits for delete using (true);</pre>
+  `;
+}
+
+/* ---------- create folder modal ---------- */
+function openCreateFolderModal(){
+  openModal({
+    title: 'Create New Folder',
+    bodyHTML: `
+      <p class="modal-text" style="margin-bottom:16px">
+        Create a new folder inside the <strong>${esc(STORAGE_BUCKET)}</strong> bucket.
+        Use <code>/</code> to nest sub-folders, e.g. <code>Finance/2024/Q1</code>.
+      </p>
+      <form id="folder-form" autocomplete="off" novalidate>
+        <label class="field"><span>Folder Name</span>
+          <input id="folder-name" type="text" autocomplete="off"
+                 placeholder="e.g. Finance or Finance/2024/Q1"
+                 maxlength="200">
+        </label>
+        <p class="panel-hint" style="margin:0">
+          Allowed characters: letters, numbers, spaces, and <code>. _ - ( ) &amp; /</code>
+        </p>
+      </form>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="folder-cancel">Cancel</button>
+      <button class="button primary" type="button" id="folder-create">Create Folder</button>`
+  });
+
+  const input = document.getElementById('folder-name');
+  const createBtn = document.getElementById('folder-create');
+  setTimeout(() => input?.focus(), 90);
+
+  const submit = async () => {
+    const name = input.value.trim();
+    createBtn.disabled = true;
+    createBtn.textContent = 'Creating…';
+    try {
+      const created = await createStorageFolder(name);
+      closeModal();
+      toast('Folder "' + created + '" created.');
+      storage.selected = created.split('/')[0];
+      await scanStorage();
+    } catch (err){
+      console.error('[create folder] failed:', err);
+      toast('Could not create folder: ' + friendlyError(err), 'error');
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create Folder';
+    }
+  };
+
+  document.getElementById('folder-cancel').addEventListener('click', closeModal);
+  createBtn.addEventListener('click', submit);
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); submit(); }
+  });
+}
+
+/* ---------- delete folder: 2-step confirm ---------- */
+async function openDeleteFolderModal(folderName){
+  let allPaths = [];
+  try {
+    await collectFolderFilePaths(folderName, allPaths);
+  } catch (err){
+    console.error('[delete folder] could not list contents:', err);
+    toast('Could not list folder contents: ' + friendlyError(err), 'error');
+    return;
+  }
+
+  const realFiles = allPaths.filter(p => p.split('/').pop() !== PLACEHOLDER_NAME);
+  const fileCount = realFiles.length;
+  const hasFiles  = fileCount > 0;
+
+  const rec = storage.folders.find(f => f.name === folderName) || null;
+  const totalBytes = rec ? rec.bytes : 0;
+  const hasLimit   = storage.limits.has(folderName);
+
+  const subs = new Set();
+  allPaths.forEach(p => {
+    const rest = p.slice(folderName.length + 1);
+    const first = rest.split('/')[0];
+    if (rest.includes('/') && first) subs.add(first);
+  });
+  const subCount = subs.size;
+
+  const infoLines = [
+    `<li><strong>${fileCount}</strong> file${fileCount === 1 ? '' : 's'} (${humanBytes(totalBytes)})</li>`,
+    `<li><strong>${subCount}</strong> sub-folder${subCount === 1 ? '' : 's'}</li>`
+  ];
+  if (hasLimit) infoLines.push('<li>The storage limit entry for this folder</li>');
+
+  openModal({
+    title: 'Delete Folder · ' + folderName,
+    bodyHTML: `
+      <p class="modal-text">
+        You are about to delete the folder <strong>${esc(folderName)}</strong>
+        from the <strong>${esc(STORAGE_BUCKET)}</strong> bucket.
+      </p>
+      <div class="danger-card">
+        <strong>This will remove:</strong>
+        <ul>${infoLines.join('')}</ul>
+        <br>
+        <strong>Deletion cannot be returned.</strong>
+      </div>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="folder-del-cancel">Cancel</button>
+      <button class="button danger" type="button" id="folder-del-continue">
+        ${hasFiles ? 'Continue' : 'Delete Folder'}
+      </button>`
+  });
+
+  document.getElementById('folder-del-cancel').addEventListener('click', closeModal);
+
+  const continueBtn = document.getElementById('folder-del-continue');
+
+  if (!hasFiles){
+    continueBtn.addEventListener('click', () => {
+      performFolderDelete(folderName, continueBtn, 'Delete Folder');
+    });
+    return;
+  }
+
+  continueBtn.addEventListener('click', () => {
+    openFinalDeleteConfirm(folderName, {
+      fileCount,
+      totalBytes,
+      subCount,
+      hasLimit
+    });
+  });
+}
+
+function openFinalDeleteConfirm(folderName, meta){
+  const { fileCount, totalBytes, subCount, hasLimit } = meta;
+
+  openModal({
+    title: '⚠️ Final Confirmation — Deletion Cannot Be Returned',
+    bodyHTML: `
+      <div class="danger-card final">
+        <p class="dc-title">
+          <span style="font-size:18px">⚠️</span>
+          Do you want to continue to delete?
+        </p>
+        <p style="margin:0">
+          The folder <strong>${esc(folderName)}</strong> contains
+          <strong>${fileCount}</strong> file${fileCount === 1 ? '' : 's'}
+          (${humanBytes(totalBytes)})${subCount ? ` across <strong>${subCount}</strong> sub-folder${subCount === 1 ? '' : 's'}` : ''}.
+        </p>
+        <p class="dc-loud">
+          DELETION CANNOT BE RETURNED. This action is permanent.
+        </p>
+      </div>
+
+      <label class="ack-row">
+        <input type="checkbox" id="final-del-ack">
+        <span>I understand that this deletion cannot be undone and I want to proceed.</span>
+      </label>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="final-del-cancel">Cancel</button>
+      <button class="button danger" type="button" id="final-del-confirm" disabled>
+        Yes, Delete Permanently
+      </button>`
+  });
+
+  const ack        = document.getElementById('final-del-ack');
+  const confirmBtn = document.getElementById('final-del-confirm');
+  const cancelBtn  = document.getElementById('final-del-cancel');
+
+  ack.addEventListener('change', () => {
+    confirmBtn.disabled = !ack.checked;
+  });
+
+  cancelBtn.addEventListener('click', closeModal);
+
+  confirmBtn.addEventListener('click', () => {
+    performFolderDelete(folderName, confirmBtn, 'Yes, Delete Permanently');
+  });
+}
+
+async function performFolderDelete(folderName, btn, restoreLabel){
+  if (btn){
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+  }
+  try {
+    const result = await deleteStorageFolder(folderName);
+    closeModal();
+    toast('Folder "' + result.folder + '" deleted (' +
+          result.filesDeleted + ' file' + (result.filesDeleted === 1 ? '' : 's') + ' removed).');
+    if (storage.selected === folderName) storage.selected = null;
+    await scanStorage();
+  } catch (err){
+    console.error('[delete folder] failed:', err);
+    toast('Could not delete folder: ' + friendlyError(err), 'error');
+    if (btn && document.body.contains(btn)){
+      btn.disabled = false;
+      btn.textContent = restoreLabel || 'Delete Folder';
+    }
+  }
+}
+
+/* ---------- set limit modal ---------- */
+function openSetLimitModal(folderName){
+  const rec = storage.folders.find(f => f.name === folderName) || { name: folderName, bytes: 0, files: 0 };
+  const lim = storage.limits.get(folderName);
+  const cur = lim && lim.limit_bytes ? splitBytes(lim.limit_bytes) : { unit: 'MB', value: 500 };
+
+  openModal({
+    title: 'Set Storage Limit · ' + folderName,
+    bodyHTML: `
+      <p class="modal-text" style="margin-bottom:16px">
+        Current usage for <strong>${esc(folderName)}</strong> is
+        <strong>${humanBytes(rec.bytes)}</strong>
+        across ${rec.files} file${rec.files === 1 ? '' : 's'}.
+      </p>
+      <form id="limit-form" autocomplete="off" novalidate>
+        <div class="field-grid">
+          <label class="field"><span>Limit Amount</span>
+            <input id="limit-value" type="number" min="0" step="any" value="${cur.value}">
+          </label>
+          <label class="field"><span>Unit</span>
+            <select id="limit-unit">
+              <option value="KB"${cur.unit === 'KB' ? ' selected' : ''}>KB</option>
+              <option value="MB"${cur.unit === 'MB' ? ' selected' : ''}>MB</option>
+              <option value="GB"${cur.unit === 'GB' ? ' selected' : ''}>GB</option>
+              <option value="TB"${cur.unit === 'TB' ? ' selected' : ''}>TB</option>
+            </select>
+          </label>
+        </div>
+        <label class="field"><span>Note <em>optional</em></span>
+          <input id="limit-note" type="text" maxlength="160"
+                 placeholder="e.g. Finance department shared drive"
+                 value="${esc(lim?.note || '')}">
+        </label>
+        <p class="panel-hint" style="margin:0">
+          Set the amount to <strong>0</strong> to mark the folder as blocked.
+          Use <em>Remove Limit</em> to make it unlimited again.
+        </p>
+      </form>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="limit-cancel">Cancel</button>
+      <button class="button primary" type="button" id="limit-save">Save Limit</button>`
+  });
+
+  document.getElementById('limit-cancel').addEventListener('click', closeModal);
+  document.getElementById('limit-save').addEventListener('click', async () => {
+    const raw = parseFloat(document.getElementById('limit-value').value);
+    if (!Number.isFinite(raw) || raw < 0){
+      toast('Enter a valid limit amount (0 or greater).', 'error');
+      return;
+    }
+    const unit  = document.getElementById('limit-unit').value;
+    const bytes = Math.round(raw * (UNIT[unit] || 1));
+    const note  = document.getElementById('limit-note').value.trim();
+
+    const btn = document.getElementById('limit-save');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      await saveFolderLimit(folderName, bytes, note);
+      closeModal();
+      toast('Limit for "' + folderName + '" set to ' + humanBytes(bytes) + '.');
+      renderFolders();
+    } catch (err){
+      console.error('[set limit] failed:', err);
+      toast('Could not save limit: ' + friendlyError(err), 'error');
+      btn.disabled = false;
+      btn.textContent = 'Save Limit';
+    }
+  });
+}
+
+/* ---------- remove limit modal ---------- */
+function openClearLimitModal(folderName){
+  const lim = storage.limits.get(folderName);
+  if (!lim) return;
+
+  openModal({
+    title: 'Remove Storage Limit',
+    bodyHTML: `<p class="modal-text">
+                 Remove the limit on <strong>${esc(folderName)}</strong>
+                 (currently <strong>${humanBytes(lim.limit_bytes)}</strong>)?<br>
+                 The folder itself and its files will not be touched —
+                 it will just become unlimited again.</p>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="limit-cancel">Cancel</button>
+      <button class="button danger" type="button" id="limit-remove">Remove Limit</button>`
+  });
+
+  document.getElementById('limit-cancel').addEventListener('click', closeModal);
+  document.getElementById('limit-remove').addEventListener('click', async () => {
+    const btn = document.getElementById('limit-remove');
+    btn.disabled = true;
+    btn.textContent = 'Removing…';
+    try {
+      await deleteFolderLimit(folderName);
+      closeModal();
+      toast('Limit removed for "' + folderName + '".');
+      renderFolders();
+    } catch (err){
+      console.error('[remove limit] failed:', err);
+      toast('Could not remove limit: ' + friendlyError(err), 'error');
+      btn.disabled = false;
+      btn.textContent = 'Remove Limit';
+    }
+  });
+}
+
+/* ---------- option 2 wiring ---------- */
+(function wireFolderPanel(){
+  if (!tbodyFolders) return;
+
+  tbodyFolders.addEventListener('click', e => {
+    const tr = e.target.closest('tr[data-folder]');
+    if (!tr) return;
+    const name = tr.dataset.folder;
+    storage.selected = storage.selected === name ? null : name;
+    renderFolders();
+  });
+
+  const search = document.getElementById('folder-search');
+  if (search) search.addEventListener('input', renderFolders);
+
+  const scan1 = document.getElementById('btn-scan');
+  const scan2 = document.getElementById('btn-scan-2');
+  if (scan1) scan1.addEventListener('click', () => scanStorage());
+  if (scan2) scan2.addEventListener('click', () => scanStorage());
+
+  const newBtn1 = document.getElementById('btn-new-folder');
+  const newBtn2 = document.getElementById('btn-new-folder-2');
+  if (newBtn1) newBtn1.addEventListener('click', openCreateFolderModal);
+  if (newBtn2) newBtn2.addEventListener('click', openCreateFolderModal);
+
+  const setBtn = document.getElementById('btn-set-limit');
+  if (setBtn){
+    setBtn.addEventListener('click', () => {
+      if (!storage.selected){ toast('Select a folder first.', 'error'); return; }
+      openSetLimitModal(storage.selected);
+    });
+  }
+
+  const clrBtn = document.getElementById('btn-clear-limit');
+  if (clrBtn){
+    clrBtn.addEventListener('click', () => {
+      if (!storage.selected){ toast('Select a folder first.', 'error'); return; }
+      openClearLimitModal(storage.selected);
+    });
+  }
+
+  const delBtn = document.getElementById('btn-delete-folder');
+  if (delBtn){
+    delBtn.addEventListener('click', () => {
+      if (!storage.selected){ toast('Select a folder first.', 'error'); return; }
+      openDeleteFolderModal(storage.selected);
+    });
+  }
+
+  const statsEl = document.getElementById('storage-stats');
+  if (statsEl){
+    statsEl.innerHTML = `
+      <div class="stat">
+        <div class="stat-label">Bucket Used</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub">Not scanned yet</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Total Limits Set</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Near Limit</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub">80% or more used</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Over Limit</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub">folders exceeding their limit</div>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+const me = session.data.session.user;
+$('#current-user').textContent = me?.username ? ('Signed in as ' + (me.full_name || me.username)) : '';
+
+await loadHeroButtons();
+await loadActiveUsers();
+loadUsers();
+})();
+</script>
+</body>
+</html>

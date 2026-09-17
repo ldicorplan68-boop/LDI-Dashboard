@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0d0d7a">
+<title>Sales Dashboard — Lakpue Drug Inc</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   LDI Sales Dashboard — Brand Theme
+   Motif: royal blue from ldi-40-taon.png,
+   red/amber accents from logo.gif & team-ldi.png
+   ---------------------------------------------------------------
+   RESPONSIVE STRATEGY
+   • Fluid tokens (clamp) for padding, type and gaps → no jumps
+   • Breakpoints: 1600+ / 1200 / 1024 / 900 / 768 / 600 / 420
+   • Mobile-safe: dvh units, safe-area insets, no fixed bg on touch
+   • Touch targets ≥44px, hover effects gated behind (hover:hover)
+   ============================================ */
+:root{
+  --royal:#1b1bb3;--royal-2:#2020c8;--royal-deep:#0d0d7a;
+  --red:#e31e24;--red-dark:#b9161b;
+  --amber:#f5a623;--sky:#2e9bd6;
+  --surface:#ffffff;--bg:#f4f6fb;
+  --text:#101425;--text-2:#4a5572;--muted:#8d97b0;
+  --border:#e3e7f2;--border-strong:#cdd4e6;
+  --shadow-sm:0 1px 3px rgba(16,20,37,.07);
+  --shadow-md:0 6px 20px rgba(16,20,37,.09);
+  --shadow-lg:0 16px 48px rgba(16,20,37,.16);
+  --r-sm:8px;--r-md:12px;--r-lg:18px;
+  --fast:150ms ease;--smooth:280ms cubic-bezier(.4,0,.2,1);
+
+  /* ---------- fluid layout tokens ---------- */
+  --gutter:clamp(14px,2.2vw,22px);        /* page side padding */
+  --gutter-y:clamp(16px,2.4vw,28px);      /* page top padding  */
+  --panel-pad:clamp(16px,1.8vw,24px);     /* card inner padding */
+  --gap:clamp(12px,1.4vw,18px);           /* grid gaps */
+  --tap:44px;                             /* min touch target */
+
+  /* ---------- fluid type tokens ---------- */
+  --fs-hero:clamp(1.22rem,.95rem + 1.4vw,1.7rem);
+  --fs-h2:clamp(.98rem,.92rem + .3vw,1.06rem);
+  --fs-stat:clamp(1.1rem,.95rem + .85vw,1.45rem);
+  --fs-brand:clamp(1.3rem,1rem + 1.4vw,2.1rem);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{
+  margin:0;font-family:'DM Sans',sans-serif;color:var(--text);
+  background:var(--royal-deep);
+  background-image:linear-gradient(180deg,rgba(27,27,179,.42) 0%,rgba(13,13,122,.72) 100%),url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/background.png');
+  background-size:cover,cover;background-position:center;background-repeat:no-repeat;
+  background-attachment:fixed,fixed;
+  min-height:100vh;
+  min-height:100dvh;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+img{max-width:100%}
+button{font-family:inherit}
+input,select{font-family:inherit}
+.num{font-variant-numeric:tabular-nums}
+
+/* Hide the whole app until the session is confirmed (prevents flash of protected UI) */
+html.auth-checking body{visibility:hidden}
+
+/* ---------- Buttons ---------- */
+.button{border:0;border-radius:var(--r-sm);padding:10px 16px;font:600 13px/1 'DM Sans',sans-serif;cursor:pointer;transition:transform var(--fast),box-shadow var(--fast),background var(--fast);display:inline-flex;align-items:center;gap:6px;min-height:38px}
+.button.primary{background:linear-gradient(135deg,var(--royal-2),var(--royal));color:#fff;box-shadow:0 2px 8px rgba(27,27,179,.35)}
+.button.secondary{background:rgba(255,255,255,.14);color:#e8ecff;border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(6px)}
+.button.danger{background:var(--red);color:#fff}
+.button.small{padding:6px 12px;font-size:12px;border-radius:7px;min-height:32px}
+@media (hover:hover){
+  .button.primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(27,27,179,.45)}
+  .button.primary:active{transform:translateY(0)}
+  .button.secondary:hover{background:rgba(255,255,255,.24);color:#fff}
+  .button.danger:hover{background:var(--red-dark)}
+}
+
+/* ---------- Topbar (team-ldi.png) ---------- */
+.app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+.topbar{
+  position:sticky;top:0;z-index:50;min-height:68px;
+  background-image:linear-gradient(90deg,rgba(13,13,122,.88) 0%,rgba(27,27,179,.78) 45%,rgba(13,13,122,.88) 100%),url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/ldi1.png');
+  background-size:cover;background-position:center;
+  border-bottom:3px solid var(--amber);
+  box-shadow:0 4px 18px rgba(13,13,122,.45);
+  padding:10px max(var(--gutter),env(safe-area-inset-right)) 10px max(var(--gutter),env(safe-area-inset-left));
+  display:flex;align-items:center;justify-content:space-between;gap:clamp(10px,2vw,20px);flex-wrap:wrap;
+  backdrop-filter:blur(8px);
+}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.nav-logo{height:clamp(32px,3.4vw,40px);width:auto;border-radius:8px;background:#fff;padding:3px 6px;box-shadow:0 2px 8px rgba(0,0,0,.35);flex:none}
+.brand strong{display:block;font-family:'Space Grotesk',sans-serif;font-size:clamp(13px,1.1vw,15px);letter-spacing:-.3px;color:#fff;white-space:nowrap}
+.brand small{display:block;color:#cfd6ff;font-size:clamp(10px,.85vw,11px);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.nav-wrap{position:relative}
+.nav-menu{
+  position:absolute;top:calc(100% + 8px);right:0;z-index:100;min-width:210px;max-width:calc(100vw - 2*var(--gutter));
+  background:#fff;border:1px solid var(--border);border-radius:var(--r-md);
+  box-shadow:var(--shadow-lg);padding:8px;display:none;flex-direction:column;gap:4px;
+}
+.nav-menu.open{display:flex}
+.nav-menu button{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  background:transparent;border:0;border-radius:8px;padding:11px 12px;min-height:42px;
+  font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:background var(--fast);
+}
+.nav-menu button .menu-icon{font-size:15px}
+.nav-menu .menu-divider{height:1px;background:var(--border);margin:4px 2px}
+.nav-menu button.logout{color:var(--red)}
+@media (hover:hover){
+  .nav-menu button:hover{background:#eef1fb}
+  .nav-menu button.logout:hover{background:#fdecec}
+}
+.nav-company{
+  background:rgba(255,255,255,.12);color:#e8ecff;border:1px solid rgba(255,255,255,.22);
+  border-radius:20px;padding:9px 15px;font-size:12.5px;font-weight:600;cursor:pointer;transition:all var(--fast);
+  backdrop-filter:blur(4px);min-height:40px;white-space:nowrap;
+}
+.nav-company.active{background:var(--amber);border-color:var(--amber);color:#3a2703;box-shadow:0 2px 10px rgba(245,166,35,.4)}
+@media (hover:hover){ .nav-company:hover{background:rgba(255,255,255,.24);color:#fff} }
+.header-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.user-info{font-size:12px;color:#e8ecff;padding:7px 13px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:20px;backdrop-filter:blur(4px)}
+
+/* ---------- Layout ---------- */
+.content{
+  flex:1;width:100%;max-width:1440px;margin:0 auto;
+  padding:var(--gutter-y) max(var(--gutter),env(safe-area-inset-right)) 40px max(var(--gutter),env(safe-area-inset-left));
+}
+.eyebrow{font-size:11.5px;font-weight:700;letter-spacing:1.6px;color:var(--amber);margin:0 0 8px;text-transform:uppercase}
+
+/* ---------- Hero ---------- */
+.hero{
+  position:relative;color:#fff;padding:clamp(18px,2.6vw,28px) clamp(16px,2.2vw,24px) clamp(18px,2.4vw,26px);
+  border-radius:var(--r-lg);
+  background-image:linear-gradient(115deg,rgba(13,13,122,.95) 0%,rgba(27,27,179,.86) 48%,rgba(227,30,36,.60) 100%),url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/ldi1.png');
+  background-size:cover;background-position:center;
+  border-bottom:3px solid var(--amber);border-left:3px solid var(--amber);border-right:3px solid var(--amber);
+  box-shadow:var(--shadow-md);
+}
+.hero::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 150% at 100% 0%,rgba(255,255,255,.20),transparent 55%);
+}
+.hero-inner{
+  position:relative;z-index:1;
+  display:flex;flex-wrap:wrap;gap:clamp(14px,2vw,20px);
+  align-items:flex-end;justify-content:space-between;
+}
+.hero-eyebrow{margin:0 0 7px;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:#ffd98a;font-weight:700}
+.hero-title{margin:0;font-family:'Space Grotesk',sans-serif;font-size:var(--fs-hero);letter-spacing:-.6px;line-height:1.12;color:#fff}
+.hero-sub{margin:9px 0 0;font-size:13px;line-height:1.5;color:rgba(255,255,255,.80);max-width:62ch}
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+.hero-btn{
+  border:0;cursor:pointer;border-radius:999px;
+  padding:12px 20px;min-height:46px;
+  font:700 13px/1 'DM Sans',sans-serif;letter-spacing:.2px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform var(--fast),box-shadow var(--fast),background var(--fast),opacity var(--fast);
+  box-shadow:0 8px 20px rgba(0,0,0,.28);
+}
+.hero-btn .hi{font-size:14px;line-height:1}
+.hero-btn.primary{background:#fff;color:var(--royal)}
+.hero-btn.edit{background:var(--amber);color:#3d2800}
+.hero-btn.danger{background:var(--red);color:#fff}
+.hero-btn:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+@media (hover:hover){
+  .hero-btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(0,0,0,.34)}
+  .hero-btn:active{transform:translateY(0)}
+  .hero-btn.primary:hover{background:#eef1ff}
+  .hero-btn.edit:hover{background:#ffb845}
+  .hero-btn.danger:hover{background:var(--red-dark)}
+}
+
+/* ---------- Hero: loading / empty states ---------- */
+.hero-empty{font-size:13px;font-weight:600;color:rgba(255,255,255,.82)}
+.hero-skeleton{
+  display:inline-block;width:112px;height:38px;border-radius:999px;
+  background:linear-gradient(90deg,rgba(255,255,255,.16),rgba(255,255,255,.34),rgba(255,255,255,.16));
+  background-size:200% 100%;animation:heroShimmer 1.1s linear infinite;
+}
+@keyframes heroShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+#hero-actions[aria-busy="true"]{pointer-events:none}
+
+/* ============================================================
+   Toolbar / empty
+   ============================================================ */
+.empty{text-align:center;padding:clamp(40px,8vw,70px) 20px;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-md)}
+.empty-icon{font-size:clamp(34px,6vw,44px);margin-bottom:10px}
+.empty h2{font-size:clamp(19px,3vw,24px);margin:0 0 10px}
+.empty p{color:var(--text-2);margin:0 0 22px}
+
+/* ---------- Stat cards ---------- */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));
+  gap:var(--gap);margin-bottom:22px;
+}
+.card{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-sm);border:1px solid var(--border);transition:box-shadow var(--smooth),transform var(--smooth)}
+@media (hover:hover){ .card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)} }
+.stat-card{padding:clamp(16px,1.8vw,20px) clamp(16px,2vw,22px)}
+.stat-label{font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.stat-value{font-size:var(--fs-stat);font-weight:700;color:var(--text);font-family:'Space Grotesk',sans-serif;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stat-card:nth-child(1){border-top:3px solid var(--royal)}
+.stat-card:nth-child(2){border-top:3px solid var(--sky)}
+.stat-card:nth-child(3){border-top:3px solid var(--red)}
+.stat-card:nth-child(4){border-top:3px solid var(--amber)}
+
+/* ---------- Filters ---------- */
+.filters{
+  display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;
+  padding:clamp(14px,1.6vw,16px) clamp(14px,1.8vw,18px);
+  background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-sm);border:1px solid var(--border);
+  align-items:center;
+}
+.filter-label{font-size:10.5px;font-weight:700;letter-spacing:1.2px;color:var(--royal);align-self:center;white-space:nowrap}
+.filters select,.filters input{
+  padding:10px 12px;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13px;
+  min-width:130px;min-height:42px;background:#fff;color:var(--text);
+  transition:border var(--fast),box-shadow var(--fast);outline:none;
+  flex:1 1 150px;max-width:100%;
+}
+.filters select:focus,.filters input:focus{border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.filters input{min-width:150px}
+
+/* ---------- Panel cards ---------- */
+.chart-card,.monitor-card{padding:var(--panel-pad);margin-bottom:22px}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:14px;flex-wrap:wrap}
+.card-head h2{font-size:var(--fs-h2);margin:0;font-family:'Space Grotesk',sans-serif;letter-spacing:-.2px}
+.monitor-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.monitor-controls label{font-size:12px;color:var(--text-2);display:flex;align-items:center;gap:6px;font-weight:600}
+.monitor-controls select{padding:8px 10px;min-height:40px;border:1px solid var(--border-strong);border-radius:7px;font-size:12.5px;background:#fff;color:var(--text);outline:none;max-width:100%}
+.monitor-controls select:focus{border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+
+/* ---------- Bar chart ---------- */
+.chart{margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.bar-chart{display:flex;align-items:flex-end;gap:clamp(6px,1vw,10px);height:clamp(180px,30vh,280px);padding:18px 6px 0;min-width:0}
+.bar-col{flex:1 1 0;display:flex;flex-direction:column;align-items:center;height:100%;min-width:0}
+.bar-value{font-size:10px;font-weight:700;color:var(--text-2);margin-bottom:6px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.bar-track{flex:1;width:100%;max-width:56px;background:#eef1f8;border-radius:8px 8px 0 0;display:flex;align-items:flex-end;min-height:4px;overflow:hidden}
+.bar-fill{width:100%;background:linear-gradient(180deg,var(--royal-2),var(--royal-deep));border-radius:8px 8px 0 0;transition:height var(--smooth)}
+@media (hover:hover){ .bar-col:hover .bar-fill{background:linear-gradient(180deg,var(--sky),var(--royal-2))} }
+.bar-label{font-size:11px;color:var(--muted);margin-top:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+/* ---------- Tables ---------- */
+.table-wrap{
+  overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  border:1px solid var(--border);border-radius:var(--r-sm);
+}
+.table-wrap::-webkit-scrollbar{height:8px}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px}
+.table-wrap::-webkit-scrollbar-track{background:#f0f3fa;border-radius:99px}
+.monitor-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:720px}
+.monitor-table th,.monitor-table td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.monitor-table thead th{
+  background:linear-gradient(135deg,var(--royal-2),var(--royal));color:#fff;font-weight:600;font-size:10.5px;
+  text-transform:uppercase;letter-spacing:.6px;position:sticky;top:0;z-index:1;
+}
+.monitor-table tbody tr:nth-child(even){background:#f7f9fd}
+@media (hover:hover){ .monitor-table tbody tr:hover{background:#eef2ff} }
+.monitor-table td.right,.monitor-table th.right{text-align:right;font-variant-numeric:tabular-nums}
+.total-cell{font-weight:700;color:var(--royal-deep);background:#e8edff}
+.name-cell{max-width:220px;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--text)}
+
+/* OPTIONAL stacked tables on phones.
+   Add class="monitor-table stack" and data-label="Column" on each <td>. */
+@media (max-width:640px){
+  .monitor-table.stack{min-width:0}
+  .monitor-table.stack thead{display:none}
+  .monitor-table.stack tbody tr{display:block;border-bottom:2px solid var(--border);padding:6px 0}
+  .monitor-table.stack tbody td{
+    display:flex;justify-content:space-between;gap:14px;
+    border-bottom:1px dashed var(--border);white-space:normal;text-align:right;
+  }
+  .monitor-table.stack tbody td:last-child{border-bottom:0}
+  .monitor-table.stack tbody td::before{
+    content:attr(data-label);font-weight:700;font-size:10.5px;letter-spacing:.5px;
+    text-transform:uppercase;color:var(--text-2);text-align:left;flex:0 0 auto;
+  }
+  .monitor-table.stack td.right{text-align:right}
+}
+
+footer{text-align:center;padding:26px var(--gutter);color:rgba(255,255,255,.75);font-size:12px}
+
+/* ---------- Line chart ---------- */
+.trend-svg{width:100%;height:auto;display:block}
+.trend-grid{stroke:#e3e7f2;stroke-width:1}
+.trend-line{fill:none;stroke:var(--royal);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.trend-area{fill:url(#trendFill);opacity:.85}
+.trend-dot{fill:#fff;stroke:var(--royal);stroke-width:2.5;transition:r var(--fast)}
+@media (hover:hover){
+  .trend-dot:hover{r:6;fill:var(--amber);stroke:var(--royal-deep)}
+}
+.trend-label{font-size:11px;fill:var(--muted);font-family:'DM Sans',sans-serif}
+.trend-value{font-size:11px;font-weight:700;fill:var(--text);font-family:'DM Sans',sans-serif}
+.trend-tip{opacity:0;transition:opacity var(--fast);pointer-events:none}
+.trend-dot:hover + .trend-tip,.trend-pt:hover ~ .trend-tip{opacity:1}
+.legend{display:flex;gap:16px;align-items:center;font-size:12px;color:var(--text-2);flex-wrap:wrap}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+
+/* ---------- Login page (split layout) ---------- */
+.login-page{display:block}
+.login-shell{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:minmax(340px,46%) 1fr}
+.login-brand{
+  position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  background-image:linear-gradient(160deg,rgba(13,13,122,.86) 0%,rgba(27,27,179,.62) 55%,rgba(13,13,122,.9) 100%),url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/ldi1.png');
+  background-size:cover;background-position:center;
+}
+.brand-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,13,122,.35),transparent 40%,rgba(13,13,122,.55))}
+.brand-content{position:relative;z-index:2;text-align:center;padding:clamp(28px,4vw,44px) clamp(20px,3vw,36px);max-width:520px}
+.brand-logo{height:clamp(56px,7vw,84px);width:auto;background:#fff;border-radius:14px;padding:8px 14px;box-shadow:0 10px 30px rgba(0,0,0,.4);margin-bottom:clamp(16px,2.4vw,26px)}
+.brand-title{font-family:'Space Grotesk',sans-serif;font-size:var(--fs-brand);color:#fff;margin:0 0 10px;letter-spacing:-.5px;line-height:1.15}
+.brand-tag{font-size:clamp(14px,1.6vw,17px);font-weight:700;color:var(--amber);margin:0 0 6px;letter-spacing:.3px}
+.brand-sub{font-size:13px;color:#cfd6ff;margin:0}
+.brand-chevron{position:absolute;left:0;right:0;bottom:0;height:70px;z-index:1;background:#fff;clip-path:polygon(0 100%,100% 100%,50% 0);opacity:.95}
+.login-main{display:flex;align-items:center;justify-content:center;padding:clamp(24px,5vw,40px) var(--gutter);background:var(--bg)}
+.login-card{
+  background:#fff;border-radius:20px;box-shadow:var(--shadow-lg);border:1px solid var(--border);
+  padding:clamp(24px,4vw,38px) clamp(20px,3.4vw,40px);width:100%;max-width:440px;
+}
+.form-head{text-align:center;margin-bottom:clamp(20px,3vw,28px)}
+.form-logo{height:clamp(36px,4.5vw,44px);width:auto;margin-bottom:14px}
+.form-head h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(19px,2.4vw,22px);margin:0 0 6px;color:var(--text)}
+.form-head p{color:var(--text-2);font-size:14px;margin:0}
+.form-group{margin-bottom:18px;text-align:left}
+.form-group label{display:block;font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:.2px}
+.form-group input{
+  width:100%;padding:13px 14px;min-height:48px;border:1.5px solid var(--border-strong);border-radius:10px;font-size:16px;
+  outline:none;transition:border var(--fast),box-shadow var(--fast);background:#fff;color:var(--text);
+}
+.form-group input:focus{border-color:var(--royal);box-shadow:0 0 0 4px rgba(27,27,179,.12)}
+.form-group input::placeholder{color:var(--muted)}
+.btn-primary{
+  width:100%;padding:14px;min-height:48px;border:0;border-radius:11px;cursor:pointer;
+  background:linear-gradient(135deg,var(--royal-2),var(--royal));color:#fff;
+  font:700 15px 'DM Sans',sans-serif;letter-spacing:.2px;
+  box-shadow:0 6px 18px rgba(27,27,179,.35);transition:transform var(--fast),box-shadow var(--fast),opacity var(--fast);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-primary:disabled{opacity:.65;cursor:wait}
+@media (hover:hover){
+  .btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 26px rgba(27,27,179,.45)}
+  .btn-primary:active:not(:disabled){transform:translateY(0)}
+}
+.btn-primary.loading .btn-label::after{
+  content:'';display:inline-block;width:14px;height:14px;margin-left:8px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite;vertical-align:-2px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.auth-error{color:var(--red);font-size:13px;min-height:18px;margin:10px 0;text-align:center;font-weight:600}
+.auth-success{text-align:center;padding:16px 0 8px}
+.success-icon{width:56px;height:56px;border-radius:50%;background:#e8f8ee;color:#16a34a;font-size:26px;display:grid;place-items:center;margin:0 auto 14px;border:2px solid #b7e6c6}
+.auth-success h3{margin:0 0 6px;color:var(--text);font-size:17px}
+.auth-success p{margin:0;color:var(--text-2);font-size:13.5px}
+.auth-footer{text-align:center;margin-top:22px;padding-top:18px;border-top:1px solid var(--border)}
+.auth-footer p{font-size:13.5px;color:var(--text-2);margin:0}
+.link-button{background:none;border:0;color:var(--royal);cursor:pointer;font:600 13.5px 'DM Sans',sans-serif;padding:0;text-decoration:none;transition:color var(--fast)}
+@media (hover:hover){ .link-button:hover{color:var(--royal-deep);text-decoration:underline} }
+
+/* ---------- Admin panel ---------- */
+.admin-overlay{
+  position:fixed;inset:0;background:rgba(13,13,122,.55);backdrop-filter:blur(6px);
+  z-index:100;display:flex;align-items:flex-start;justify-content:center;
+  padding:clamp(16px,4vw,44px) var(--gutter);overflow-y:auto;-webkit-overflow-scrolling:touch;
+  animation:fadeIn var(--smooth);
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.admin-panel{
+  background:#fff;border-radius:16px;padding:clamp(18px,2.6vw,26px);width:100%;max-width:640px;box-shadow:var(--shadow-lg);
+  animation:slideUp var(--smooth);
+}
+.admin-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid var(--royal);flex-wrap:wrap}
+.admin-header h2{margin:0;font-size:clamp(16px,2.2vw,19px);font-family:'Space Grotesk',sans-serif;color:var(--text)}
+.admin-filters{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.admin-filters label{font-size:12.5px;font-weight:700;color:var(--text-2)}
+.admin-filters select{padding:9px 12px;min-height:42px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;background:#fff;color:var(--text);outline:none;flex:1 1 180px;max-width:100%}
+.admin-filters select:focus{border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.admin-user-list{display:flex;flex-direction:column;gap:10px}
+.admin-user-card{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#fafbfe;transition:border var(--fast)}
+.admin-user-card.status-pending{border-color:var(--amber);background:#fffaf0}
+.admin-user-card.status-active{border-color:#7ed6a2;background:#f4fcf7}
+.admin-user-card.status-rejected{border-color:var(--red);background:#fff5f5}
+.admin-user-main{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.admin-user-main strong{font-size:14.5px;color:var(--text);overflow-wrap:anywhere}
+.admin-user-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.badge{padding:4px 11px;border-radius:20px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.badge-pending{background:#fdeec8;color:#a16c07}
+.badge-active{background:#d9f4e4;color:#0e7c3f}
+.badge-rejected{background:#fde3e3;color:#b9161b}
+.badge-role-superadmin{background:#e3e8ff;color:#1b1bb3}
+.badge-role-company_admin{background:#e0f2fe;color:#0369a1}
+.badge-role-sales_rep{background:#fef3e2;color:#b45309}
+.badge-role-area_user{background:#ede9fe;color:#6d28d9}
+
+/* ---------- Links styled as buttons ---------- */
+a.button{text-decoration:none}
+a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block}
+
+/* ============================================================
+   BREAKPOINTS
+   ============================================================ */
+
+/* ---- Large desktop (1600px+) : a little extra room ---- */
+@media (min-width:1600px){
+  .content{max-width:1520px}
+}
+
+/* ---- Small desktop / large laptop (≤1280px) ---- */
+@media (max-width:1280px){
+  .content{max-width:100%}
+}
+
+/* ---- Tablet landscape & small laptop (≤1024px) ---- */
+@media (max-width:1024px){
+  .login-shell{grid-template-columns:1fr}
+  .login-brand{min-height:clamp(200px,28vh,260px)}
+  .brand-chevron{display:none}
+  .hero-inner{align-items:flex-start}
+  .hero-actions{width:100%}
+  .hero-btn{flex:1 1 160px}
+}
+
+/* ---- Tablet portrait (≤900px) ---- */
+@media (max-width:900px){
+  /* fixed backgrounds cause repaint jank / are ignored on iOS */
+  body{background-attachment:scroll,scroll}
+  .topbar{background-attachment:scroll}
+  .hero{background-attachment:scroll}
+  .login-brand{background-attachment:scroll}
+
+  .bar-chart{height:clamp(170px,26vh,220px)}
+  .filters select,.filters input{flex:1 1 100%}
+  .filters{flex-direction:column;align-items:stretch}
+  .filters select,.filters input{width:100%}
+  .filter-label{align-self:flex-start}
+}
+
+/* ---- Small tablet / large phone (≤768px) ---- */
+@media (max-width:768px){
+  .topbar{padding:10px max(var(--gutter),env(safe-area-inset-right)) 10px max(var(--gutter),env(safe-area-inset-left));gap:10px}
+  .brand{flex:1 1 auto}
+  .brand small{max-width:46vw}
+  .nav-links{margin-left:auto}
+  .header-actions{width:100%;justify-content:flex-start}
+  .admin-overlay{align-items:stretch;padding:0}
+  .admin-panel{border-radius:0;max-width:none;min-height:100dvh}
+  .admin-header{position:sticky;top:0;background:#fff;z-index:2;padding-top:6px}
+}
+
+/* ---- Phones (≤600px) ---- */
+@media (max-width:600px){
+  .hero{padding:18px 16px 20px}
+  .hero-actions{width:100%}
+  .hero-btn{flex:1 1 140px;padding:11px 14px}
+  .bar-chart{height:170px;gap:6px;padding:14px 2px 0}
+  .bar-value{font-size:9px}
+  .bar-label{font-size:10px}
+  .monitor-table{font-size:12px;min-width:660px}
+  .monitor-table th,.monitor-table td{padding:8px 10px}
+  .card-head{flex-direction:column;align-items:stretch}
+  .monitor-controls{width:100%}
+  .monitor-controls label{flex:1 1 100%}
+  .monitor-controls select{width:100%}
+  .nav-menu{right:auto;left:0;min-width:min(260px,calc(100vw - 2*var(--gutter)))}
+}
+
+/* ---- Small phones (≤420px) ---- */
+@media (max-width:420px){
+  .brand small{display:none}
+  .nav-company{padding:9px 12px;font-size:12px}
+  .hero-title{letter-spacing:-.3px}
+  .stat-card{padding:14px 16px}
+  .chart-card,.monitor-card{padding:14px}
+  .login-card{padding:22px 18px;border-radius:16px}
+  .admin-user-card{padding:12px 13px}
+}
+
+/* ---- Landscape phones (short viewport) ---- */
+@media (max-height:520px) and (orientation:landscape){
+  .topbar{position:static}
+  .hero{padding:16px}
+  .bar-chart{height:150px}
+  .login-brand{min-height:160px}
+}
+
+/* ---- Touch devices: bigger hit areas, no sticky hover ---- */
+@media (hover:none){
+  .button,.hero-btn,.nav-company{min-height:44px}
+  .nav-menu button{min-height:46px}
+}
+
+/* ---- Accessibility: honour reduced motion ---- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    scroll-behavior:auto !important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand">
+    <img src="https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/logo.gif" alt="LDI" class="nav-logo">
+    <div><strong>Lakpue Drug Inc</strong><small>Alagang Tunay, Laking LDI</small></div>
+  </div>
+  <nav class="nav-links">
+    <div class="nav-wrap">
+      <button class="nav-company" id="settings-btn" type="button">&#9881; Settings</button>
+      <div class="nav-menu" id="settings-menu">
+        <button type="button" data-goto="settings/option-1-change-password.html"><span class="menu-icon">&#128273;</span>Change Password</button>
+        <button type="button" data-goto="settings/option-2.html" id="menu-admin" hidden><span class="menu-icon">&#9881;</span>Admin Settings</button>
+        <button type="button" data-goto="settings/option-3.html"><span class="menu-icon">&#9881;</span>Option 3</button>
+        <button type="button" data-goto="settings/option-4.html"><span class="menu-icon">&#9881;</span>Option 4</button>
+        <button type="button" data-goto="settings/option-5.html"><span class="menu-icon">&#9881;</span>Option 5</button>
+        <div class="menu-divider"></div>
+        <button type="button" class="logout" id="menu-logout"><span class="menu-icon">&#9095;</span>Log Out</button>
+      </div>
+    </div>
+  </nav>
+</header>
+<main class="content">
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <p class="hero-eyebrow">LAKPUE DRUG INC &#8226; COMPANY GROUP</p>
+        <h1 class="hero-title">Alagang Tunay, Laking LDI</h1>
+      </div>
+      <div class="hero-actions" id="hero-actions" aria-busy="true">
+        <!-- Rendered by JS from the hero_buttons table, filtered per user -->
+      </div>
+    </div>
+  </section>
+  <!-- ===================================================================
+       DATA SECTIONS GO HERE (stat cards / filters / charts / tables /
+       admin panel) — every class is already styled by the inlined CSS.
+       =================================================================== -->
+</main>
+</div>
+<script src="connect.js"></script>
+<script>
+/* ============================================================================
+   INLINE SUPABASE CLIENT + AUTH GUARD
+   ============================================================================ */
+(function(){
+  const SUPABASE_URL = HOSTNAME;
+  const SUPABASE_ANON_KEY = ANON_KEY;
+
+  class QB {
+    constructor(t){ this.t=t; this.url=SUPABASE_URL+'/rest/v1/'+t; this.p=[]; this.m='GET'; this.b=null; this.rr=false }
+    select(f='*'){ this.p.push('select='+encodeURIComponent(f)); return this }
+    eq(f,v){ this.p.push(f+'=eq.'+encodeURIComponent(v)); return this }
+    neq(f,v){ this.p.push(f+'=not.'+encodeURIComponent(v)); return this }
+    gt(f,v){ this.p.push(f+'=gt.'+encodeURIComponent(v)); return this }
+    lt(f,v){ this.p.push(f+'=lt.'+encodeURIComponent(v)); return this }
+    gte(f,v){ this.p.push(f+'=gte.'+encodeURIComponent(v)); return this }
+    lte(f,v){ this.p.push(f+'=lte.'+encodeURIComponent(v)); return this }
+    like(f,v){ this.p.push(f+'=like.'+encodeURIComponent(v)); return this }
+    ilike(f,v){ this.p.push(f+'=ilike.'+encodeURIComponent(v)); return this }
+    in(f,vs){ this.p.push(f+'=in.('+vs.map(encodeURIComponent).join(',')+')'); return this }
+    order(f,o={}){ this.p.push('order='+f+'.'+(o.ascending===false?'desc':'asc')); return this }
+    limit(n){ this.p.push('limit='+n); return this }
+    offset(n){ this.p.push('offset='+n); return this }
+    _url(){ return this.p.length ? this.url+'?'+this.p.join('&') : this.url }
+    _h(e={}){
+      const h={ apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+SUPABASE_ANON_KEY, ...e }
+      if(this.rr) h.Prefer='return=representation'
+      return h
+    }
+    _build(){ const i={ method:this.m, headers:this._h() }; if(this.b) i.body=JSON.stringify(this.b); return i }
+    async _run(){
+      const r = await fetch(this._url(), this._build())
+      if(!r.ok){ const t = await r.text(); throw new Error('API Error: '+t) }
+      const t = await r.text()
+      return t ? JSON.parse(t) : []
+    }
+    then(onF,onR){ return this._run().then(onF,onR) }
+    catch(onR){ return this._run().catch(onR) }
+    async single(){ this.p.push('limit=1'); const r = await this._run(); return r && r.length ? r[0] : null }
+    insert(rows){ this.m='POST'; this.b=Array.isArray(rows)?rows:[rows]; this.rr=true; return this }
+    update(changes){ this.m='PATCH'; this.b=changes; this.rr=true; return this }
+    delete(){ this.m='DELETE'; this.rr=true; return this }
+  }
+
+  const supabase = {
+    from(t){ return new QB(t) },
+    auth:{
+      currentUser:null,
+      session:null,
+      async signInWithPassword({email,password}){
+        try{
+          const u = await supabase.from('users').select('*').eq('username',email).single()
+          if(!u) return { data:null, error:{ message:'User not found' } }
+          if(u.password !== password) return { data:null, error:{ message:'Wrong password' } }
+          if(u.status === 'pending') return { data:null, error:{ message:'Account pending admin approval' } }
+          if(u.status === 'rejected') return { data:null, error:{ message:'Account rejected' } }
+          supabase.auth.currentUser = u
+          supabase.auth.session = { user:u }
+          try{ sessionStorage.setItem('ldi_session', JSON.stringify(u)) }catch(e){}
+          return { data:{ user:u, session:supabase.auth.session }, error:null }
+        }catch(e){
+          console.error('Login error:', e)
+          return { data:null, error:{ message:e.message || 'Login failed' } }
+        }
+      },
+      async signUp({email,password}){
+        try{
+          const ex = await supabase.from('users').select('id').eq('username',email).single()
+          if(ex) return { data:null, error:{ message:'Username already exists' } }
+          const c = await supabase.from('users').insert({
+            username:email, password, role:'sales_rep', status:'pending',
+            assigned_companies:[], assigned_sales_rep_codes:[], assigned_areas:[]
+          })
+          const user = Array.isArray(c) ? c[0] : c
+          return { data:{ user }, error:null }
+        }catch(e){
+          console.error('SignUp error:', e)
+          return { data:null, error:{ message:e.message || 'Sign up failed' } }
+        }
+      },
+      async signOut(){
+        supabase.auth.currentUser = null
+        supabase.auth.session = null
+        try{ sessionStorage.removeItem('ldi_session') }catch(e){}
+        return { error:null }
+      },
+      async getSession(){
+        try{
+          const raw = sessionStorage.getItem('ldi_session')
+          if(raw){
+            const u = JSON.parse(raw)
+            supabase.auth.currentUser = u
+            supabase.auth.session = { user:u }
+          }
+        }catch(e){}
+        return { data:{ session:supabase.auth.session }, error:null }
+      }
+    },
+    async init(){}
+  }
+
+  window.supabase = supabase
+
+  document.documentElement.classList.add('auth-checking')
+  ;(async function(){
+    try{
+      await supabase.init()
+      const session = await supabase.auth.getSession()
+      if(!session?.data?.session?.user){
+        location.replace('index.html')
+        return
+      }
+    }catch(e){
+      location.replace('index.html')
+      return
+    }finally{
+      setTimeout(()=>document.documentElement.classList.remove('auth-checking'), 3000)
+      document.documentElement.classList.remove('auth-checking')
+    }
+  })()
+})()
+</script>
+<script>
+/* ============================================================================
+   SETTINGS FLOATING MENU
+   ============================================================================ */
+(function(){
+  const btn = document.getElementById('settings-btn')
+  const menu = document.getElementById('settings-menu')
+  if(!btn || !menu){ return }
+
+  /* Keep the dropdown inside the viewport on every screen size */
+  function keepInView(){
+    menu.style.transform = ''
+    const r = menu.getBoundingClientRect()
+    const pad = 10
+    let shift = 0
+    if(r.right > window.innerWidth - pad){ shift = (window.innerWidth - pad) - r.right }
+    if(r.left + shift < pad){ shift = pad - r.left }
+    if(shift) menu.style.transform = 'translateX('+shift+'px)'
+  }
+
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation()
+    menu.classList.toggle('open')
+    if(menu.classList.contains('open')) keepInView()
+  })
+  document.addEventListener('click', (e)=>{
+    if(!menu.classList.contains('open')) return
+    if(!menu.contains(e.target) && e.target !== btn){ menu.classList.remove('open') }
+  })
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){ menu.classList.remove('open') }
+  })
+  window.addEventListener('resize', ()=>{ if(menu.classList.contains('open')) keepInView() })
+  window.addEventListener('orientationchange', ()=>{ if(menu.classList.contains('open')) keepInView() })
+
+  menu.querySelectorAll('button[data-goto]').forEach((item)=>{
+    item.addEventListener('click', ()=>{ location.href = item.getAttribute('data-goto') })
+  })
+  const logout = document.getElementById('menu-logout')
+  if(logout){
+    logout.addEventListener('click', ()=>{
+      try{ sessionStorage.removeItem('ldi_session') }catch(e){}
+      location.replace('index.html')
+    })
+  }
+
+  const adminItem = document.getElementById('menu-admin')
+  function refreshAdminItem(){
+    if(!adminItem) return
+    let me = null
+    try{ me = JSON.parse(sessionStorage.getItem('ldi_session') || 'null') }catch(e){}
+    const isAdmin = !!(me && (me.role === 'superadmin' || me.role === 'company_admin'))
+    adminItem.hidden = !isAdmin
+  }
+  refreshAdminItem()
+  window.addEventListener('pageshow', function(e){ if(e.persisted) refreshAdminItem() })
+})()
+</script>
+<script>
+/* ============================================================================
+   HERO BUTTONS — DYNAMIC CATALOG + PER-USER PERMISSION FILTER
+   ----------------------------------------------------------------------------
+   Source of truth for WHICH buttons exist : the `hero_buttons` table.
+   Source of truth for WHO SEES what       : users.allowed_hero_buttons.
+
+   Flow
+   ----
+   1. READ CATALOG   — select all rows from `hero_buttons`, ordered by
+                       sort_order then id.
+   2. READ PERMISSION— read the signed-in user's allowed_hero_buttons field
+                       (fresh from the DB, not just the cached session).
+   3. FILTER
+        • "all"               → show every catalog row
+        • list of ids/labels  → show only those (case-insensitive match
+                                against both id and label)
+        • empty / missing     → show nothing (fail closed, no leakage)
+   4. GUARANTEE      — labels in ALWAYS_VISIBLE_LABELS are appended if the
+                       filter removed them. Currently empty, so EVERY
+                       button (including ART) behaves the same: hidden
+                       unless the user is allowed to see it.
+   5. FAIL CLOSED    — if the catalog read fails, render NOTHING. Never the
+                       full set.
+   6. bfcache        — re-runs on Back/Forward and on tab re-focus so a
+                       previous user's DOM can never leak into a new visit.
+
+   Managing buttons
+   ----------------
+   Add a row to `hero_buttons`      → button becomes available to assign.
+   Edit a row                       → label/href/order update everywhere.
+   Delete a row                     → button disappears for everyone.
+
+   Managing visibility
+   -------------------
+   Set users.allowed_hero_buttons to:
+     '["all"]'                  → this user sees every button
+     '["ART","Sales","HRMD"]'   → this user sees only these
+     '[]'                       → this user sees nothing
+   ============================================================================ */
+(function(){
+  const heroBox = document.getElementById('hero-actions')
+  if(!heroBox) return
+
+  const TABLE = 'hero_buttons'
+
+  /* Buttons that must remain visible even if the permission list omits them.
+     Set to [] to disable the guarantee entirely. Matched on label.
+     Currently EMPTY — so ART is hidden too when not allowed. */
+  const ALWAYS_VISIBLE_LABELS = []
+
+  /* ---------- helpers ---------- */
+  function esc(v){
+    return String(v ?? '')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;')
+  }
+  function norm(v){ return String(v ?? '').trim().toLowerCase() }
+
+  /* Accepts array, JSON string, or CSV string. Returns array of strings. */
+  function parseAllowed(v){
+    if(Array.isArray(v)) return v.map(x => String(x)).filter(Boolean)
+    if(typeof v === 'string' && v.trim()){
+      const raw = v.trim()
+      try{
+        const p = JSON.parse(raw)
+        if(Array.isArray(p)) return p.map(x => String(x)).filter(Boolean)
+      }catch(e){}
+      return raw.split(',').map(s => s.trim()).filter(Boolean)
+    }
+    return []
+  }
+  function hasAll(list){ return list.some(x => norm(x) === 'all') }
+
+  function readSession(){
+    try{ return JSON.parse(sessionStorage.getItem('ldi_session') || 'null') }catch(e){ return null }
+  }
+
+  /* ---------- render states ---------- */
+  function renderLoading(){
+    heroBox.setAttribute('aria-busy','true')
+    heroBox.innerHTML =
+      '<span class="hero-skeleton" aria-hidden="true"></span>' +
+      '<span class="hero-skeleton" aria-hidden="true"></span>'
+  }
+  function renderHero(list){
+    heroBox.removeAttribute('aria-busy')
+    if(!list || !list.length){
+      heroBox.innerHTML =
+        '<span class="hero-empty">No dashboard buttons are assigned to your account.</span>'
+      return
+    }
+    heroBox.innerHTML = list.map(b =>
+      '<a class="hero-btn primary" href="'+esc(b.href || '#')+'">'+esc(b.label || '')+'</a>'
+    ).join('')
+  }
+
+  /* ---------- 1. READ CATALOG ---------- */
+  async function fetchButtons(){
+    const rows = await window.supabase
+      .from(TABLE)
+      .select('id,label,href,sort_order')
+      .order('sort_order', { ascending:true })
+      .order('id',         { ascending:true })
+    if(!Array.isArray(rows)) throw new Error('hero_buttons read returned no array')
+    return rows
+  }
+
+  /* ---------- 2. READ PERMISSIONS ---------- */
+  async function fetchAllowed(me){
+    let allowedRaw = me.allowed_hero_buttons
+
+    let q = window.supabase.from('users').select('allowed_hero_buttons')
+    if(me.id != null){
+      q = q.eq('id', me.id)
+    }else if(me.username){
+      q = q.eq('username', me.username)
+    }else{
+      throw new Error('signed-in user has no id or username')
+    }
+
+    const fresh = await q.single()
+    if(fresh && Object.prototype.hasOwnProperty.call(fresh, 'allowed_hero_buttons')){
+      allowedRaw = fresh.allowed_hero_buttons
+    }
+    return parseAllowed(allowedRaw)
+  }
+
+  /* ---------- 3 + 4. FILTER + GUARANTEE ---------- */
+  function filterAllowed(buttons, allowed){
+    let visible
+
+    if(hasAll(allowed)){
+      visible = buttons.slice()
+    }else if(allowed.length === 0){
+      visible = []
+    }else{
+      const keys = new Set(allowed.map(norm))
+      visible = buttons.filter(b =>
+        keys.has(norm(b.id)) || keys.has(norm(b.label))
+      )
+    }
+
+    /* Guarantee the always-visible buttons survive the filter.
+       ALWAYS_VISIBLE_LABELS is currently [] so this block is a no-op. */
+    if(ALWAYS_VISIBLE_LABELS.length){
+      const want = new Set(ALWAYS_VISIBLE_LABELS.map(norm))
+      const have = new Set(visible.map(b => norm(b.label)))
+      buttons.forEach(b => {
+        if(want.has(norm(b.label)) && !have.has(norm(b.label))){
+          visible.push(b)
+          have.add(norm(b.label))
+        }
+      })
+    }
+
+    return visible
+  }
+
+  /* ---------- main ---------- */
+  let running = false
+
+  async function initHero(){
+    if(running) return
+    running = true
+
+    try{
+      /* Wipe whatever is there — it may be another user's DOM (bfcache). */
+      heroBox.removeAttribute('aria-busy')
+      heroBox.innerHTML = ''
+
+      const me = readSession()
+      if(!me){ return }              /* no session → auth guard redirects */
+
+      renderLoading()
+
+      let buttons
+      let allowed
+
+      try{
+        buttons = await fetchButtons()
+        if(!buttons.length) throw new Error('hero_buttons table is empty')
+        allowed = await fetchAllowed(me)
+      }catch(e){
+        /* 5. FAIL CLOSED — never render the full set on error. */
+        console.warn('[hero] lookup failed — failing closed:', e.message || e)
+        renderHero([])
+        return
+      }
+
+      const visible = filterAllowed(buttons, allowed)
+      renderHero(visible)
+
+      console.log(
+        '[hero] user=' + (me.username || me.id) +
+        '  allowed=' + JSON.stringify(allowed) +
+        '  showing ' + visible.length + '/' + buttons.length + ' button(s)',
+        visible.map(b => b.label)
+      )
+    }finally{
+      running = false
+    }
+  }
+
+  /* Initial run */
+  initHero()
+
+  /* 6. bfcache restore — DOM may still hold a previous user's render. */
+  window.addEventListener('pageshow', function(e){
+    if(e.persisted) initHero()
+  })
+
+  /* Re-check when the tab becomes visible again after a long sleep. */
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible' && !heroBox.hasAttribute('aria-busy')){
+      initHero()
+    }
+  })
+})()
+</script>
+</body>
+</html>
