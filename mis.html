@@ -26,7 +26,7 @@
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --safe-left: env(safe-area-inset-left, 0px);
       --safe-right: env(safe-area-inset-right, 0px);
-      --topbar-h: 68px; /* fallback, updated by JS */
+      --topbar-h: 68px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -104,6 +104,42 @@
       min-height: -webkit-fill-available;
       display: flex; flex-direction: column;
     }
+
+    /* ================= CONNECTION BANNER ================= */
+    .conn-banner {
+      position: fixed; left: 50%; transform: translateX(-50%);
+      top: calc(10px + var(--safe-top)); z-index: 600;
+      display: flex; align-items: center; gap: 10px;
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: #fff; padding: 9px 16px; border-radius: 999px;
+      box-shadow: 0 10px 28px rgba(185,22,27,.45);
+      font: 700 12.5px/1 'DM Sans', sans-serif;
+      max-width: calc(100vw - 24px);
+      animation: connIn .25s ease;
+    }
+    @keyframes connIn {
+      from { opacity: 0; transform: translate(-50%, -8px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+    .conn-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #fff; flex-shrink: 0;
+      animation: connPulse 1.1s ease-in-out infinite;
+    }
+    @keyframes connPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .35; transform: scale(.78); }
+    }
+    .conn-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .conn-retry {
+      background: rgba(255,255,255,.2); color: #fff;
+      border: 1px solid rgba(255,255,255,.5); border-radius: 999px;
+      padding: 5px 12px; font: 700 11.5px 'DM Sans', sans-serif;
+      cursor: pointer; flex-shrink: 0;
+      transition: background var(--fast);
+    }
+    .conn-retry:hover { background: rgba(255,255,255,.34); }
+    .conn-retry:disabled { opacity: .5; cursor: wait; }
 
     /* ================= TOPBAR ================= */
     .topbar {
@@ -928,7 +964,9 @@
     .fm-preview-body .unsupported-preview .download-link {
       display: inline-block; margin-top: 16px; padding: 10px 24px;
       background: var(--royal); color: #fff; border-radius: 10px;
-      text-decoration: none; font-weight: 700; font-size: 13px;
+      border: 0; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700; font-size: 13px;
       transition: background .15s;
     }
     .fm-preview-body .unsupported-preview .download-link:hover { background: var(--royal-2); }
@@ -948,21 +986,18 @@
        RESPONSIVE BREAKPOINTS — LAPTOP, DESKTOP, TABLET, PHONE
        ========================================================================== */
 
-    /* ---- Large Desktop (1441px+) ---- */
     @media (min-width: 1441px) {
       .content { max-width: 1520px; }
       .main-col-inner { max-width: 1280px; }
       .fm-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
     }
 
-    /* ---- Standard Desktop / Large Laptop (1101px–1440px) ---- */
     @media (max-width: 1440px) {
       .sidebar { width: 220px; }
       .side-show { left: 200px; }
       .layout.side-hidden .side-show { left: 14px; }
     }
 
-    /* ---- Laptop / Small Desktop (901px–1100px) ---- */
     @media (max-width: 1100px) {
       .sidebar { width: 200px; padding: 20px 14px; }
       .side-show { left: 180px; }
@@ -973,7 +1008,6 @@
       .fm-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
     }
 
-    /* ---- Tablet Landscape / Small Laptop (769px–900px) ---- */
     @media (max-width: 900px) {
       .layout {
         flex-direction: column;
@@ -1008,7 +1042,6 @@
       .fm-grid { grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap: 12px; }
     }
 
-    /* ---- Tablet Portrait / Large Phone (481px–768px) ---- */
     @media (max-width: 768px) {
       .topbar {
         padding: 10px 16px;
@@ -1088,9 +1121,10 @@
 
       .fm-progress { min-width: 240px; padding: 12px 16px; left: 14px; right: 14px; transform: none; bottom: 14px; bottom: calc(14px + var(--safe-bottom)); }
       .fm-toast { left: 14px; right: 14px; transform: none; bottom: 14px; bottom: calc(14px + var(--safe-bottom)); }
+
+      .conn-banner { font-size: 11.5px; padding: 8px 12px; }
     }
 
-    /* ---- Small Phone (360px–480px) ---- */
     @media (max-width: 480px) {
       .topbar { padding: 8px 12px; padding-top: calc(8px + var(--safe-top)); }
       .brand strong { font-size: 13px; }
@@ -1156,7 +1190,6 @@
       .fm-toast { padding: 10px 14px; font-size: 12.5px; }
     }
 
-    /* ---- Very Small Phone (320px–359px) ---- */
     @media (max-width: 359px) {
       .hero-title { font-size: 15px; }
       .hero-btn { padding: 6px 8px; font-size: 10px; }
@@ -1168,7 +1201,6 @@
       .manage-icon-btn { width: 28px; height: 28px; font-size: 11px; }
     }
 
-    /* ---- Landscape Phone / Small Tablet (height ≤ 500px) ---- */
     @media (max-height: 500px) and (orientation: landscape) {
       .topbar { padding: 6px 16px; padding-top: calc(6px + var(--safe-top)); }
       .nav-logo { height: 30px; }
@@ -1181,7 +1213,6 @@
       .side-btn { padding: 8px 12px; font-size: 12px; min-height: 36px; }
     }
 
-    /* ---- Touch Device Optimizations ---- */
     @media (hover: none) and (pointer: coarse) {
       .button, .hero-btn, .side-btn, .fm-item, .manage-icon-btn,
       .icon-choice, .fm-crumb, .fm-choice-btn {
@@ -1200,7 +1231,6 @@
       .fm-crumb:hover { background: transparent; }
     }
 
-    /* ---- Reduced Motion ---- */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: .01ms !important;
@@ -1212,7 +1242,6 @@
       .hero-btn:hover { transform: none; }
     }
 
-    /* ---- Dark Mode Support ---- */
     @media (prefers-color-scheme: dark) {
       .fm-preview-body { background: #12121c; }
       .fm-preview-body .text-preview { background: #1a1a2e; color: #e8e8f0; }
@@ -1228,9 +1257,16 @@
 </head>
 <body>
 <div class="app">
+  <div class="conn-banner" id="conn-banner" hidden role="alert">
+    <span class="conn-dot"></span>
+    <span class="conn-text" id="conn-text">Server unreachable — Cloudflare tunnel may be down</span>
+    <button class="conn-retry" id="conn-retry" type="button">Retry</button>
+  </div>
+
   <header class="topbar">
     <div class="brand">
-      <img src="https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/logo.gif" alt="LDI" class="nav-logo">
+      <img src="https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/logo.gif"
+           alt="LDI" class="nav-logo" id="nav-logo">
       <div><strong id="topbar-title">ART Files</strong><small>Lakpue Drug Inc</small></div>
     </div>
     <div class="topbar-right">
@@ -1568,7 +1604,15 @@
 
 <script>
 /* ============================================================================
-   ART FILE MANAGER + SIDEBAR MANAGEMENT + PREVIEW + DELETE CANCEL
+   ART FILE MANAGER — BLOB-BASED PREVIEW/DOWNLOAD + CONNECTION GUARD
+   ============================================================================
+   Key fix:
+   - Every file is now fetched through the authenticated Supabase Storage API
+     (with apikey + Authorization headers) and turned into a local Blob URL.
+   - Previews and downloads NEVER depend on the public bucket URL or on a new
+     browser tab hitting the Cloudflare tunnel.
+   - A connection monitor pings the backend; if the Cloudflare tunnel drops,
+     a banner appears and everything recovers automatically when it's back.
    ============================================================================ */
 (function(){
   'use strict';
@@ -1578,7 +1622,9 @@
   const BUCKET        = 'department';
   const PLACEHOLDER   = '.emptyFolderPlaceholder';
   const FETCH_TIMEOUT = 20000;
+  const PING_TIMEOUT  = 8000;
   const CONCURRENCY   = 4;
+  const PREVIEW_MAX_BYTES = 60 * 1024 * 1024; // 60 MB hard cap for in-browser preview
 
   const DEFAULT_ICON = '\uD83D\uDCC1';
   const ICON_CHOICES = [
@@ -1599,6 +1645,7 @@
   const ROOT = deriveRootFromFilename();
   const ROOT_DISPLAY = ROOT.toUpperCase();
 
+  /* ---------------- DOM refs ---------------- */
   const layout        = document.getElementById('art-layout');
   const sideToggle    = document.getElementById('side-toggle');
   const heroTitle     = document.getElementById('hero-title');
@@ -1689,6 +1736,12 @@
   const previewCloseBtn  = document.getElementById('fm-preview-close');
   const previewDownloadBtn = document.getElementById('fm-preview-download');
 
+  const connBanner  = document.getElementById('conn-banner');
+  const connText    = document.getElementById('conn-text');
+  const connRetry   = document.getElementById('conn-retry');
+  const navLogo     = document.getElementById('nav-logo');
+
+  /* ---------------- Branding ---------------- */
   function applyBranding() {
     if (topbarTitle) topbarTitle.textContent = ROOT_DISPLAY + ' Files';
     heroEyebrow.textContent = 'LAKPUE DRUG INC \u2022 ' + ROOT_DISPLAY;
@@ -1698,10 +1751,12 @@
   }
   applyBranding();
 
-  /* ============================================================================
-     DYNAMIC TOPBAR HEIGHT SYNC
-     Keeps the sidebar flush against the header at all times.
-     ============================================================================ */
+  // Hide broken branding image instead of showing a broken icon
+  if (navLogo) {
+    navLogo.addEventListener('error', () => { navLogo.style.display = 'none'; });
+  }
+
+  /* ---------------- Topbar height sync ---------------- */
   function syncTopbarHeight() {
     const topbar = document.querySelector('.topbar');
     if (!topbar) return;
@@ -1718,7 +1773,7 @@
     if (tb) ro.observe(tb);
   }
 
-  // ---------- STATE ----------
+  /* ---------------- STATE ---------------- */
   let currentPath      = '';
   let allItems         = [];
   let items            = [];
@@ -1744,13 +1799,143 @@
   let activeUploadController = null;
   let conflictState    = null;
   let previewItem      = null;
+  let previewObjectUrl = null;      // revoked on close
+  let previewAbort     = null;
 
   let deleteCancelRequested = false;
   let activeDeleteController = null;
 
-  // ============================================================================
-  // SIDEBAR PERSISTENCE
-  // ============================================================================
+  /* ============================================================================
+     CONNECTION MANAGER
+     Detects Cloudflare tunnel / backend outages and recovers automatically.
+     ============================================================================ */
+  const Connection = (function(){
+    let online = true;
+    let checking = false;
+    let intervalId = null;
+    const listeners = new Set();
+
+    function notify() {
+      listeners.forEach(fn => { try { fn(online); } catch (e) {} });
+    }
+
+    function setOnline(next, reason) {
+      const changed = next !== online;
+      online = next;
+      updateBanner(reason);
+      if (changed) notify();
+    }
+
+    function updateBanner(reason) {
+      if (!connBanner) return;
+      if (online) {
+        connBanner.hidden = true;
+      } else {
+        connBanner.hidden = false;
+        connText.textContent = reason || 'Server unreachable — Cloudflare tunnel may be down';
+      }
+    }
+
+    async function ping() {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), PING_TIMEOUT);
+      try {
+        const res = await fetch(SUPABASE_URL + '/rest/v1/', {
+          method: 'GET',
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+            'Cache-Control': 'no-store'
+          },
+          signal: ctrl.signal,
+          cache: 'no-store'
+        });
+        clearTimeout(timer);
+        // Any HTTP response < 500 means the tunnel + backend answered.
+        return res.status < 500;
+      } catch (e) {
+        clearTimeout(timer);
+        return false;
+      }
+    }
+
+    async function check(manual) {
+      if (checking) return online;
+      checking = true;
+      if (manual && connRetry) {
+        connRetry.disabled = true;
+        connRetry.textContent = 'Checking…';
+      }
+      const ok = await ping();
+      checking = false;
+      if (manual && connRetry) {
+        connRetry.disabled = false;
+        connRetry.textContent = 'Retry';
+      }
+      setOnline(ok, ok ? '' : 'Server unreachable — Cloudflare tunnel may be down');
+      return ok;
+    }
+
+    function start() {
+      if (intervalId) return;
+      intervalId = setInterval(() => {
+        // Only actively re-check while offline; otherwise gentle background ping
+        check(false);
+      }, online ? 45000 : 10000);
+    }
+
+    function restartTimer() {
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+      start();
+    }
+
+    window.addEventListener('online', () => { check(true); });
+    window.addEventListener('offline', () => {
+      setOnline(false, 'Your device is offline');
+    });
+
+    if (connRetry) {
+      connRetry.addEventListener('click', async () => {
+        const ok = await check(true);
+        restartTimer();
+        if (ok) {
+          showToast('Reconnected', 2200);
+          onReconnect();
+        } else {
+          showToast('Still unreachable', 2600);
+        }
+      });
+    }
+
+    let reconnectHandler = null;
+    function onReconnect() {
+      if (typeof reconnectHandler === 'function') reconnectHandler();
+    }
+    function setReconnectHandler(fn) { reconnectHandler = fn; }
+
+    return {
+      isOnline: () => online,
+      check,
+      start,
+      restartTimer,
+      setOnline,
+      setReconnectHandler,
+      onChange: (fn) => { listeners.add(fn); return () => listeners.delete(fn); }
+    };
+  })();
+
+  function guardOnline() {
+    if (!Connection.isOnline()) {
+      showToast('No connection to the server. Retrying…', 3000);
+      Connection.check(true).then(ok => { if (ok) { Connection.restartTimer(); refresh(); } });
+      return false;
+    }
+    return true;
+  }
+
+  /* ============================================================================
+     SIDEBAR PERSISTENCE
+     ============================================================================ */
   function sidebarStorageKey() { return 'ldi_sidebar_' + ROOT; }
 
   function normalizeButtons(list) {
@@ -1908,7 +2093,7 @@
     return result.ok;
   }
 
-  // ---------- ICON PICKER ----------
+  /* ---------------- ICON PICKER ---------------- */
   function buildIconPicker() {
     iconPicker.innerHTML = '';
     ICON_CHOICES.forEach((emoji) => {
@@ -1937,7 +2122,7 @@
     });
   }
 
-  // ---------- SIDEBAR RENDER ----------
+  /* ---------------- SIDEBAR RENDER ---------------- */
   function renderSidebar() {
     sideButtonsContainer.innerHTML = '';
     if (!sidebarButtons.length) {
@@ -1984,7 +2169,7 @@
     if (el) el.classList.add('active');
   }
 
-  // ---------- MANAGE MODAL ----------
+  /* ---------------- MANAGE MODAL ---------------- */
   function openManageModal() {
     if (!isSuperAdmin) {
       showToast('Only superadmins can manage the sidebar', 3000);
@@ -2155,7 +2340,7 @@
     showToast(ok ? 'Sidebar reset to defaults' : 'Reset locally — server sync failed', ok ? 2600 : 4000);
   }
 
-  // ---------- SUPERADMIN DETECTION ----------
+  /* ---------------- SUPERADMIN DETECTION ---------------- */
   async function loadCurrentUser() {
     try {
       const raw = sessionStorage.getItem('ldi_session');
@@ -2195,7 +2380,7 @@
     return role === 'superadmin';
   }
 
-  // ---------- HELPERS ----------
+  /* ---------------- HELPERS ---------------- */
   function authHeaders(extra) {
     return Object.assign({
       'apikey': SUPABASE_ANON_KEY,
@@ -2263,7 +2448,7 @@
     return (it.metadata && typeof it.metadata.size === 'number') ? it.metadata.size : 0;
   }
 
-  // ---------- STORAGE API ----------
+  /* ---------------- STORAGE API ---------------- */
   async function listFolder(prefix) {
     const res = await fetchT(`${SUPABASE_URL}/storage/v1/object/list/${encodeURIComponent(BUCKET)}`, {
       method: 'POST',
@@ -2331,21 +2516,70 @@
     return out;
   }
 
-  // ---------- DOWNLOAD ----------
+  /* ============================================================================
+     ★★★ THE CORE FIX — AUTHENTICATED BLOB FETCH ★★★
+     Downloads a storage object as a Blob using the Storage API with headers.
+     Falls back to the public URL only if the authenticated route fails.
+     ============================================================================ */
+  async function fetchObjectBlob(fullPath, signal) {
+    const apiUrl = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}/${encodePath(fullPath)}`;
+    let lastErr = null;
+
+    // 1) Authenticated route — works with private buckets and through the tunnel
+    try {
+      const res = await fetchT(apiUrl, { method: 'GET', headers: authHeaders() }, signal);
+      if (res.ok) return await res.blob();
+      lastErr = new Error('HTTP ' + res.status);
+    } catch (err) {
+      lastErr = err;
+    }
+
+    // 2) Public route fallback
+    try {
+      const pub = getPublicUrl(fullPath);
+      const res = await fetchT(pub, { method: 'GET' }, signal);
+      if (res.ok) return await res.blob();
+      lastErr = new Error('HTTP ' + res.status);
+    } catch (err) {
+      lastErr = err;
+    }
+
+    throw new Error('Could not read file from storage' + (lastErr ? ' (' + lastErr.message + ')' : ''));
+  }
+
   function getPublicUrl(fullPath) {
     return `${SUPABASE_URL}/storage/v1/object/public/${encodeURIComponent(BUCKET)}/${encodePath(fullPath)}`;
   }
 
-  function downloadFile(fullPath, fileName) {
-    const url = getPublicUrl(fullPath);
+  function saveBlobAsFile(blob, fileName) {
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName || fullPath.split('/').pop();
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
+    a.download = fileName;
+    a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+  }
+
+  /* ---------------- DOWNLOAD ---------------- */
+  async function downloadFile(fullPath, fileName) {
+    const name = fileName || fullPath.split('/').pop();
+    if (!guardOnline()) return;
+    progressStart('Downloading…');
+    progressFill.style.width = '35%';
+    try {
+      const blob = await fetchObjectBlob(fullPath);
+      progressFill.style.width = '90%';
+      saveBlobAsFile(blob, name);
+      progressFill.style.width = '100%';
+      progressEnd();
+      showToast('Downloaded "' + name + '"', 2400);
+    } catch (err) {
+      progressEnd();
+      showToast('Download failed: ' + err.message, 4500);
+    }
   }
 
   async function downloadFolder(folderPath, folderName) {
@@ -2353,55 +2587,68 @@
       showToast('ZIP library failed to load. Please refresh and try again.', 4000);
       return;
     }
-    const files = await collectAllUnder(folderPath + '/');
+    if (!guardOnline()) return;
+
+    let files;
+    try {
+      files = await collectAllUnder(folderPath + '/');
+    } catch (err) {
+      showToast('Could not read folder: ' + err.message, 4000);
+      return;
+    }
     if (!files.length) { showToast('Folder is empty — nothing to download', 3000); return; }
+
     const total = files.length;
     let done = 0, failed = 0;
     progressStart('Preparing ZIP (' + total + ' file' + (total === 1 ? '' : 's') + ')…');
     progressUpdate(0, total, folderName);
+
     const zip = new JSZip();
     const basePrefix = folderPath + '/';
+
     for (const filePath of files) {
       try {
-        const url = getPublicUrl(filePath);
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const blob = await resp.blob();
+        const blob = await fetchObjectBlob(filePath);
         const rel = filePath.substring(basePrefix.length);
         zip.file(rel, blob);
         done++;
       } catch (err) { failed++; }
       progressUpdate(done + failed, total, filePath.split('/').pop());
     }
-    if (done === 0) { progressEnd(); showToast('Could not download any files', 4000); return; }
+
+    if (done === 0) {
+      progressEnd();
+      showToast('Could not download any files', 4000);
+      return;
+    }
+
     progressTitle.textContent = 'Compressing…';
     progressName.textContent = '';
     progressCount.textContent = '';
     progressFill.style.width = '0%';
+
     let zipBlob;
     try {
       zipBlob = await zip.generateAsync(
         { type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
         (meta) => { progressFill.style.width = meta.percent.toFixed(0) + '%'; }
       );
-    } catch (err) { progressEnd(); showToast('Failed to create ZIP: ' + err.message, 4000); return; }
+    } catch (err) {
+      progressEnd();
+      showToast('Failed to create ZIP: ' + err.message, 4000);
+      return;
+    }
     progressEnd();
+
     const safeName = (folderName || 'folder').replace(/[\\/:*?"<>|]+/g, '_');
-    const zipName = safeName + '.zip';
-    const url = URL.createObjectURL(zipBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = zipName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    saveBlobAsFile(zipBlob, safeName + '.zip');
+
     showToast(failed === 0
-      ? 'Downloaded "' + zipName + '" (' + done + ' file' + (done === 1 ? '' : 's') + ')'
-      : 'Downloaded "' + zipName + '" (' + done + ' / ' + total + ', ' + failed + ' failed)', 4000);
+      ? 'Downloaded "' + safeName + '.zip" (' + done + ' file' + (done === 1 ? '' : 's') + ')'
+      : 'Downloaded "' + safeName + '.zip" (' + done + ' / ' + total + ', ' + failed + ' failed)', 4200);
   }
 
-  // ---------- RENAME ----------
+  /* ---------------- RENAME ---------------- */
   function openRenameModal(item) {
     if (!item) return;
     renameTarget = item;
@@ -2433,6 +2680,7 @@
 
   async function confirmRename() {
     if (renameBusy || !renameTarget) return;
+    if (!guardOnline()) return;
     const newName = (renameInput.value || '').trim();
     const oldName = renameTarget.name;
     if (!newName) { renameInput.focus(); return; }
@@ -2465,10 +2713,7 @@
           let done = 0;
           for (const childPath of children) {
             try {
-              const oldUrl = getPublicUrl(childPath);
-              const resp = await fetch(oldUrl);
-              if (!resp.ok) throw new Error('Fetch failed');
-              const blob = await resp.blob();
+              const blob = await fetchObjectBlob(childPath);
               const rel = childPath.substring(oldPath.length);
               const newChildPath = newPath + rel;
               await uploadOne(newChildPath, new File([blob], rel.split('/').pop() || 'file', { type: blob.type }));
@@ -2483,10 +2728,7 @@
           try { await deleteMany([oldPath + '/' + PLACEHOLDER]); } catch (e) {}
         }
       } else {
-        const oldUrl = getPublicUrl(oldPath);
-        const resp = await fetch(oldUrl);
-        if (!resp.ok) throw new Error('Failed to fetch file for rename');
-        const blob = await resp.blob();
+        const blob = await fetchObjectBlob(oldPath);
         progressFill.style.width = '50%';
         await uploadOne(newPath, new File([blob], newName, { type: blob.type }));
         progressFill.style.width = '80%';
@@ -2510,7 +2752,7 @@
     }
   }
 
-  // ---------- CONTEXT MENU ----------
+  /* ---------------- CONTEXT MENU ---------------- */
   function closeContextMenu() {
     if (contextMenuEl && contextMenuEl.parentNode) {
       contextMenuEl.parentNode.removeChild(contextMenuEl);
@@ -2564,7 +2806,7 @@
     downloadItem.addEventListener('click', async () => {
       closeContextMenu();
       if (isDir) await downloadFolder(fullPathFor(item.name), item.name);
-      else downloadFile(fullPathFor(item.name), item.name);
+      else await downloadFile(fullPathFor(item.name), item.name);
     });
     menu.appendChild(downloadItem);
 
@@ -2600,9 +2842,11 @@
   }
 
   async function deleteSingleItem(item) {
+    if (!guardOnline()) return;
     const isDir = isFolder(item);
     const label = '"' + item.name + '"';
     if (!confirm('Delete ' + label + '? This cannot be undone.')) return;
+
     progressStart('Deleting…', true);
     progressFill.style.width = '30%';
     deleteCancelRequested = false;
@@ -2643,7 +2887,7 @@
     }
   }
 
-  // ---------- ROOT FOLDER CHECK ----------
+  /* ---------------- ROOT FOLDER CHECK ---------------- */
   async function ensureRootFolderExists() {
     const exists = await verifyRootFolderExists();
     if (exists) {
@@ -2673,7 +2917,7 @@
       'You are not allowed to upload files or create folders here. Please contact your administrator.';
   }
 
-  // ---------- STORAGE LIMIT ----------
+  /* ---------------- STORAGE LIMIT ---------------- */
   async function fetchFolderLimit() {
     try {
       const row = await window.supabase
@@ -2707,6 +2951,7 @@
   async function updateStorageInfo() {
     if (storageLoading) return;
     if (!rootExists) { storageBox.hidden = true; return; }
+    if (!Connection.isOnline()) { storageBox.hidden = true; return; }
     storageLoading = true;
     try {
       if (storageLimit === null) storageLimit = await fetchFolderLimit();
@@ -2754,7 +2999,7 @@
   }
   function closeFullModal() { fullModal.hidden = true; }
 
-  // ---------- FOLDER TRAVERSAL ----------
+  /* ---------------- FOLDER TRAVERSAL ---------------- */
   function readEntryFile(entry) { return new Promise((resolve, reject) => entry.file(resolve, reject)); }
   function readAllDirEntries(reader) {
     return new Promise((resolve, reject) => {
@@ -2811,7 +3056,7 @@
     return out;
   }
 
-  // ---------- FILTER + SORT ----------
+  /* ---------------- FILTER + SORT ---------------- */
   function getComparator() {
     switch (sortBy) {
       case 'name-desc': return (a, b) => b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' });
@@ -2843,7 +3088,7 @@
     searchClear.hidden = true;
   }
 
-  // ---------- RENDER ----------
+  /* ---------------- RENDER ---------------- */
   function renderBreadcrumbs() {
     const parts = [{ label: ROOT, path: '' }];
     if (currentPath) {
@@ -2883,6 +3128,11 @@
     if (!rootExists) {
       emptyIcon.textContent = '🚫';
       emptyText.textContent = 'This folder does not exist in the "' + BUCKET + '" bucket. You are not allowed to upload files or create folders here. Please contact your administrator.';
+      return;
+    }
+    if (!Connection.isOnline()) {
+      emptyIcon.textContent = '📡';
+      emptyText.textContent = 'Cannot reach the server. Your Cloudflare tunnel may be disconnected. The page will reconnect automatically.';
       return;
     }
     if (allItems.length === 0) {
@@ -3016,322 +3266,360 @@
     renderItems();
   }
 
-  // ============================================================================
-  // PREVIEW SYSTEM
-  // ============================================================================
+  /* ============================================================================
+     PREVIEW SYSTEM — fully blob based, no public URL dependency
+     ============================================================================ */
   function getFileExtension(name) {
     return (name.split('.').pop() || '').toLowerCase();
   }
 
-  function showPreviewLoading() {
-    previewBody.innerHTML = '<div class="fm-preview-loading"><div class="spinner"></div><span>Loading preview…</span></div>';
+  const IMAGE_EXT = ['png','jpg','jpeg','gif','webp','bmp','svg','ico','tiff','avif'];
+  const VIDEO_EXT = ['mp4','webm','mov','m4v','ogv'];
+  const AUDIO_EXT = ['mp3','wav','ogg','oga','flac','m4a','aac','weba'];
+  const TEXT_EXT  = ['txt','md','markdown','log','json','xml','yaml','yml','js','mjs','ts','tsx','jsx',
+                     'html','htm','css','scss','py','java','php','rb','go','rs','c','cpp','h','hpp',
+                     'sh','bat','ini','cfg','conf','env','sql','csv','rtf','odt'];
+
+  function showPreviewLoading(text) {
+    previewBody.innerHTML =
+      '<div class="fm-preview-loading"><div class="spinner"></div><span>' +
+      (text || 'Loading preview…') + '</span></div>';
   }
 
-  function showPreviewError(msg, downloadUrl) {
-    previewBody.innerHTML = `
-      <div class="unsupported-preview">
-        <span class="big-icon">⚠️</span>
-        <p>${msg}</p>
-        ${downloadUrl ? `<a class="download-link" href="${downloadUrl}" target="_blank" rel="noopener">Download file</a>` : ''}
-      </div>
-    `;
+  function showPreviewError(msg, item) {
+    previewBody.innerHTML = '';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'unsupported-preview';
+
+    const icon = document.createElement('span');
+    icon.className = 'big-icon';
+    icon.textContent = '⚠️';
+
+    const p1 = document.createElement('p');
+    p1.textContent = msg;
+
+    const p2 = document.createElement('p');
+    p2.style.opacity = '.75';
+    p2.style.fontSize = '13px';
+    p2.textContent = 'You can still download this file — it will not open in a new tab.';
+
+    wrap.appendChild(icon);
+    wrap.appendChild(p1);
+    wrap.appendChild(p2);
+
+    const dl = document.createElement('button');
+    dl.type = 'button';
+    dl.className = 'download-link';
+    dl.textContent = '⬇️ Download file';
+    dl.addEventListener('click', () => {
+      if (item) downloadFile(fullPathFor(item.name), item.name);
+    });
+    wrap.appendChild(dl);
+
+    previewBody.appendChild(wrap);
+  }
+
+  function revokePreviewUrl() {
+    if (previewObjectUrl) {
+      try { URL.revokeObjectURL(previewObjectUrl); } catch (e) {}
+      previewObjectUrl = null;
+    }
   }
 
   async function openPreview(item) {
     if (!item || isFolder(item)) return;
+
+    if (!guardOnline()) return;
+
+    // Reset any previous preview
+    closePreview(true);
+
     previewItem = item;
     const fileName = item.name;
     const ext = getFileExtension(fileName);
-    const publicUrl = getPublicUrl(fullPathFor(fileName));
 
     previewFilename.textContent = fileName;
-    const icon = fileIcon(fileName);
-    previewTitle.querySelector('.file-icon').textContent = icon;
+    previewTitle.querySelector('.file-icon').textContent = fileIcon(fileName);
 
     previewOverlay.hidden = false;
     document.body.style.overflow = 'hidden';
 
-    previewDownloadBtn.onclick = () => {
-      downloadFile(fullPathFor(fileName), fileName);
-    };
+    previewDownloadBtn.onclick = () => downloadFile(fullPathFor(fileName), fileName);
 
-    if (['png','jpg','jpeg','gif','webp','bmp','svg','ico','tiff'].includes(ext)) {
-      previewImage(publicUrl, fileName);
-    } else if (ext === 'pdf') {
-      previewPdf(publicUrl);
-    } else if (['docx'].includes(ext)) {
-      previewDocx(publicUrl);
-    } else if (['xlsx','xls','csv'].includes(ext)) {
-      previewXlsx(publicUrl);
-    } else if (['txt','md','log','json','xml','js','ts','html','css','py','java','php','rb','go','rs','c','cpp','h','rtf','odt'].includes(ext)) {
-      previewText(publicUrl);
-    } else if (['mp4','webm','mov','avi','mkv'].includes(ext)) {
-      previewVideo(publicUrl);
-    } else if (['mp3','wav','ogg','flac','m4a','aac'].includes(ext)) {
-      previewAudio(publicUrl);
-    } else {
-      showPreviewError('Preview not available for this file type.', publicUrl);
+    const size = getItemSize(item);
+    if (size && size > PREVIEW_MAX_BYTES) {
+      showPreviewError('This file is too large to preview (' + formatBytes(size) + ').', item);
+      return;
+    }
+
+    showPreviewLoading('Fetching file…');
+
+    let blob;
+    try {
+      previewAbort = new AbortController();
+      blob = await fetchObjectBlob(fullPathFor(fileName), previewAbort.signal);
+    } catch (err) {
+      previewAbort = null;
+      if (err && err.name === 'AbortError') return;
+      showPreviewError('Could not load this file: ' + err.message, item);
+      return;
+    }
+    previewAbort = null;
+
+    // If the user closed the preview while loading, abort quietly
+    if (!previewItem || previewItem.name !== fileName || previewOverlay.hidden) return;
+
+    try {
+      if (IMAGE_EXT.includes(ext)) {
+        await renderImagePreview(blob, fileName);
+      } else if (ext === 'pdf') {
+        await renderPdfPreview(blob);
+      } else if (ext === 'docx') {
+        await renderDocxPreview(blob);
+      } else if (['xlsx','xls','xlsm','ods'].includes(ext)) {
+        await renderXlsxPreview(blob);
+      } else if (TEXT_EXT.includes(ext) && ext !== 'csv') {
+        await renderTextPreview(blob);
+      } else if (VIDEO_EXT.includes(ext)) {
+        renderMediaPreview(blob, 'video', item);
+      } else if (AUDIO_EXT.includes(ext)) {
+        renderMediaPreview(blob, 'audio', item);
+      } else {
+        showPreviewError('No in-browser preview is available for .' + ext + ' files.', item);
+      }
+    } catch (err) {
+      showPreviewError('Preview failed: ' + err.message, item);
     }
   }
 
-  function previewImage(url, name) {
-    showPreviewLoading();
-    const img = new Image();
-    img.onload = () => {
-      previewBody.innerHTML = '';
-      previewBody.appendChild(img);
-    };
-    img.onerror = () => {
-      showPreviewError('Could not load image.', url);
-    };
-    img.src = url;
-    img.alt = name;
+  function renderImagePreview(blob, fileName) {
+    return new Promise((resolve, reject) => {
+      revokePreviewUrl();
+      previewObjectUrl = URL.createObjectURL(blob);
+      const img = new Image();
+      img.alt = fileName;
+      img.onload = () => {
+        previewBody.innerHTML = '';
+        previewBody.appendChild(img);
+        resolve();
+      };
+      img.onerror = () => reject(new Error('Image could not be decoded'));
+      img.src = previewObjectUrl;
+    });
   }
 
-  function previewVideo(url) {
-    showPreviewLoading();
-    const video = document.createElement('video');
-    video.controls = true;
-    video.style.maxWidth = '100%';
-    video.style.maxHeight = '100%';
-    video.style.display = 'block';
-    video.style.borderRadius = '8px';
-    video.onloadeddata = () => {
-      previewBody.innerHTML = '';
+  function renderMediaPreview(blob, kind, item) {
+    revokePreviewUrl();
+    previewObjectUrl = URL.createObjectURL(blob);
+    previewBody.innerHTML = '';
+
+    if (kind === 'video') {
+      const video = document.createElement('video');
+      video.controls = true;
+      video.style.maxWidth = '100%';
+      video.style.maxHeight = '100%';
+      video.style.display = 'block';
+      video.style.borderRadius = '8px';
+      video.src = previewObjectUrl;
+      video.onerror = () => showPreviewError('Could not play this video.', item);
       previewBody.appendChild(video);
-    };
-    video.onerror = () => {
-      showPreviewError('Could not load video.', url);
-    };
-    video.src = url;
-  }
-
-  function previewAudio(url) {
-    showPreviewLoading();
-    const audio = document.createElement('audio');
-    audio.controls = true;
-    audio.style.width = '80%';
-    audio.style.maxWidth = '500px';
-    audio.onloadeddata = () => {
-      previewBody.innerHTML = '';
+    } else {
       const wrap = document.createElement('div');
       wrap.style.padding = '40px';
       wrap.style.width = '100%';
       wrap.style.display = 'flex';
       wrap.style.justifyContent = 'center';
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.style.width = '80%';
+      audio.style.maxWidth = '500px';
+      audio.src = previewObjectUrl;
+      audio.onerror = () => showPreviewError('Could not play this audio file.', item);
       wrap.appendChild(audio);
       previewBody.appendChild(wrap);
-    };
-    audio.onerror = () => {
-      showPreviewError('Could not load audio.', url);
-    };
-    audio.src = url;
-  }
-
-  async function previewText(url) {
-    showPreviewLoading();
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const text = await res.text();
-      previewBody.innerHTML = '';
-      const div = document.createElement('div');
-      div.className = 'text-preview';
-      div.textContent = text;
-      previewBody.appendChild(div);
-    } catch (err) {
-      showPreviewError('Could not load text file: ' + err.message, url);
     }
   }
 
-  async function previewPdf(url) {
-    showPreviewLoading();
-    try {
-      if (typeof pdfjsLib === 'undefined') {
-        throw new Error('PDF.js not loaded');
-      }
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  async function renderTextPreview(blob) {
+    const text = await blob.text();
+    previewBody.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'text-preview';
+    div.textContent = text;
+    previewBody.appendChild(div);
+  }
 
-      const loadingTask = pdfjsLib.getDocument(url);
-      const pdf = await loadingTask.promise;
-      const totalPages = pdf.numPages;
+  async function renderPdfPreview(blob) {
+    if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-      previewBody.innerHTML = '';
-      const container = document.createElement('div');
-      container.className = 'pdf-page';
-      container.style.width = '100%';
+    const arrayBuffer = await blob.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const totalPages = pdf.numPages;
 
-      let currentPage = 1;
-      const canvas = document.createElement('canvas');
-      canvas.style.maxWidth = '100%';
-      canvas.style.height = 'auto';
-      canvas.style.boxShadow = '0 8px 30px rgba(0,0,0,.4)';
-      canvas.style.borderRadius = '4px';
-      canvas.style.background = '#fff';
+    previewBody.innerHTML = '';
+    const container = document.createElement('div');
+    container.className = 'pdf-page';
+    container.style.width = '100%';
 
-      const controls = document.createElement('div');
-      controls.className = 'pdf-controls';
-      const prevBtn = document.createElement('button');
-      prevBtn.textContent = '◀ Prev';
-      const nextBtn = document.createElement('button');
-      nextBtn.textContent = 'Next ▶';
-      const pageInfo = document.createElement('span');
-      pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    let currentPage = 1;
+    const canvas = document.createElement('canvas');
+    canvas.style.maxWidth = '100%';
+    canvas.style.height = 'auto';
+    canvas.style.boxShadow = '0 8px 30px rgba(0,0,0,.4)';
+    canvas.style.borderRadius = '4px';
+    canvas.style.background = '#fff';
 
-      prevBtn.disabled = currentPage <= 1;
-      nextBtn.disabled = currentPage >= totalPages;
+    const controls = document.createElement('div');
+    controls.className = 'pdf-controls';
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '◀ Prev';
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = 'Next ▶';
+    const pageInfo = document.createElement('span');
+    pageInfo.textContent = 'Page 1 of ' + totalPages;
 
-      controls.appendChild(prevBtn);
-      controls.appendChild(pageInfo);
-      controls.appendChild(nextBtn);
+    prevBtn.disabled = true;
+    nextBtn.disabled = totalPages <= 1;
 
-      container.appendChild(canvas);
-      container.appendChild(controls);
+    controls.appendChild(prevBtn);
+    controls.appendChild(pageInfo);
+    controls.appendChild(nextBtn);
+
+    container.appendChild(canvas);
+    container.appendChild(controls);
+    previewBody.appendChild(container);
+
+    async function renderPage(num) {
+      const page = await pdf.getPage(num);
+      const viewport = page.getViewport({ scale: 1.5 });
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      pageInfo.textContent = 'Page ' + num + ' of ' + totalPages;
+      prevBtn.disabled = num <= 1;
+      nextBtn.disabled = num >= totalPages;
+      currentPage = num;
+    }
+
+    prevBtn.onclick = () => { if (currentPage > 1) renderPage(currentPage - 1); };
+    nextBtn.onclick = () => { if (currentPage < totalPages) renderPage(currentPage + 1); };
+
+    await renderPage(1);
+  }
+
+  async function renderDocxPreview(blob) {
+    if (typeof mammoth === 'undefined') throw new Error('Mammoth library not loaded');
+    const arrayBuffer = await blob.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer });
+    previewBody.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'docx-preview';
+    div.innerHTML = result.value || '<p><em>Document is empty or could not be rendered.</em></p>';
+    previewBody.appendChild(div);
+  }
+
+  async function renderXlsxPreview(blob) {
+    if (typeof XLSX === 'undefined') throw new Error('SheetJS library not loaded');
+    const arrayBuffer = await blob.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+    previewBody.innerHTML = '';
+    const container = document.createElement('div');
+    container.className = 'xlsx-preview';
+
+    const sheetNames = workbook.SheetNames;
+    if (!sheetNames.length) {
+      container.innerHTML = '<p><em>No sheets found.</em></p>';
       previewBody.appendChild(container);
-
-      async function renderPage(num) {
-        const page = await pdf.getPage(num);
-        const viewport = page.getViewport({ scale: 1.5 });
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const ctx = canvas.getContext('2d');
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        pageInfo.textContent = `Page ${num} of ${totalPages}`;
-        prevBtn.disabled = num <= 1;
-        nextBtn.disabled = num >= totalPages;
-        currentPage = num;
-      }
-
-      prevBtn.onclick = () => { if (currentPage > 1) renderPage(currentPage - 1); };
-      nextBtn.onclick = () => { if (currentPage < totalPages) renderPage(currentPage + 1); };
-
-      await renderPage(1);
-
-    } catch (err) {
-      showPreviewError('Could not load PDF: ' + err.message, url);
+      return;
     }
-  }
 
-  async function previewDocx(url) {
-    showPreviewLoading();
-    try {
-      if (typeof mammoth === 'undefined') throw new Error('Mammoth library not loaded');
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const arrayBuffer = await res.arrayBuffer();
-      const result = await mammoth.convertToHtml({ arrayBuffer });
-      previewBody.innerHTML = '';
-      const div = document.createElement('div');
-      div.className = 'docx-preview';
-      div.innerHTML = result.value || '<p><em>Document is empty or could not be rendered.</em></p>';
-      previewBody.appendChild(div);
-    } catch (err) {
-      showPreviewError('Could not preview Word document: ' + err.message, url);
-    }
-  }
+    const tabsDiv = document.createElement('div');
+    tabsDiv.className = 'sheet-tabs';
+    const tableWrap = document.createElement('div');
+    tableWrap.style.overflow = 'auto';
+    tableWrap.style.maxHeight = 'calc(90vh - 200px)';
 
-  async function previewXlsx(url) {
-    showPreviewLoading();
-    try {
-      if (typeof XLSX === 'undefined') throw new Error('SheetJS library not loaded');
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const arrayBuffer = await res.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    let activeSheet = sheetNames[0];
 
-      previewBody.innerHTML = '';
-      const container = document.createElement('div');
-      container.className = 'xlsx-preview';
-
-      const sheetNames = workbook.SheetNames;
-      if (!sheetNames.length) {
-        container.innerHTML = '<p><em>No sheets found.</em></p>';
-        previewBody.appendChild(container);
-        return;
-      }
-
-      const tabsDiv = document.createElement('div');
-      tabsDiv.className = 'sheet-tabs';
-      const tableWrap = document.createElement('div');
-      tableWrap.style.overflow = 'auto';
-      tableWrap.style.maxHeight = 'calc(90vh - 200px)';
-
-      let activeSheet = sheetNames[0];
-
-      function renderSheet(name) {
-        const worksheet = workbook.Sheets[name];
-        const html = XLSX.utils.sheet_to_html(worksheet, { id: 'sheet-table', editable: false });
-        tableWrap.innerHTML = html;
-        const table = tableWrap.querySelector('table');
-        if (table) {
-          table.style.width = '100%';
-          table.style.borderCollapse = 'collapse';
-          table.style.fontSize = '13px';
-          table.querySelectorAll('td, th').forEach(cell => {
-            cell.style.border = '1px solid #d9d9e0';
-            cell.style.padding = '6px 10px';
-            cell.style.textAlign = 'left';
-            cell.style.whiteSpace = 'nowrap';
-            cell.style.maxWidth = '300px';
-            cell.style.overflow = 'hidden';
-            cell.style.textOverflow = 'ellipsis';
-          });
-          table.querySelectorAll('th').forEach(th => {
-            th.style.background = '#f0f4ff';
-            th.style.fontWeight = '700';
-            th.style.position = 'sticky';
-            th.style.top = '0';
-            th.style.zIndex = '2';
-          });
-          table.querySelectorAll('tr:nth-child(even) td').forEach(td => {
-            td.style.background = '#fafbff';
-          });
-        }
-        tabsDiv.querySelectorAll('.sheet-tab').forEach(t => {
-          t.classList.toggle('active', t.dataset.sheet === name);
+    function renderSheet(name) {
+      const worksheet = workbook.Sheets[name];
+      const html = XLSX.utils.sheet_to_html(worksheet, { id: 'sheet-table', editable: false });
+      tableWrap.innerHTML = html;
+      const table = tableWrap.querySelector('table');
+      if (table) {
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.fontSize = '13px';
+        table.querySelectorAll('td, th').forEach(cell => {
+          cell.style.border = '1px solid #d9d9e0';
+          cell.style.padding = '6px 10px';
+          cell.style.textAlign = 'left';
+          cell.style.whiteSpace = 'nowrap';
+          cell.style.maxWidth = '300px';
+          cell.style.overflow = 'hidden';
+          cell.style.textOverflow = 'ellipsis';
+        });
+        table.querySelectorAll('th').forEach(th => {
+          th.style.background = '#f0f4ff';
+          th.style.fontWeight = '700';
+          th.style.position = 'sticky';
+          th.style.top = '0';
+          th.style.zIndex = '2';
+        });
+        table.querySelectorAll('tr:nth-child(even) td').forEach(td => {
+          td.style.background = '#fafbff';
         });
       }
-
-      sheetNames.forEach(name => {
-        const tab = document.createElement('button');
-        tab.className = 'sheet-tab' + (name === activeSheet ? ' active' : '');
-        tab.dataset.sheet = name;
-        tab.textContent = name;
-        tab.addEventListener('click', () => {
-          activeSheet = name;
-          renderSheet(name);
-        });
-        tabsDiv.appendChild(tab);
+      tabsDiv.querySelectorAll('.sheet-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.sheet === name);
       });
-
-      container.appendChild(tabsDiv);
-      container.appendChild(tableWrap);
-      previewBody.appendChild(container);
-      renderSheet(activeSheet);
-
-    } catch (err) {
-      showPreviewError('Could not preview spreadsheet: ' + err.message, url);
     }
+
+    sheetNames.forEach(name => {
+      const tab = document.createElement('button');
+      tab.className = 'sheet-tab' + (name === activeSheet ? ' active' : '');
+      tab.dataset.sheet = name;
+      tab.textContent = name;
+      tab.addEventListener('click', () => {
+        activeSheet = name;
+        renderSheet(name);
+      });
+      tabsDiv.appendChild(tab);
+    });
+
+    container.appendChild(tabsDiv);
+    container.appendChild(tableWrap);
+    previewBody.appendChild(container);
+    renderSheet(activeSheet);
   }
 
-  function closePreview() {
+  function closePreview(silent) {
+    if (previewAbort) {
+      try { previewAbort.abort(); } catch (e) {}
+      previewAbort = null;
+    }
+    revokePreviewUrl();
     previewOverlay.hidden = true;
     previewBody.innerHTML = '';
     previewItem = null;
-    document.body.style.overflow = '';
+    if (!silent) document.body.style.overflow = '';
+    else document.body.style.overflow = '';
   }
 
-  previewCloseBtn.addEventListener('click', closePreview);
+  previewCloseBtn.addEventListener('click', () => closePreview());
   previewOverlay.addEventListener('click', (e) => {
     if (e.target === previewOverlay) closePreview();
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !previewOverlay.hidden) {
-      closePreview();
-    }
+    if (e.key === 'Escape' && !previewOverlay.hidden) closePreview();
   });
 
-  // ---------- ACTIONS ----------
+  /* ---------------- ACTIONS ---------------- */
   function startHeroSpin() {
     if (!heroRefresh) return;
     heroRefresh.classList.add('spinning');
@@ -3347,18 +3635,24 @@
 
   async function refresh() {
     if (!rootExists) { renderBreadcrumbs(); renderItems(); return; }
+
     startHeroSpin();
     loading.hidden = false;
     grid.hidden = true;
     empty.hidden = true;
     renderBreadcrumbs();
+
     try {
       const data = await listFolder(folderPrefix());
+      Connection.setOnline(true);
       allItems = Array.isArray(data) ? data : [];
       selected.clear();
       applyFilterAndSort();
       renderItems();
     } catch (err) {
+      const looksLikeNetwork = /Failed to fetch|NetworkError|aborted|timeout/i.test(err.message || '');
+      if (looksLikeNetwork) Connection.setOnline(false);
+
       if (currentPath === '') {
         rootExists = false;
         lockUploadsForMissingRoot();
@@ -3376,12 +3670,20 @@
     }
   }
 
-  function pickFiles() { if (!rootExists) { lockUploadsForMissingRoot(); return; } fileInput.value = ''; fileInput.click(); }
-  function pickFolder() { if (!rootExists) { lockUploadsForMissingRoot(); return; } folderInput.value = ''; folderInput.click(); }
+  function pickFiles() {
+    if (!rootExists) { lockUploadsForMissingRoot(); return; }
+    if (!guardOnline()) return;
+    fileInput.value = '';
+    fileInput.click();
+  }
+  function pickFolder() {
+    if (!rootExists) { lockUploadsForMissingRoot(); return; }
+    if (!guardOnline()) return;
+    folderInput.value = '';
+    folderInput.click();
+  }
 
-  // ============================================================================
-  // DUPLICATE FILE HANDLING
-  // ============================================================================
+  /* ---------------- DUPLICATE FILE HANDLING ---------------- */
   function normalizeRel(p) {
     return String(p == null ? '' : p).replace(/\\/g, '/').replace(/^\/+/, '');
   }
@@ -3523,7 +3825,7 @@
     return out;
   }
 
-  // ---------- PROGRESS ----------
+  /* ---------------- PROGRESS ---------------- */
   function progressStart(title, cancellable) {
     progress.hidden = false;
     progressTitle.textContent = title;
@@ -3546,6 +3848,8 @@
   }
 
   async function uploadEntries(entries) {
+    if (!guardOnline()) return;
+
     const stillExists = await verifyRootFolderExists();
     if (!stillExists) {
       rootExists = false;
@@ -3638,6 +3942,8 @@
 
   async function doDelete() {
     if (!selected.size) return;
+    if (!guardOnline()) return;
+
     const selectedItems = items.filter(it => selected.has(it.name));
     const label = selectedItems.length === 1
       ? '"' + selectedItems[0].name + '"'
@@ -3688,9 +3994,10 @@
     }
   }
 
-  // ---------- NEW FOLDER ----------
+  /* ---------------- NEW FOLDER ---------------- */
   async function openNewFolderModal() {
     if (!rootExists) { lockUploadsForMissingRoot(); return; }
+    if (!guardOnline()) return;
     const stillExists = await verifyRootFolderExists();
     if (!stillExists) {
       rootExists = false;
@@ -3713,6 +4020,8 @@
 
   async function confirmModal() {
     if (modalBusy) return;
+    if (!guardOnline()) return;
+
     const stillExists = await verifyRootFolderExists();
     if (!stillExists) {
       closeModal();
@@ -3744,7 +4053,7 @@
     }
   }
 
-  // ---------- SIDEBAR TOGGLE ----------
+  /* ---------------- SIDEBAR TOGGLE ---------------- */
   if (sideToggle) {
     sideToggle.addEventListener('click', () => {
       const hidden = layout.classList.toggle('side-hidden');
@@ -3753,7 +4062,7 @@
     });
   }
 
-  // ---------- DRAG & DROP ----------
+  /* ---------------- DRAG & DROP ---------------- */
   let dragDepth = 0;
   ['dragenter','dragover'].forEach(ev => {
     dropzone.addEventListener(ev, (e) => {
@@ -3784,6 +4093,8 @@
     dropzone.classList.remove('drag-over');
     dropzone.classList.remove('full');
 
+    if (!guardOnline()) return;
+
     const stillExists = await verifyRootFolderExists();
     if (!stillExists) {
       rootExists = false;
@@ -3799,7 +4110,7 @@
     await uploadEntries(collected);
   });
 
-  // ---------- SEARCH / SORT ----------
+  /* ---------------- SEARCH / SORT ---------------- */
   searchInput.addEventListener('input', () => {
     searchTerm = searchInput.value.trim();
     searchClear.hidden = !searchTerm;
@@ -3833,7 +4144,7 @@
     renderItems();
   });
 
-  // ---------- EVENTS ----------
+  /* ---------------- EVENTS ---------------- */
   uploadBtn.addEventListener('click', pickFiles);
   uploadFolderBtn.addEventListener('click', pickFolder);
 
@@ -3854,6 +4165,9 @@
   deleteBtn.addEventListener('click', doDelete);
   selectAllBtn.addEventListener('click', toggleSelectAll);
   heroRefresh.addEventListener('click', async () => {
+    const ok = await Connection.check(true);
+    Connection.restartTimer();
+    if (!ok) { showToast('Server unreachable — check your tunnel', 3500); return; }
     await ensureRootFolderExists();
     refresh();
     updateStorageInfo().catch(err => console.error(err));
@@ -3958,10 +4272,32 @@
   window.addEventListener('resize', closeContextMenu);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeContextMenu(); });
 
-  // ---------- INIT ----------
+  /* ============================================================================
+     RECONNECT HANDLER — when the tunnel comes back, reload everything cleanly
+     ============================================================================ */
+  Connection.setReconnectHandler(async () => {
+    const exists = await ensureRootFolderExists();
+    if (exists) {
+      await refresh();
+      updateStorageInfo().catch(err => console.error(err));
+    } else {
+      refresh();
+    }
+  });
+
+  /* ---------------- INIT ---------------- */
   (async function init() {
     buildIconPicker();
     setSelectedIcon(DEFAULT_ICON);
+
+    // Kick off connectivity monitoring first so the banner can appear early
+    Connection.check(true).then(ok => {
+      Connection.start();
+      if (!ok) {
+        // Still attempt local-only sidebar so the page isn't completely blank
+        renderSidebar();
+      }
+    });
 
     await loadCurrentUser();
     isSuperAdmin = isSuperAdminRole(currentUser);
@@ -3981,6 +4317,11 @@
     refresh();
     syncTopbarHeight();
   })();
+
+  /* Clean up any lingering object URLs when leaving the page */
+  window.addEventListener('beforeunload', () => {
+    revokePreviewUrl();
+  });
 })();
 </script>
 </body>
