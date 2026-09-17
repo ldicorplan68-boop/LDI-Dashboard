@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azrianna Bia - Birthday Invitation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { min-height: 100vh; background: radial-gradient(circle at center, #ffd9ec 0%, #c9a7e8 55%, #9b6fd0 100%); background-size: cover; background-position: center; background-repeat: no-repeat; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; }
+
+        /* Instant tiny placeholder (blurred, same colour family) */
+        #bg-placeholder {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            object-position: center;
+            z-index: -2;
+            filter: blur(10px) saturate(1.1);
+            transform: scale(1.08);
+            pointer-events: none;
+        }
+
+        #bg-img {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            object-position: center;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+            pointer-events: none;
+        }
+        #bg-img.loaded { opacity: 1; }
+
+        .overlay { min-height: 100vh; background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(75,0,130,0.4) 60%, rgba(138,43,226,0.5) 100%); padding-top: 5rem; }
+        .navbar { display: none; position: fixed; top: 0; left: 0; width: 100%; padding: 1rem 2rem; justify-content: center; gap: 1.5rem; background: rgba(75,0,130,0.8); backdrop-filter: blur(10px); z-index: 100; flex-wrap: wrap; }
+        .navbar.visible { display: flex; }
+        .navbar a { color: white; text-decoration: none; font-size: 0.9rem; padding: 8px 18px; border-radius: 25px; transition: all 0.3s ease; cursor: pointer; }
+        .navbar a:hover, .navbar a.active { background: rgba(138,43,226,0.6); transform: translateY(-2px); }
+        @media (max-width: 768px){
+            .navbar { padding: 0.4rem 0.5rem; gap: 0.3rem; top: 0; width: 100%; }
+            .navbar a { font-size: 0.7rem; padding: 4px 8px; border-radius: 12px; flex: 1 1 auto; text-align: center; white-space: nowrap; min-width: auto; }
+        }
+        .section { display: none; min-height: 100vh; }
+        .section.active { display: block; }
+        .content { text-align: center; color: white; padding: 2rem; }
+        .content h1 { font-size: 2.5rem; text-shadow: 2px 2px 8px rgba(0,0,0,0.5); margin-bottom: 1.5rem; }
+        .btn { display: inline-block; padding: 15px 40px; font-size: 1.1rem; color: white; background: linear-gradient(135deg, #8a2be2, #ff69b4); border: none; border-radius: 50px; cursor: pointer; text-decoration: none; box-shadow: 0 4px 15px rgba(138,43,226,0.4); transition: all 0.3s ease; }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(138,43,226,0.6); }
+        .container { display: flex; width: 100%; padding: 2rem; gap: 2rem; flex-wrap: wrap; }
+        .left-panel, .right-panel { flex: 1; display: flex; flex-direction: column; gap: 1.5rem; padding: 1rem; min-width: 280px; }
+        .info-card, .venue-card, .church-photo { background: rgba(75,0,130,0.6); backdrop-filter: blur(10px); border-radius: 20px; padding: 2rem; color: white; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        .info-card h2, .venue-card h2, .church-photo h2 { font-size: 1.5rem; margin-bottom: 1rem; text-shadow: 2px 2px 8px rgba(0,0,0,0.5); border-bottom: 2px solid rgba(255,105,180,0.5); padding-bottom: 0.5rem; }
+        .detail { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem; font-size: 1rem; }
+        .church-img-placeholder { width: 100%; height: 360px; background: rgba(255,255,255,0.2); border-radius: 15px; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(255,255,255,0.5); }
+        @media (max-width: 768px){ .church-img-placeholder { height: 260px; } }
+        .godparents-container { display: flex; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; }
+        .godparents-section { flex: 1; min-width: 250px; }
+        .godparents-section h2 { font-size: 1.5rem; color: #ff69b4; margin-bottom: 1rem; font-weight: 700; text-shadow: 2px 2px 8px rgba(0,0,0,0.5); }
+        .godparents-list { list-style: none; text-align: left; }
+        .godparents-list li { padding: 0.6rem 1rem 0.6rem 1.4rem; margin-bottom: 0.5rem; background: rgba(0,0,0,0.35); border-radius: 10px; border-left: 4px solid #ff69b4; color: #fff; font-size: 1.05rem; font-weight: 600; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1.5rem; max-width: 900px; margin: 0 auto 2rem; }
+        .gallery-item { position: relative; overflow: hidden; background: rgba(75,0,130,0.6); backdrop-filter: blur(10px); border-radius: 15px; padding: 1rem; min-height: 200px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.4s ease, box-shadow 0.4s ease; }
+        .gallery-item:hover { transform: scale(1.05) rotate(-1deg); box-shadow: 0 0 30px rgba(138,43,226,0.7), 0 12px 45px rgba(138,43,226,0.55); }
+        .gallery-item::after { content:''; position:absolute; top:-60%; left:-60%; width:220%; height:220%; background: conic-gradient(from 0deg, transparent 0deg, rgba(255,255,255,0.28) 90deg, transparent 180deg); animation: shimmer-sweep 3.5s linear infinite; opacity:0; transition: opacity 0.4s ease; pointer-events:none; }
+        .gallery-item:hover::after { opacity:1; }
+        .gallery-item img { width: 100%; height: 200px; object-fit: cover; border-radius: 10px; transition: transform 0.5s ease, filter 0.5s ease; }
+        .gallery-item:hover img { transform: scale(1.14); filter: brightness(1.12) saturate(1.25); }
+        .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; justify-content: center; align-items: center; }
+        .lightbox.active { display: flex; }
+        .lightbox-content { max-width: 90%; max-height: 90%; position: relative; animation: magicalIn 0.5s ease; }
+        .lightbox-content::before { content:''; position:absolute; inset:-16px; border-radius:34px; background: conic-gradient(from 0deg, rgba(255,105,180,0), rgba(255,105,180,0.55), rgba(138,43,226,0.55), rgba(255,215,0,0.4), rgba(255,105,180,0)); filter: blur(16px); -webkit-mask: radial-gradient(closest-side, transparent 62%, #000 100%); mask: radial-gradient(closest-side, transparent 62%, #000 100%); z-index:-1; animation: haloSpin 7s linear infinite; }
+        .lightbox-content img { max-width: 100%; max-height: 80vh; border-radius: 18px; box-shadow: 0 0 30px rgba(138,43,226,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 150px rgba(255,215,0,0.15); animation: sparkle 3.5s ease-in-out infinite; will-change: transform, opacity, filter; }
+        .lightbox-content img.magical { animation: morphIn 0.7s cubic-bezier(0.22,1.2,0.36,1), sparkle 3.5s ease-in-out 0.5s infinite; }
+        .lightbox-content img.transitioning { animation: photoOut 0.45s ease forwards; }
+        .lightbox-close { position: absolute; top: -50px; right: 0; color: white; font-size: 2.5rem; cursor: pointer; transition: all 0.3s ease; }
+        .lightbox-close:hover { color: #ff69b4; transform: scale(1.3) rotate(90deg); text-shadow: 0 0 18px rgba(255,105,180,0.9); }
+        .lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); color: white; font-size: 2rem; cursor: pointer; padding: 1rem; transition: all 0.3s ease; }
+        .lightbox-prev { left: -60px; } .lightbox-next { right: -60px; }
+        .lightbox-prev:hover, .lightbox-next:hover { color: #ff69b4; text-shadow: 0 0 18px rgba(255,105,180,0.9); transform: translateY(-50%) scale(1.25); }
+        .glitter-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; overflow: hidden; }
+        .glitter { position: absolute; width: 10px; height: 10px; background: radial-gradient(circle, rgba(255,215,0,1) 0%, rgba(255,105,180,0.8) 50%, transparent 100%); border-radius: 50%; animation: glitterFall linear infinite; opacity: 0; }
+        @keyframes glitterFall { 0% { transform: translateY(-100px) rotate(0deg) scale(0); opacity: 0; } 10% { opacity: 1; transform: translateY(0) rotate(36deg) scale(1); } 100% { transform: translateY(100vh) rotate(720deg) scale(0.5); opacity: 0; } } @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } } @keyframes magicalIn { from { transform: scale(0.5) rotate(-10deg); opacity: 0; filter: blur(10px); } to { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); } } @keyframes sparkle { 0%, 100% { box-shadow: 0 0 60px rgba(138,43,226,0.6), 0 0 120px rgba(255,105,180,0.3); } 50% { box-shadow: 0 0 80px rgba(255,105,180,0.8), 0 0 150px rgba(138,43,226,0.5), 0 0 200px rgba(255,255,255,0.2); } } @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } } @keyframes shimmer { 0%, 100% { filter: brightness(1) saturate(1); } 50% { filter: brightness(1.2) saturate(1.3); } } @keyframes morphIn { 0% { transform: scale(0.8) rotateY(90deg); filter: blur(20px) brightness(2); opacity: 0; } 50% { transform: scale(1.1) rotateY(0deg); filter: blur(5px) brightness(1.5); opacity: 0.8; } 100% { transform: scale(1) rotateY(0deg); filter: blur(0) brightness(1); opacity: 1; } }
+@keyframes photoOut { from { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0) brightness(1); } to { transform: scale(0.55) rotate(12deg) translateY(-24px); opacity: 0; filter: blur(16px) brightness(1.9); } } @keyframes haloSpin { 0% { transform: rotate(0deg) scale(0.92); } 100% { transform: rotate(360deg) scale(1.1); } } @keyframes shimmer-sweep { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- Instant, always-visible blurred placeholder (a few hundred bytes) -->
+    <img id="bg-placeholder"
+         alt=""
+         aria-hidden="true"
+         src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='70%25'%3E%3Cstop offset='0%25' stop-color='%23ffd9ec'/%3E%3Cstop offset='55%25' stop-color='%23c9a7e8'/%3E%3Cstop offset='100%25' stop-color='%239b6fd0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='32' height='32' fill='url(%23g)'/%3E%3C/svg%3E">
+
+    <!-- Full image is NOT in the src attribute. It lives in a text/plain script
+         so the HTML parser doesn't decode it during first paint. -->
+    <img id="bg-img" alt="" aria-hidden="true">
+
+    <script type="text/plain" id="bg-data">data:image/svg+xml;base64,{{YOUR_ORIGINAL_BASE64}}</script>
+
+    <!-- ===== Everything else in your body goes here, unchanged ===== -->
+    <!-- e.g. .overlay, .navbar, .section, .gallery, .lightbox, .glitter-container -->
+
+
+
+    <!-- Background loader: swap in the full image after first paint -->
+    <script>
+    (function () {
+        var full = document.getElementById('bg-img');
+        var dataEl = document.getElementById('bg-data');
+        if (!full || !dataEl) return;
+
+        var data = dataEl.textContent.trim();
+        if (!data || data.indexOf('{{') === 0) return; // placeholder still there
+
+        function reveal() {
+            full.src = data;
+            full.onload = function () { full.classList.add('loaded'); };
+            if (full.complete) full.classList.add('loaded');
+        }
+
+        // Wait for the browser to finish its first paint, then decode the big image.
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(reveal, { timeout: 1200 });
+        } else {
+            window.addEventListener('load', function () {
+                setTimeout(reveal, 60);
+            });
+        }
+    })();
+    </script>
+
+</body>
+</html>
