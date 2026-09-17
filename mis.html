@@ -982,6 +982,127 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ================= PENDING / RESUMABLE UPLOADS ================= */
+    .fm-pending-fab {
+      position: fixed;
+      right: 20px;
+      bottom: calc(20px + var(--safe-bottom));
+      z-index: 290;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--amber), #d4880f);
+      color: #101425;
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px 12px 14px;
+      font: 700 13px 'DM Sans', sans-serif;
+      cursor: pointer;
+      box-shadow: 0 10px 28px rgba(245, 166, 35, .55);
+      animation: fmToastIn .25s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .fm-pending-fab:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 34px rgba(245, 166, 35, .65);
+      background: linear-gradient(135deg, #f5a623, #c47d0c);
+    }
+    .fm-pending-fab:active { transform: translateY(0); }
+    .fm-pending-fab-icon { font-size: 15px; line-height: 1; }
+    .fm-pending-fab-count {
+      background: #101425;
+      color: #fff;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-left: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .fm-pending-modal { max-width: 540px; }
+    .fm-pending-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 340px;
+      overflow-y: auto;
+      padding: 4px 2px;
+      margin: 14px 0 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .fm-pending-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f7f9fd;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      flex-wrap: wrap;
+    }
+    .fm-pending-row-icon {
+      font-size: 20px;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .fm-pending-row-info { flex: 1; min-width: 0; }
+    .fm-pending-row-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .fm-pending-row-meta {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-top: 3px;
+    }
+    .fm-pending-row-progress {
+      height: 4px;
+      background: #e0e5f0;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .fm-pending-row-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--royal-2), var(--sky));
+      width: 0%;
+      transition: width var(--smooth);
+    }
+    .fm-pending-row-fill.done {
+      background: linear-gradient(90deg, #16a34a, #22c55e);
+    }
+    .fm-pending-row-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .fm-pending-empty {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--muted);
+      font-size: 13px;
+      font-style: italic;
+      background: #f7f9fd;
+      border: 1px dashed var(--border-strong);
+      border-radius: 10px;
+    }
+    .fm-pending-row.busy { opacity: .7; pointer-events: none; }
+    .fm-pending-row.resuming { border-color: var(--royal); background: #eef1fb; }
+
     /* ==========================================================================
        RESPONSIVE BREAKPOINTS — LAPTOP, DESKTOP, TABLET, PHONE
        ========================================================================== */
@@ -1123,6 +1244,10 @@
       .fm-toast { left: 14px; right: 14px; transform: none; bottom: 14px; bottom: calc(14px + var(--safe-bottom)); }
 
       .conn-banner { font-size: 11.5px; padding: 8px 12px; }
+
+      .fm-pending-fab { right: 14px; bottom: calc(14px + var(--safe-bottom)); padding: 10px 14px 10px 12px; font-size: 12px; }
+      .fm-pending-modal { max-width: 100%; }
+      .fm-pending-row-actions { width: 100%; justify-content: flex-end; }
     }
 
     @media (max-width: 480px) {
@@ -1188,6 +1313,9 @@
       .fm-progress-title { font-size: 12.5px; }
       .fm-progress-cancel { padding: 4px 10px; font-size: 10.5px; }
       .fm-toast { padding: 10px 14px; font-size: 12.5px; }
+
+      .fm-pending-fab { padding: 9px 12px 9px 10px; font-size: 11.5px; gap: 6px; }
+      .fm-pending-fab-count { padding: 2px 6px; font-size: 10px; }
     }
 
     @media (max-width: 359px) {
@@ -1215,7 +1343,7 @@
 
     @media (hover: none) and (pointer: coarse) {
       .button, .hero-btn, .side-btn, .fm-item, .manage-icon-btn,
-      .icon-choice, .fm-crumb, .fm-choice-btn {
+      .icon-choice, .fm-crumb, .fm-choice-btn, .fm-pending-fab {
         -webkit-tap-highlight-color: transparent;
       }
       .button:active, .hero-btn:active, .side-btn:active {
@@ -1229,6 +1357,7 @@
       .hero-btn:hover { transform: none; box-shadow: 0 4px 12px rgba(0,0,0,.22); }
       .hero-refresh:hover { background: rgba(255,255,255,.14); color: #fff; }
       .fm-crumb:hover { background: transparent; }
+      .fm-pending-fab:hover { transform: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1506,6 +1635,31 @@
 
 <div class="fm-toast" id="fm-toast" hidden></div>
 
+<!-- Floating indicator: shows up whenever there are unfinished uploads -->
+<button class="fm-pending-fab" id="fm-pending-fab" hidden type="button">
+  <span class="fm-pending-fab-icon">&#9208;&#65039;</span>
+  <span class="fm-pending-fab-text">Resume Uploads</span>
+  <span class="fm-pending-fab-count" id="fm-pending-fab-count">0</span>
+</button>
+
+<!-- Pending uploads modal -->
+<div class="fm-modal-overlay" id="fm-pending-modal" hidden>
+  <div class="fm-modal fm-pending-modal">
+    <div class="fm-alert-icon warn">&#9208;&#65039;</div>
+    <h3 style="text-align:center">Unfinished Uploads</h3>
+    <p class="fm-alert-message">
+      These uploads were interrupted. Click <strong>Resume</strong> to continue
+      from where they stopped &mdash; already-uploaded chunks are not sent again.
+      If the page was reloaded, you'll be asked to re-select the file.
+    </p>
+    <div class="fm-pending-list" id="fm-pending-list"></div>
+    <div class="fm-modal-actions" style="justify-content:space-between;margin-top:16px">
+      <button class="button fm-btn-light" id="fm-pending-clear" type="button">Discard All</button>
+      <button class="button primary" id="fm-pending-close" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
 <script src="connect.js"></script>
 <script>
 /* ============================================================================
@@ -1605,12 +1759,17 @@
 <script>
 /* ============================================================================
    ART FILE MANAGER — BLOB-BASED PREVIEW/DOWNLOAD + CONNECTION GUARD
+   + RESUMABLE (TUS) UPLOADS WITH RESUME BUTTON
    ============================================================================
-   Key fix:
-   - Every file is now fetched through the authenticated Supabase Storage API
+   Key fixes vs. original:
+   - Every file is fetched through the authenticated Supabase Storage API
      (with apikey + Authorization headers) and turned into a local Blob URL.
-   - Previews and downloads NEVER depend on the public bucket URL or on a new
-     browser tab hitting the Cloudflare tunnel.
+   - Previews and downloads NEVER depend on the public bucket URL.
+   - Uploads of small files use a size-scaled timeout and are retried with
+     exponential backoff on transient errors.
+   - Uploads of large files (>= 6 MB) use Supabase's TUS resumable endpoint
+     so a failed upload can be resumed from the last successful chunk, even
+     after a page reload.
    - A connection monitor pings the backend; if the Cloudflare tunnel drops,
      a banner appears and everything recovers automatically when it's back.
    ============================================================================ */
@@ -1624,6 +1783,25 @@
   const FETCH_TIMEOUT = 20000;
   const PING_TIMEOUT  = 8000;
   const CONCURRENCY   = 4;
+
+  // --- Upload tuning -----------------------------------------------------
+  const UPLOAD_CONCURRENCY     = 2;        // tunnel-friendly
+  const UPLOAD_TIMEOUT_BASE_MS = 60000;    // 60s floor
+  const UPLOAD_TIMEOUT_PER_MB  = 10000;    // +10s per MB
+  const UPLOAD_TIMEOUT_MAX_MS  = 300000;   // 5 min ceiling
+  const UPLOAD_MAX_ATTEMPTS    = 4;        // 1 try + 3 retries
+
+  // --- Resumable (TUS) upload tuning ------------------------------------
+  const UPLOAD_RESUMABLE_THRESHOLD = 6 * 1024 * 1024;   // 6 MB
+  const TUS_CHUNK_SIZE             = 6 * 1024 * 1024;   // must stay 6 MB
+  const UPLOAD_STATE_KEY           = 'ldi_pending_uploads_v1';
+  const UPLOAD_STATE_MAX_AGE_MS    = 7 * 24 * 60 * 60 * 1000;  // 7 days
+
+  const RETRYABLE_STATUS = new Set([
+    408, 425, 429, 500, 502, 503, 504,
+    520, 521, 522, 523, 524, 525, 527     // Cloudflare-family codes
+  ]);
+
   const PREVIEW_MAX_BYTES = 60 * 1024 * 1024; // 60 MB hard cap for in-browser preview
 
   const DEFAULT_ICON = '\uD83D\uDCC1';
@@ -1751,7 +1929,6 @@
   }
   applyBranding();
 
-  // Hide broken branding image instead of showing a broken icon
   if (navLogo) {
     navLogo.addEventListener('error', () => { navLogo.style.display = 'none'; });
   }
@@ -1799,7 +1976,7 @@
   let activeUploadController = null;
   let conflictState    = null;
   let previewItem      = null;
-  let previewObjectUrl = null;      // revoked on close
+  let previewObjectUrl = null;
   let previewAbort     = null;
 
   let deleteCancelRequested = false;
@@ -1807,7 +1984,6 @@
 
   /* ============================================================================
      CONNECTION MANAGER
-     Detects Cloudflare tunnel / backend outages and recovers automatically.
      ============================================================================ */
   const Connection = (function(){
     let online = true;
@@ -1851,7 +2027,6 @@
           cache: 'no-store'
         });
         clearTimeout(timer);
-        // Any HTTP response < 500 means the tunnel + backend answered.
         return res.status < 500;
       } catch (e) {
         clearTimeout(timer);
@@ -1879,7 +2054,6 @@
     function start() {
       if (intervalId) return;
       intervalId = setInterval(() => {
-        // Only actively re-check while offline; otherwise gentle background ping
         check(false);
       }, online ? 45000 : 10000);
     }
@@ -2466,19 +2640,6 @@
     } catch (err) { return false; }
   }
 
-  async function uploadOne(fullPath, file, signal) {
-    const res = await fetchT(`${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}/${encodePath(fullPath)}`, {
-      method: 'POST',
-      headers: authHeaders({
-        'Content-Type': file.type || 'application/octet-stream',
-        'x-upsert': 'true'
-      }),
-      body: file
-    }, signal);
-    if (!res.ok) throw new Error('Upload failed (' + file.name + '): ' + await res.text());
-    return res.json().catch(() => ({}));
-  }
-
   async function deleteMany(paths) {
     const res = await fetchT(`${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}`, {
       method: 'DELETE',
@@ -2517,15 +2678,12 @@
   }
 
   /* ============================================================================
-     ★★★ THE CORE FIX — AUTHENTICATED BLOB FETCH ★★★
-     Downloads a storage object as a Blob using the Storage API with headers.
-     Falls back to the public URL only if the authenticated route fails.
+     AUTHENTICATED BLOB FETCH — previews/downloads never touch the public URL
      ============================================================================ */
   async function fetchObjectBlob(fullPath, signal) {
     const apiUrl = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}/${encodePath(fullPath)}`;
     let lastErr = null;
 
-    // 1) Authenticated route — works with private buckets and through the tunnel
     try {
       const res = await fetchT(apiUrl, { method: 'GET', headers: authHeaders() }, signal);
       if (res.ok) return await res.blob();
@@ -2534,7 +2692,6 @@
       lastErr = err;
     }
 
-    // 2) Public route fallback
     try {
       const pub = getPublicUrl(fullPath);
       const res = await fetchT(pub, { method: 'GET' }, signal);
@@ -3267,7 +3424,7 @@
   }
 
   /* ============================================================================
-     PREVIEW SYSTEM — fully blob based, no public URL dependency
+     PREVIEW SYSTEM — fully blob based
      ============================================================================ */
   function getFileExtension(name) {
     return (name.split('.').pop() || '').toLowerCase();
@@ -3332,7 +3489,6 @@
 
     if (!guardOnline()) return;
 
-    // Reset any previous preview
     closePreview(true);
 
     previewItem = item;
@@ -3367,7 +3523,6 @@
     }
     previewAbort = null;
 
-    // If the user closed the preview while loading, abort quietly
     if (!previewItem || previewItem.name !== fileName || previewOverlay.hidden) return;
 
     try {
@@ -3607,8 +3762,7 @@
     previewOverlay.hidden = true;
     previewBody.innerHTML = '';
     previewItem = null;
-    if (!silent) document.body.style.overflow = '';
-    else document.body.style.overflow = '';
+    document.body.style.overflow = '';
   }
 
   previewCloseBtn.addEventListener('click', () => closePreview());
@@ -3847,6 +4001,376 @@
     progressCancelBtn.disabled = false;
   }
 
+  /* ============================================================================
+     UPLOAD HELPERS
+     ============================================================================ */
+
+  function sleep(ms, signal) {
+    return new Promise((resolve, reject) => {
+      if (signal && signal.aborted) {
+        return reject(new DOMException('Aborted', 'AbortError'));
+      }
+      const t = setTimeout(resolve, ms);
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          clearTimeout(t);
+          reject(new DOMException('Aborted', 'AbortError'));
+        }, { once: true });
+      }
+    });
+  }
+
+  /**
+   * Single small-file upload attempt. Size-scaled timeout, retryable flag on
+   * the error object.
+   */
+  async function uploadOne(fullPath, file, outerSignal) {
+    const sizeMB  = (file && file.size ? file.size : 0) / 1048576;
+    const timeout = Math.min(
+      UPLOAD_TIMEOUT_MAX_MS,
+      UPLOAD_TIMEOUT_BASE_MS + sizeMB * UPLOAD_TIMEOUT_PER_MB
+    );
+
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeout);
+    const onOuterAbort = () => ctrl.abort();
+
+    if (outerSignal) {
+      if (outerSignal.aborted) {
+        clearTimeout(timer);
+        throw new DOMException('Aborted', 'AbortError');
+      }
+      outerSignal.addEventListener('abort', onOuterAbort, { once: true });
+    }
+
+    const url = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}/${encodePath(fullPath)}`;
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: authHeaders({
+          'Content-Type': file.type || 'application/octet-stream',
+          'x-upsert': 'true'
+        }),
+        body: file,
+        signal: ctrl.signal
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        const err  = new Error(
+          'HTTP ' + res.status + ' — ' + (text.slice(0, 180) || res.statusText)
+        );
+        err.status    = res.status;
+        err.retryable = RETRYABLE_STATUS.has(res.status);
+        throw err;
+      }
+      return res.json().catch(() => ({}));
+    } catch (err) {
+      if (err && err.name === 'AbortError') {
+        if (outerSignal && outerSignal.aborted) throw err;
+        const e = new Error('Timed out after ' + Math.round(timeout / 1000) + 's');
+        e.retryable = true;
+        throw e;
+      }
+      if (err && err.retryable === undefined) err.retryable = true;
+      throw err;
+    } finally {
+      clearTimeout(timer);
+      if (outerSignal) outerSignal.removeEventListener('abort', onOuterAbort);
+    }
+  }
+
+  /* ============================================================================
+     RESUMABLE (TUS) UPLOADS
+     ============================================================================ */
+
+  const resumableSessions = new Map();
+
+  function makeFingerprint(file, fullPath) {
+    return [
+      file.name,
+      String(file.size),
+      String(file.lastModified || 0),
+      fullPath
+    ].join('|');
+  }
+
+  function b64encode(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  function buildTusMetadata(map) {
+    return Object.keys(map)
+      .filter(k => map[k] != null && map[k] !== '')
+      .map(k => k + ' ' + b64encode(String(map[k])))
+      .join(',');
+  }
+
+  function persistSessions() {
+    try {
+      const arr = [];
+      resumableSessions.forEach(s => {
+        arr.push({
+          fingerprint: s.fingerprint,
+          name: s.name,
+          size: s.size,
+          lastModified: s.lastModified,
+          fullPath: s.fullPath,
+          bucket: s.bucket,
+          folder: s.folder,
+          uploadUrl: s.uploadUrl,
+          offset: s.offset,
+          createdAt: s.createdAt,
+          updatedAt: s.updatedAt
+        });
+      });
+      localStorage.setItem(UPLOAD_STATE_KEY, JSON.stringify(arr));
+    } catch (e) {
+      // Quota or privacy mode — sessions just won't survive a reload.
+    }
+  }
+
+  function loadPersistedSessions() {
+    try {
+      const raw = localStorage.getItem(UPLOAD_STATE_KEY);
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return;
+      const now = Date.now();
+      arr.forEach(s => {
+        if (!s || !s.fingerprint) return;
+        if (s.bucket !== BUCKET || s.folder !== ROOT) return;
+        if (!s.uploadUrl) return;
+        if (typeof s.offset !== 'number' || s.offset >= s.size) return;
+        if (now - (s.updatedAt || 0) > UPLOAD_STATE_MAX_AGE_MS) return;
+        resumableSessions.set(s.fingerprint, Object.assign({}, s, { file: null }));
+      });
+    } catch (e) {}
+  }
+
+  async function createTusUpload(fullPath, file, signal) {
+    const url = SUPABASE_URL + '/storage/v1/upload/resumable';
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: Object.assign(authHeaders(), {
+        'Tus-Resumable': '1.0.0',
+        'Upload-Length': String(file.size),
+        'Upload-Metadata': buildTusMetadata({
+          bucketName: BUCKET,
+          objectName: fullPath,
+          contentType: file.type || 'application/octet-stream',
+          cacheControl: '3600'
+        }),
+        'x-upsert': 'true'
+      }),
+      signal
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      const err = new Error('TUS init failed: HTTP ' + res.status +
+        (body ? ' — ' + body.slice(0, 180) : ''));
+      err.retryable = RETRYABLE_STATUS.has(res.status) || res.status >= 500;
+      throw err;
+    }
+
+    let location = res.headers.get('Location');
+    if (!location) {
+      const err = new Error('TUS init: server did not return a Location header');
+      err.retryable = false;
+      throw err;
+    }
+    if (!/^https?:/i.test(location)) {
+      location = new URL(location, SUPABASE_URL).toString();
+    }
+    return location;
+  }
+
+  async function tusGetOffset(uploadUrl, signal) {
+    const res = await fetch(uploadUrl, {
+      method: 'HEAD',
+      headers: Object.assign(authHeaders(), { 'Tus-Resumable': '1.0.0' }),
+      signal
+    });
+    if (!res.ok) {
+      const err = new Error('TUS head: HTTP ' + res.status);
+      err.retryable = RETRYABLE_STATUS.has(res.status);
+      throw err;
+    }
+    const hdr = res.headers.get('Upload-Offset');
+    return hdr ? parseInt(hdr, 10) : 0;
+  }
+
+  async function tusUploadChunk(uploadUrl, chunk, offset, signal) {
+    const res = await fetch(uploadUrl, {
+      method: 'PATCH',
+      headers: Object.assign(authHeaders(), {
+        'Tus-Resumable': '1.0.0',
+        'Upload-Offset': String(offset),
+        'Content-Type': 'application/offset+octet-stream'
+      }),
+      body: chunk,
+      signal
+    });
+
+    if (res.status !== 204 && !res.ok) {
+      const body = await res.text().catch(() => '');
+      const err = new Error('TUS chunk: HTTP ' + res.status +
+        (body ? ' — ' + body.slice(0, 180) : ''));
+      err.retryable = RETRYABLE_STATUS.has(res.status) || res.status >= 500;
+      throw err;
+    }
+
+    const hdr = res.headers.get('Upload-Offset');
+    return hdr ? parseInt(hdr, 10) : offset + chunk.size;
+  }
+
+  async function tusDelete(uploadUrl) {
+    try {
+      await fetch(uploadUrl, {
+        method: 'DELETE',
+        headers: Object.assign(authHeaders(), { 'Tus-Resumable': '1.0.0' })
+      });
+    } catch (e) { /* best effort */ }
+  }
+
+  async function runTusUpload(session, signal) {
+    const file = session.file;
+    if (!file) throw new Error('File reference missing — please re-select the file');
+
+    if (session.uploadUrl && session.offset > 0) {
+      try {
+        const serverOffset = await tusGetOffset(session.uploadUrl, signal);
+        session.offset = serverOffset;
+      } catch (err) {
+        session.uploadUrl = null;
+        session.offset = 0;
+      }
+    }
+
+    if (!session.uploadUrl) {
+      session.uploadUrl = await createTusUpload(session.fullPath, file, signal);
+      session.offset = 0;
+    }
+
+    while (session.offset < file.size) {
+      if (signal && signal.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+      }
+      const end   = Math.min(session.offset + TUS_CHUNK_SIZE, file.size);
+      const chunk = file.slice(session.offset, end);
+      const next  = await tusUploadChunk(session.uploadUrl, chunk, session.offset, signal);
+      session.offset    = next;
+      session.updatedAt = Date.now();
+      persistSessions();
+    }
+  }
+
+  function makePausedError(session, cause) {
+    const err = new Error((cause && cause.message) || 'Upload paused');
+    err.name = 'UploadPausedError';
+    err.session = session;
+    err.resumable = true;
+    err.cause = cause;
+    return err;
+  }
+
+  async function uploadLargeResumable(fullPath, file, outerSignal, existingSession) {
+    const fingerprint = makeFingerprint(file, fullPath);
+    let session = existingSession || resumableSessions.get(fingerprint);
+
+    if (!session) {
+      session = {
+        fingerprint: fingerprint,
+        name: file.name,
+        size: file.size,
+        lastModified: file.lastModified || 0,
+        fullPath: fullPath,
+        bucket: BUCKET,
+        folder: ROOT,
+        uploadUrl: null,
+        offset: 0,
+        file: file,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      resumableSessions.set(fingerprint, session);
+    } else {
+      session.file = file;
+      session.updatedAt = Date.now();
+    }
+    persistSessions();
+
+    let lastErr = null;
+    for (let attempt = 0; attempt < UPLOAD_MAX_ATTEMPTS; attempt++) {
+      if (outerSignal && outerSignal.aborted) {
+        persistSessions();
+        throw new DOMException('Aborted', 'AbortError');
+      }
+      if (attempt > 0) {
+        const backoff = Math.min(20000, 800 * Math.pow(2, attempt - 1));
+        await sleep(backoff + Math.random() * 600, outerSignal);
+      }
+
+      try {
+        await runTusUpload(session, outerSignal);
+        resumableSessions.delete(fingerprint);
+        persistSessions();
+        renderPendingUploads();
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          persistSessions();
+          throw err;
+        }
+        lastErr = err;
+        persistSessions();
+        if (err && err.retryable === false) break;
+      }
+    }
+
+    persistSessions();
+    renderPendingUploads();
+    throw makePausedError(session, lastErr);
+  }
+
+  /**
+   * Small files: single POST with retries.
+   * Large files: TUS pipeline with resume.
+   */
+  async function uploadWithRetry(fullPath, file, outerSignal) {
+    if (file.size >= UPLOAD_RESUMABLE_THRESHOLD) {
+      return await uploadLargeResumable(fullPath, file, outerSignal);
+    }
+
+    let lastErr = null;
+
+    for (let attempt = 0; attempt < UPLOAD_MAX_ATTEMPTS; attempt++) {
+      if (outerSignal && outerSignal.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+      }
+
+      if (attempt > 0) {
+        const backoff = Math.min(20000, 800 * Math.pow(2, attempt - 1));
+        const jitter  = Math.random() * 600;
+        await sleep(backoff + jitter, outerSignal);
+      }
+
+      try {
+        return await uploadOne(fullPath, file, outerSignal);
+      } catch (err) {
+        if (err && err.name === 'AbortError') throw err;
+        lastErr = err;
+        if (err && err.retryable === false) throw err;
+      }
+    }
+    throw lastErr || new Error('Upload failed after retries');
+  }
+
+  /* ============================================================================
+     UPLOAD ENTRY
+     ============================================================================ */
   async function uploadEntries(entries) {
     if (!guardOnline()) return;
 
@@ -3900,6 +4424,9 @@
     progressStart('Uploading ' + total + ' file' + (total === 1 ? '' : 's') + '…', true);
     progressUpdate(0, total, '');
 
+    const failures = [];
+    let paused = 0;
+
     async function worker() {
       while (true) {
         if (uploadCancelRequested) return;
@@ -3908,19 +4435,36 @@
         const entry = toUpload[myIndex];
         const rel = normalizeRel(entry.relativePath);
         const fullPath = folderPrefix() + rel;
+
         try {
-          await uploadOne(fullPath, entry.file, signal);
+          await uploadWithRetry(fullPath, entry.file, signal);
           done++;
         } catch (err) {
-          if (uploadCancelRequested || signal.aborted) return;
-          failed++;
+          if (err && err.name === 'AbortError') {
+            if (entry.file.size >= UPLOAD_RESUMABLE_THRESHOLD) {
+              const fp = makeFingerprint(entry.file, fullPath);
+              if (resumableSessions.has(fp)) paused++;
+            }
+            return;
+          }
+          if (err && err.name === 'UploadPausedError') {
+            paused++;
+            console.warn('[upload] paused (resumable):', entry.file.name);
+          } else {
+            failed++;
+            failures.push({
+              name: entry.file.name,
+              error: (err && err.message) || String(err)
+            });
+            console.error('[upload] failed:', entry.file.name, err);
+          }
         }
         progressUpdate(done + failed, total, entry.file.name);
       }
     }
 
     const workers = [];
-    for (let i = 0; i < Math.min(CONCURRENCY, total); i++) workers.push(worker());
+    for (let i = 0; i < Math.min(UPLOAD_CONCURRENCY, total); i++) workers.push(worker());
     await Promise.all(workers);
 
     const wasCancelled = uploadCancelRequested;
@@ -3929,15 +4473,275 @@
     progressEnd();
 
     if (wasCancelled) {
-      showToast('Upload cancelled — ' + done + ' of ' + total + ' file' + (total === 1 ? '' : 's') + ' uploaded', 4200);
-    } else if (failed === 0) {
+      const msg = paused > 0
+        ? 'Upload cancelled — ' + done + ' uploaded, ' + paused + ' can be resumed'
+        : 'Upload cancelled — ' + done + ' of ' + total + ' uploaded';
+      showToast(msg, 4800);
+    } else if (failed === 0 && paused === 0) {
       showToast('Uploaded ' + done + ' file' + (done === 1 ? '' : 's'));
+    } else if (paused > 0 && failed === 0) {
+      showToast(
+        done + ' uploaded, ' + paused + ' paused — click "Resume Uploads" to continue',
+        6500
+      );
     } else {
-      showToast('Uploaded ' + done + ' / ' + total + ' (' + failed + ' failed)', 4000);
+      const first = failures[0];
+      showToast(
+        'Uploaded ' + done + ' / ' + total +
+        (paused ? ' — ' + paused + ' paused' : '') +
+        (failed ? ' — ' + failed + ' failed' : '') +
+        (first ? ' (' + first.name + ': ' + first.error + ')' : '') +
+        '  •  see console for details',
+        8000
+      );
     }
 
+    renderPendingUploads();
     await refresh();
     updateStorageInfo().catch(err => console.error(err));
+  }
+
+  /* ============================================================================
+     PENDING UPLOADS UI — the "Resume" surface
+     ============================================================================ */
+
+  function renderPendingUploads() {
+    const fab   = document.getElementById('fm-pending-fab');
+    const count = document.getElementById('fm-pending-fab-count');
+    if (!fab || !count) return;
+
+    const n = resumableSessions.size;
+    if (n === 0) {
+      fab.hidden = true;
+    } else {
+      fab.hidden = false;
+      count.textContent = String(n);
+    }
+    renderPendingModalList();
+  }
+
+  function openPendingModal() {
+    renderPendingModalList();
+    const m = document.getElementById('fm-pending-modal');
+    if (m) m.hidden = false;
+  }
+
+  function closePendingModal() {
+    const m = document.getElementById('fm-pending-modal');
+    if (m) m.hidden = true;
+  }
+
+  function renderPendingModalList() {
+    const list = document.getElementById('fm-pending-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (resumableSessions.size === 0) {
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'fm-pending-empty';
+      emptyEl.textContent = 'No unfinished uploads.';
+      list.appendChild(emptyEl);
+      return;
+    }
+
+    resumableSessions.forEach(session => {
+      const pct = session.size > 0
+        ? Math.min(100, Math.round((session.offset / session.size) * 100))
+        : 0;
+
+      const row = document.createElement('div');
+      row.className = 'fm-pending-row';
+      row.dataset.fp = session.fingerprint;
+
+      const icon = document.createElement('div');
+      icon.className = 'fm-pending-row-icon';
+      icon.textContent = fileIcon(session.name);
+
+      const info = document.createElement('div');
+      info.className = 'fm-pending-row-info';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'fm-pending-row-name';
+      nameEl.textContent = session.name;
+      nameEl.title = session.name;
+
+      const metaEl = document.createElement('div');
+      metaEl.className = 'fm-pending-row-meta';
+      metaEl.textContent = formatBytes(session.offset) + ' of ' +
+        formatBytes(session.size) + ' · ' + pct + '%' +
+        (session.file ? '' : ' · re-select required');
+
+      const prog = document.createElement('div');
+      prog.className = 'fm-pending-row-progress';
+      const fill = document.createElement('div');
+      fill.className = 'fm-pending-row-fill';
+      fill.style.width = pct + '%';
+      if (pct >= 100) fill.classList.add('done');
+      prog.appendChild(fill);
+
+      info.appendChild(nameEl);
+      info.appendChild(metaEl);
+      info.appendChild(prog);
+
+      const actions = document.createElement('div');
+      actions.className = 'fm-pending-row-actions';
+
+      const resumeBtn = document.createElement('button');
+      resumeBtn.type = 'button';
+      resumeBtn.className = 'button small primary';
+      resumeBtn.textContent = '▶ Resume';
+      resumeBtn.addEventListener('click', () => resumeSession(session.fingerprint));
+
+      const discardBtn = document.createElement('button');
+      discardBtn.type = 'button';
+      discardBtn.className = 'button small fm-btn-light';
+      discardBtn.textContent = 'Discard';
+      discardBtn.addEventListener('click', () => discardSession(session.fingerprint));
+
+      actions.appendChild(resumeBtn);
+      actions.appendChild(discardBtn);
+
+      row.appendChild(icon);
+      row.appendChild(info);
+      row.appendChild(actions);
+      list.appendChild(row);
+    });
+  }
+
+  function pickFileForResume(session) {
+    return new Promise(resolve => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.style.display = 'none';
+      input.setAttribute('accept', '*/*');
+
+      const cleanup = () => {
+        if (input.parentNode) input.parentNode.removeChild(input);
+      };
+
+      input.addEventListener('change', () => {
+        const f = input.files && input.files[0];
+        cleanup();
+        if (!f) { resolve(null); return; }
+        if (f.name !== session.name || f.size !== session.size) {
+          showToast(
+            'Selected file does not match — need "' + session.name + '" (' +
+            formatBytes(session.size) + ')',
+            6000
+          );
+          resolve(null);
+          return;
+        }
+        resolve(f);
+      });
+      input.addEventListener('cancel', () => { cleanup(); resolve(null); });
+
+      document.body.appendChild(input);
+      input.click();
+    });
+  }
+
+  async function resumeSession(fingerprint) {
+    const session = resumableSessions.get(fingerprint);
+    if (!session) return;
+    if (!guardOnline()) return;
+
+    const list = document.getElementById('fm-pending-list');
+    const row  = list ? list.querySelector('[data-fp="' + CSS.escape(fingerprint) + '"]') : null;
+    if (row) row.classList.add('resuming');
+
+    let file = session.file;
+    if (!file) {
+      file = await pickFileForResume(session);
+      if (!file) {
+        if (row) row.classList.remove('resuming');
+        return;
+      }
+      session.file = file;
+    }
+
+    const stillExists = await verifyRootFolderExists();
+    if (!stillExists) {
+      rootExists = false;
+      lockUploadsForMissingRoot();
+      if (row) row.classList.remove('resuming');
+      return;
+    }
+
+    progressStart('Resuming "' + session.name + '"…', true);
+    progressUpdate(0, 1, session.name);
+    progressFill.style.width = '5%';
+
+    activeUploadController = new AbortController();
+    const signal = activeUploadController.signal;
+    uploadCancelRequested = false;
+
+    const progressTimer = setInterval(() => {
+      const pct = session.size > 0
+        ? Math.min(100, Math.round((session.offset / session.size) * 100))
+        : 0;
+      progressFill.style.width = pct + '%';
+      if (row) {
+        const f = row.querySelector('.fm-pending-row-fill');
+        const m = row.querySelector('.fm-pending-row-meta');
+        if (f) f.style.width = pct + '%';
+        if (m) m.textContent = formatBytes(session.offset) + ' of ' +
+          formatBytes(session.size) + ' · ' + pct + '%';
+      }
+    }, 350);
+
+    try {
+      await uploadLargeResumable(session.fullPath, file, signal, session);
+      clearInterval(progressTimer);
+      progressFill.style.width = '100%';
+      progressEnd();
+      showToast('Resumed and completed: ' + session.name, 3200);
+      resumableSessions.delete(fingerprint);
+      persistSessions();
+      renderPendingUploads();
+      await refresh();
+      updateStorageInfo().catch(err => console.error(err));
+    } catch (err) {
+      clearInterval(progressTimer);
+      progressEnd();
+      if (err && err.name === 'AbortError') {
+        showToast('Resume cancelled — progress kept', 3200);
+      } else {
+        showToast('Resume failed: ' + ((err && err.message) || err), 4500);
+      }
+      if (row) row.classList.remove('resuming');
+      renderPendingUploads();
+    } finally {
+      activeUploadController = null;
+      uploadCancelRequested = false;
+      progressCancelBtn.hidden = true;
+    }
+  }
+
+  async function discardSession(fingerprint) {
+    const session = resumableSessions.get(fingerprint);
+    if (!session) return;
+    if (!confirm('Discard the unfinished upload of "' + session.name + '"?\n' +
+                 'The partial data on the server will be deleted.')) return;
+
+    if (session.uploadUrl) await tusDelete(session.uploadUrl);
+    resumableSessions.delete(fingerprint);
+    persistSessions();
+    renderPendingUploads();
+    showToast('Discarded "' + session.name + '"', 2600);
+  }
+
+  async function discardAllSessions() {
+    if (resumableSessions.size === 0) return;
+    if (!confirm('Discard all ' + resumableSessions.size + ' unfinished upload(s)?')) return;
+    const sessions = Array.from(resumableSessions.values());
+    resumableSessions.clear();
+    persistSessions();
+    renderPendingUploads();
+    for (const s of sessions) {
+      if (s.uploadUrl) await tusDelete(s.uploadUrl);
+    }
+    showToast('Discarded ' + sessions.length + ' unfinished upload(s)', 3000);
   }
 
   async function doDelete() {
@@ -4237,6 +5041,28 @@
     conflictState.render();
   });
 
+  /* ---------------- PENDING UPLOADS UI WIRING ---------------- */
+  (function wirePendingUI() {
+    const fab        = document.getElementById('fm-pending-fab');
+    const pendingModal = document.getElementById('fm-pending-modal');
+    const closeBtn   = document.getElementById('fm-pending-close');
+    const clearBtn   = document.getElementById('fm-pending-clear');
+
+    if (fab) fab.addEventListener('click', openPendingModal);
+    if (closeBtn) closeBtn.addEventListener('click', closePendingModal);
+    if (clearBtn) clearBtn.addEventListener('click', discardAllSessions);
+    if (pendingModal) {
+      pendingModal.addEventListener('click', e => {
+        if (e.target === pendingModal) closePendingModal();
+      });
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && pendingModal && !pendingModal.hidden) {
+        closePendingModal();
+      }
+    });
+  })();
+
   if (manageSidebarBtn) manageSidebarBtn.addEventListener('click', openManageModal);
   manageCloseBtn.addEventListener('click', closeManageModal);
   manageCloseBtn2.addEventListener('click', closeManageModal);
@@ -4249,7 +5075,8 @@
   manageBtnLink.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveSidebarForm(); } });
 
   document.addEventListener('keydown', (e) => {
-    if (!modal.hidden || !fullModal.hidden || !manageModal.hidden || !renameModal.hidden || !conflictModal.hidden || !previewOverlay.hidden) return;
+    const pendingModal = document.getElementById('fm-pending-modal');
+    if (!modal.hidden || !fullModal.hidden || !manageModal.hidden || !renameModal.hidden || !conflictModal.hidden || !previewOverlay.hidden || (pendingModal && !pendingModal.hidden)) return;
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
       e.preventDefault();
@@ -4273,7 +5100,7 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeContextMenu(); });
 
   /* ============================================================================
-     RECONNECT HANDLER — when the tunnel comes back, reload everything cleanly
+     RECONNECT HANDLER
      ============================================================================ */
   Connection.setReconnectHandler(async () => {
     const exists = await ensureRootFolderExists();
@@ -4290,11 +5117,14 @@
     buildIconPicker();
     setSelectedIcon(DEFAULT_ICON);
 
-    // Kick off connectivity monitoring first so the banner can appear early
+    // Bring back any unfinished uploads from a previous session
+    loadPersistedSessions();
+    renderPendingUploads();
+
+    // Kick off connectivity monitoring first
     Connection.check(true).then(ok => {
       Connection.start();
       if (!ok) {
-        // Still attempt local-only sidebar so the page isn't completely blank
         renderSidebar();
       }
     });
