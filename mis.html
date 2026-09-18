@@ -493,7 +493,7 @@
       padding: 16px 12px 12px;
       display: flex; flex-direction: column; align-items: center; gap: 8px;
       cursor: pointer;
-      transition: background var(--fast), border-color var(--fast), transform var(--fast);
+      transition: background var(--fast), border-color var(--fast), transform var(--fast), box-shadow var(--fast);
       user-select: none; text-align: center;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
@@ -515,6 +515,39 @@
     .fm-empty .empty-icon { font-size: 44px; margin-bottom: 8px; display: block; color: var(--muted); }
     .fm-empty p { margin: 0; }
 
+    /* ================= DRAG & DROP VISUAL STATES ================= */
+    .fm-item.dragging {
+      opacity: 0.4;
+      cursor: grabbing;
+      transform: scale(0.98);
+    }
+    .fm-item.drag-over-folder {
+      background: #c9dcff;
+      border-color: var(--royal);
+      box-shadow: 0 0 0 3px rgba(27,27,179,.22), 0 10px 26px rgba(27,27,179,.28);
+      transform: scale(1.05);
+      z-index: 3;
+    }
+    .fm-item.drag-over-folder::after {
+      content: '📥';
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      font-size: 22px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,.35));
+      animation: dropBounce .4s ease;
+      pointer-events: none;
+    }
+    @keyframes dropBounce {
+      0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+      60% { transform: scale(1.25) rotate(6deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+    .fm-item.drag-forbidden {
+      cursor: not-allowed;
+    }
+
     /* ================= CONTEXT MENU ================= */
     .fm-context-menu {
       position: fixed; z-index: 250; background: #fff;
@@ -523,6 +556,8 @@
       padding: 6px; min-width: 170px;
       animation: fmContextIn .12s ease;
       -webkit-overflow-scrolling: touch;
+      max-height: 80vh;
+      overflow-y: auto;
     }
     @keyframes fmContextIn {
       from { opacity: 0; transform: scale(.96); }
@@ -551,6 +586,55 @@
       color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       max-width: 200px;
+    }
+
+    /* ================= MOVE-TO MODAL ================= */
+    .move-to-list {
+      display: flex; flex-direction: column; gap: 6px;
+      max-height: 320px; overflow-y: auto;
+      padding: 4px 2px; margin: 8px 0 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .move-to-row {
+      display: flex; align-items: center; gap: 10px;
+      background: #f7f9fd; border: 1px solid var(--border);
+      border-radius: 9px; padding: 10px 12px;
+      cursor: pointer; text-align: left;
+      font: 600 13px 'DM Sans', sans-serif; color: var(--text);
+      transition: background var(--fast), border-color var(--fast), transform var(--fast);
+      -webkit-tap-highlight-color: transparent;
+      width: 100%;
+      border-width: 1.5px;
+    }
+    .move-to-row:hover { background: #eef1fb; border-color: var(--border-strong); }
+    .move-to-row:active { transform: scale(.99); }
+    .move-to-row.selected {
+      background: #dfe6ff; border-color: var(--royal);
+      box-shadow: 0 0 0 3px rgba(27,27,179,.14);
+    }
+    .move-to-row-icon {
+      font-size: 20px; width: 32px; height: 32px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #fff; border: 1px solid var(--border); border-radius: 8px;
+      flex-shrink: 0; line-height: 1;
+    }
+    .move-to-row.selected .move-to-row-icon {
+      background: var(--royal); color: #fff; border-color: var(--royal);
+    }
+    .move-to-row-info { flex: 1; min-width: 0; }
+    .move-to-row-name {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .move-to-row-path {
+      font-size: 11px; color: var(--muted); margin-top: 2px;
+      font-family: monospace;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .move-to-empty {
+      text-align: center; padding: 30px 16px; color: var(--muted);
+      font-size: 13px; font-style: italic;
+      background: #f7f9fd; border: 1px dashed var(--border-strong);
+      border-radius: 10px;
     }
 
     /* ================= MODALS ================= */
@@ -1178,8 +1262,6 @@
 
     /* ==========================================================================
        RESPONSIVE BREAKPOINTS
-       Sidebar ALWAYS stays docked on the side — never stacked.
-       Main content SLIDES to fill the space when the sidebar hides.
        ========================================================================== */
 
     @media (min-width: 1441px) {
@@ -1202,7 +1284,6 @@
       .fm-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
     }
 
-    /* -------- Tablet / Phone portrait: sidebar stays on the side -------- */
     @media (max-width: 900px) {
       :root { --sidebar-w: clamp(120px, 36vw, 180px); }
 
@@ -1252,7 +1333,6 @@
     @media (max-width: 768px) {
       :root { --sidebar-w: clamp(110px, 34vw, 160px); }
 
-      /* Topbar: logo + text sa KALIWA, back button sa KANAN — hindi naka-stack */
       .topbar {
         padding: 10px 16px;
         padding-top: calc(10px + var(--safe-top));
@@ -1646,6 +1726,18 @@
   </div>
 </div>
 
+<div class="fm-modal-overlay" id="fm-move-modal" hidden>
+  <div class="fm-modal">
+    <h3>📦 Move to Folder</h3>
+    <p class="fm-hint" id="fm-move-hint" style="margin-top:-8px">Choose a destination folder.</p>
+    <div class="move-to-list" id="fm-move-list"></div>
+    <div class="fm-modal-actions" style="justify-content:space-between">
+      <button class="button fm-btn-light" id="fm-move-cancel" type="button">Cancel</button>
+      <button class="button primary" id="fm-move-confirm" type="button" disabled>Move Here</button>
+    </div>
+  </div>
+</div>
+
 <div class="fm-modal-overlay" id="manage-modal" hidden>
   <div class="fm-modal manage-modal">
     <h3>&#9881;&#65039; Manage Sidebar</h3>
@@ -1897,6 +1989,9 @@
    - Blob-based previews/downloads with connection-aware retry
    - Resumable (TUS) uploads with a Resume button
    - Auto-recovery when the Cloudflare tunnel comes back online
+   - Touch-friendly single-tap-to-open on mobile devices
+   - Drag & drop to move files/folders between folders
+   - "Move to…" context menu fallback for touch devices
    ============================================================================ */
 (function(){
   'use strict';
@@ -1961,6 +2056,21 @@
   }
   const ROOT = deriveRootFromFilename();
   const ROOT_DISPLAY = ROOT.toUpperCase();
+
+  /* ---------------- Touch detection ---------------- */
+  const IS_TOUCH_DEVICE = (function(){
+    if (typeof window === 'undefined') return false;
+    // Primary: media query
+    if (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) {
+      return true;
+    }
+    // Fallback: touch events support + no fine pointer
+    if ('ontouchstart' in window && navigator.maxTouchPoints > 0) {
+      const finePointer = window.matchMedia && window.matchMedia('(any-pointer: fine)').matches;
+      return !finePointer;
+    }
+    return false;
+  })();
 
   /* ---------------- DOM refs ---------------- */
   const layout        = document.getElementById('art-layout');
@@ -2027,6 +2137,12 @@
   const conflictAllReplace = document.getElementById('fm-conflict-all-replace');
   const conflictAllRename  = document.getElementById('fm-conflict-all-rename');
   const conflictAllSkip    = document.getElementById('fm-conflict-all-skip');
+
+  const moveModal    = document.getElementById('fm-move-modal');
+  const moveList     = document.getElementById('fm-move-list');
+  const moveHint     = document.getElementById('fm-move-hint');
+  const moveCancel   = document.getElementById('fm-move-cancel');
+  const moveConfirm  = document.getElementById('fm-move-confirm');
 
   const sideButtonsContainer = document.getElementById('side-buttons-container');
   const manageSidebarBtn = document.getElementById('manage-sidebar-btn');
@@ -2125,6 +2241,22 @@
 
   let deleteCancelRequested = false;
   let activeDeleteController = null;
+
+  // Drag & drop state
+  let draggedItem      = null;
+  let draggedItemEl    = null;
+  let dragOverFolderEl = null;
+
+  // Move modal state
+  let moveTargets      = [];
+  let moveSelectedName = null;
+  let moveSourceItem   = null;
+
+  // Touch long-press-to-select state (para sa mobile)
+  let touchLongPressTimer = null;
+  let touchStartX = 0, touchStartY = 0;
+  let touchMoved = false;
+  let touchStartedOnItem = null;
 
   /* ============================================================================
      HELPERS
@@ -3387,6 +3519,322 @@
     }
   }
 
+  /* ============================================================================
+     MOVE ITEM (drag & drop / move-to modal)
+     ============================================================================ */
+  async function moveItem(sourceItem, targetFolderName) {
+    if (!guardOnline() || !sourceItem || !targetFolderName) return;
+
+    const sourceName = sourceItem.name;
+    const sourceIsFolder = isFolder(sourceItem);
+
+    // Can't move into itself
+    if (sourceIsFolder && sourceName === targetFolderName) {
+      showToast('Cannot move a folder into itself', 3000);
+      return;
+    }
+
+    const sourcePrefix = fullPathFor(sourceName);
+    const targetFolderPrefix = fullPathFor(targetFolderName) + '/';
+
+    // Can't move folder into its own descendant
+    if (sourceIsFolder && (targetFolderPrefix === sourcePrefix + '/'
+        || targetFolderPrefix.startsWith(sourcePrefix + '/'))) {
+      showToast('Cannot move a folder into its own subfolder', 3200);
+      return;
+    }
+
+    progressStart('Moving "' + sourceName + '"…');
+    progressFill.style.width = '10%';
+    progressCancelBtn.hidden = true;
+
+    try {
+      // Collect source paths
+      let sources;
+      if (sourceIsFolder) {
+        sources = await collectAllUnder(sourcePrefix + '/');
+      } else {
+        sources = [sourcePrefix];
+      }
+      if (!sources.length) {
+        // Empty folder — just recreate at target
+        await createFolderApi(targetFolderPrefix + sourceName + '/');
+        try { await deleteMany([sourcePrefix + '/' + PLACEHOLDER]); } catch (e) {}
+        progressEnd();
+        showToast('Moved empty folder "' + sourceName + '"');
+        selected.clear();
+        await refresh();
+        return;
+      }
+
+      // Check for name conflict at target
+      const targetEntries = await listFolder(targetFolderPrefix);
+      const conflicting = targetEntries.find(e => e.name === sourceName);
+      if (conflicting) {
+        progressEnd();
+        const proceed = confirm(
+          '"' + sourceName + '" already exists in "' + targetFolderName + '".\n\n' +
+          'OK = Replace the existing one\n' +
+          'Cancel = Abort move'
+        );
+        if (!proceed) return;
+        progressStart('Moving "' + sourceName + '"…');
+
+        // Delete existing target
+        const existingPath = targetFolderPrefix + sourceName;
+        let existingPaths;
+        if (isFolder(conflicting)) {
+          existingPaths = await collectAllUnder(existingPath + '/');
+        } else {
+          existingPaths = [existingPath];
+        }
+        if (existingPaths.length) {
+          const CHUNK = 100;
+          for (let i = 0; i < existingPaths.length; i += CHUNK) {
+            await deleteMany(existingPaths.slice(i, i + CHUNK));
+          }
+        }
+      }
+
+      // Copy each source to target
+      const total = sources.length;
+      let done = 0;
+      for (const srcPath of sources) {
+        const rel = srcPath.slice(sourcePrefix.length);
+        let destPath;
+        if (sourceIsFolder) {
+          destPath = targetFolderPrefix + sourceName + rel;
+        } else {
+          destPath = targetFolderPrefix + sourceName;
+        }
+        const blob = await fetchObjectBlob(srcPath);
+        const destName = destPath.split('/').pop() || 'file';
+        await uploadOne(destPath, new File([blob], destName, { type: blob.type || 'application/octet-stream' }));
+        done++;
+        progressFill.style.width = (15 + Math.round((done / total) * 70)) + '%';
+        progressUpdate(done, total, srcPath.split('/').pop());
+      }
+
+      // Delete sources (old location)
+      const CHUNK = 100;
+      for (let i = 0; i < sources.length; i += CHUNK) {
+        await deleteMany(sources.slice(i, i + CHUNK));
+      }
+
+      progressFill.style.width = '100%';
+      progressEnd();
+      showToast('Moved "' + sourceName + '" to "' + targetFolderName + '"');
+      selected.clear();
+      await refresh();
+      updateStorageInfo().catch(err => console.error(err));
+    } catch (err) {
+      progressEnd();
+      if (isOfflineError(err)) {
+        showToast('Server unreachable — move cancelled', 5000);
+      } else {
+        showToast('Move failed: ' + err.message, 4500);
+      }
+    }
+  }
+
+  /* ---------------- MOVE-TO MODAL (mobile fallback) ---------------- */
+  function openMoveToModal(sourceItem) {
+    if (!sourceItem) return;
+
+    moveSourceItem = sourceItem;
+    moveSelectedName = null;
+
+    // Collect all folders in the current directory (excluding the source itself if it's a folder)
+    moveTargets = items.filter(it => {
+      if (!isFolder(it)) return false;
+      if (it.name === sourceItem.name) return false;
+      return true;
+    });
+
+    // Also allow "move to parent" if we're inside a subfolder
+    const allowMoveUp = !!currentPath;
+
+    moveHint.textContent = 'Move "' + sourceItem.name + '" to:';
+
+    renderMoveList(allowMoveUp);
+    moveConfirm.disabled = true;
+    moveModal.hidden = false;
+  }
+
+  function renderMoveList(allowMoveUp) {
+    moveList.innerHTML = '';
+
+    if (allowMoveUp) {
+      const upRow = document.createElement('button');
+      upRow.type = 'button';
+      upRow.className = 'move-to-row';
+      upRow.dataset.target = '__parent__';
+      upRow.innerHTML =
+        '<span class="move-to-row-icon">⬆️</span>' +
+        '<span class="move-to-row-info">' +
+          '<div class="move-to-row-name">Parent folder</div>' +
+          '<div class="move-to-row-path">' + (ROOT + '/' + (currentPath.slice(0, -1) || '')) + '</div>' +
+        '</span>';
+      upRow.addEventListener('click', () => selectMoveTarget(upRow, '__parent__'));
+      moveList.appendChild(upRow);
+    }
+
+    if (!moveTargets.length && !allowMoveUp) {
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'move-to-empty';
+      emptyEl.textContent = 'No subfolders here. Create one first, then move this item into it.';
+      moveList.appendChild(emptyEl);
+      return;
+    }
+
+    moveTargets.forEach(folder => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'move-to-row';
+      row.dataset.target = folder.name;
+      row.innerHTML =
+        '<span class="move-to-row-icon">📁</span>' +
+        '<span class="move-to-row-info">' +
+          '<div class="move-to-row-name">' + escapeHtml(folder.name) + '</div>' +
+          '<div class="move-to-row-path">' + ROOT + '/' + (currentPath || '') + escapeHtml(folder.name) + '</div>' +
+        '</span>';
+      row.addEventListener('click', () => selectMoveTarget(row, folder.name));
+      moveList.appendChild(row);
+    });
+  }
+
+  function selectMoveTarget(rowEl, targetName) {
+    moveList.querySelectorAll('.move-to-row').forEach(r => r.classList.remove('selected'));
+    rowEl.classList.add('selected');
+    moveSelectedName = targetName;
+    moveConfirm.disabled = false;
+  }
+
+  function closeMoveModal() {
+    moveModal.hidden = true;
+    moveTargets = [];
+    moveSelectedName = null;
+    moveSourceItem = null;
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  async function confirmMoveTo() {
+    if (!moveSelectedName || !moveSourceItem) return;
+    const source = moveSourceItem;
+    const target = moveSelectedName;
+    closeMoveModal();
+
+    if (target === '__parent__') {
+      // Move up one level — need to compute destination folder name
+      await moveToParent(source);
+    } else {
+      await moveItem(source, target);
+    }
+  }
+
+  async function moveToParent(sourceItem) {
+    if (!currentPath) return;
+    // Current path like "A/B/" — parent is "A/". The target folder name is "B" (relative to A).
+    // But moveItem works with folder in the SAME directory. So we need a different approach.
+    const parentPath = currentPath.replace(/[^\/]+\/$/, ''); // remove last segment
+    const currentFolderName = currentPath.replace(/\/$/, '').split('/').pop();
+    if (!currentFolderName) return;
+
+    if (!guardOnline()) return;
+    const sourceName = sourceItem.name;
+    const sourceIsFolder = isFolder(sourceItem);
+
+    const sourcePrefix = fullPathFor(sourceName);
+    const targetFolderPrefix = ROOT + '/' + parentPath; // e.g. ROOT/A/
+    const targetPrefix = targetFolderPrefix + currentFolderName + '/';
+
+    // Guard: can't move folder into itself
+    if (sourceIsFolder) {
+      const checkPrefix = sourcePrefix + '/';
+      if (targetPrefix.startsWith(checkPrefix) || targetPrefix === checkPrefix) {
+        showToast('Cannot move here', 3000);
+        return;
+      }
+    }
+
+    progressStart('Moving up "' + sourceName + '"…');
+    progressFill.style.width = '10%';
+
+    try {
+      let sources;
+      if (sourceIsFolder) sources = await collectAllUnder(sourcePrefix + '/');
+      else sources = [sourcePrefix];
+      if (!sources.length) {
+        await createFolderApi(targetPrefix + sourceName + '/');
+        try { await deleteMany([sourcePrefix + '/' + PLACEHOLDER]); } catch (e) {}
+        progressEnd();
+        showToast('Moved "' + sourceName + '"');
+        selected.clear();
+        await refresh();
+        return;
+      }
+
+      // Check conflict at parent level
+      const targetEntries = await listFolder(targetFolderPrefix);
+      const conflicting = targetEntries.find(e => e.name === sourceName);
+      if (conflicting) {
+        progressEnd();
+        const ok = confirm('"' + sourceName + '" already exists in the parent folder. Replace it?');
+        if (!ok) return;
+        progressStart('Moving up "' + sourceName + '"…');
+        const existingPath = targetFolderPrefix + sourceName;
+        const existingPaths = isFolder(conflicting)
+          ? await collectAllUnder(existingPath + '/')
+          : [existingPath];
+        if (existingPaths.length) {
+          const CHUNK = 100;
+          for (let i = 0; i < existingPaths.length; i += CHUNK) {
+            await deleteMany(existingPaths.slice(i, i + CHUNK));
+          }
+        }
+      }
+
+      const total = sources.length;
+      let done = 0;
+      for (const srcPath of sources) {
+        const rel = srcPath.slice(sourcePrefix.length);
+        const destPath = sourceIsFolder
+          ? targetPrefix + sourceName + rel
+          : targetPrefix + sourceName;
+        const blob = await fetchObjectBlob(srcPath);
+        const destName = destPath.split('/').pop() || 'file';
+        await uploadOne(destPath, new File([blob], destName, { type: blob.type || 'application/octet-stream' }));
+        done++;
+        progressFill.style.width = (15 + Math.round((done / total) * 70)) + '%';
+        progressUpdate(done, total, srcPath.split('/').pop());
+      }
+
+      const CHUNK = 100;
+      for (let i = 0; i < sources.length; i += CHUNK) {
+        await deleteMany(sources.slice(i, i + CHUNK));
+      }
+
+      progressFill.style.width = '100%';
+      progressEnd();
+      showToast('Moved "' + sourceName + '" to parent folder');
+      selected.clear();
+      await refresh();
+      updateStorageInfo().catch(err => console.error(err));
+    } catch (err) {
+      progressEnd();
+      if (isOfflineError(err)) showToast('Server unreachable — move cancelled', 5000);
+      else showToast('Move failed: ' + err.message, 4500);
+    }
+  }
+
   /* ---------------- CONTEXT MENU ---------------- */
   function closeContextMenu() {
     if (contextMenuEl && contextMenuEl.parentNode) {
@@ -3434,6 +3882,17 @@
       menu.appendChild(sepPreview);
     }
 
+    // ===== MOVE TO =====
+    const moveItemBtn = document.createElement('button');
+    moveItemBtn.type = 'button';
+    moveItemBtn.className = 'fm-context-item';
+    moveItemBtn.innerHTML = '<span class="ctx-icon">📦</span><span class="ctx-label">Move to…</span>';
+    moveItemBtn.addEventListener('click', () => {
+      closeContextMenu();
+      openMoveToModal(item);
+    });
+    menu.appendChild(moveItemBtn);
+
     const downloadItem = document.createElement('button');
     downloadItem.type = 'button';
     downloadItem.className = 'fm-context-item';
@@ -3466,8 +3925,10 @@
     document.body.appendChild(menu);
     contextMenuEl = menu;
 
+    // Position: use touch/pointer coords
     const menuRect = menu.getBoundingClientRect();
-    let x = event.clientX, y = event.clientY;
+    let x = (event.clientX || (event.touches && event.touches[0] && event.touches[0].clientX) || window.innerWidth / 2);
+    let y = (event.clientY || (event.touches && event.touches[0] && event.touches[0].clientY) || window.innerHeight / 2);
     if (x + menuRect.width > window.innerWidth - 8) x = window.innerWidth - menuRect.width - 8;
     if (y + menuRect.height > window.innerHeight - 8) y = window.innerHeight - menuRect.height - 8;
     if (x < 8) x = 8;
@@ -3804,7 +4265,12 @@
       el.className = 'fm-item';
       el.dataset.name = it.name;
       el.dataset.idx = String(idx);
+      el.dataset.isFolder = isDir ? '1' : '0';
       if (selected.has(it.name)) el.classList.add('selected');
+
+      // Enable drag on desktop (HTML5 DnD works only on non-touch)
+      // We still set draggable=true — iOS will just ignore it.
+      el.setAttribute('draggable', 'true');
 
       const icon = document.createElement('div');
       icon.className = 'fm-icon';
@@ -3824,8 +4290,18 @@
       el.appendChild(name);
       el.appendChild(meta);
 
+      // ===== CLICK HANDLER =====
       el.addEventListener('click', (e) => handleItemClick(e, idx, it));
-      el.addEventListener('dblclick', () => handleItemDblClick(it));
+
+      // ===== DOUBLE-CLICK HANDLER (desktop only, for backwards-compat) =====
+      // On touch devices, this normally doesn't fire; single tap handles it via handleItemClick
+      el.addEventListener('dblclick', (e) => {
+        // On touch devices, prevent double-processing
+        if (IS_TOUCH_DEVICE) { e.preventDefault(); return; }
+        handleItemDblClick(it);
+      });
+
+      // ===== CONTEXT MENU (right-click + long-press) =====
       el.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -3838,13 +4314,123 @@
         buildContextMenu(it, e);
       });
 
+      // ===== DESKTOP HTML5 DRAG SOURCE =====
+      el.addEventListener('dragstart', (e) => {
+        // Cancel on touch devices (HTML5 drag doesn't work well there anyway)
+        if (IS_TOUCH_DEVICE) {
+          e.preventDefault();
+          return;
+        }
+        draggedItem = it;
+        draggedItemEl = el;
+        try {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', it.name);
+          // Custom drag image
+          try {
+            e.dataTransfer.setDragImage(el, el.offsetWidth / 2, el.offsetHeight / 2);
+          } catch (err) {}
+        } catch (err) {}
+        // Delay so the drag image isn't affected
+        setTimeout(() => el.classList.add('dragging'), 0);
+      });
+
+      el.addEventListener('dragend', () => {
+        el.classList.remove('dragging');
+        if (draggedItemEl) draggedItemEl.classList.remove('dragging');
+        draggedItem = null;
+        draggedItemEl = null;
+        clearDragOverHighlights();
+      });
+
+      // ===== FOLDER DROP TARGETS =====
+      if (isDir) {
+        el.addEventListener('dragover', (e) => {
+          if (!draggedItem) return;
+          if (draggedItem.name === it.name) return;
+
+          // Prevent folder into itself / into descendant
+          if (isFolder(draggedItem)) {
+            const srcName = draggedItem.name;
+            const tgtName = it.name;
+            if (tgtName === srcName) return;
+            // If we are inside a descendant path, forbid
+            if (currentPath && currentPath.startsWith(srcName + '/')) return;
+          }
+
+          e.preventDefault();
+          e.stopPropagation();
+          try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+          if (dragOverFolderEl !== el) {
+            if (dragOverFolderEl) dragOverFolderEl.classList.remove('drag-over-folder');
+            dragOverFolderEl = el;
+            el.classList.add('drag-over-folder');
+          }
+        });
+
+        el.addEventListener('dragenter', (e) => {
+          if (!draggedItem) return;
+          if (draggedItem.name === it.name) return;
+          e.preventDefault();
+          e.stopPropagation();
+        });
+
+        el.addEventListener('dragleave', (e) => {
+          // Only remove if we actually left the element (not entered a child)
+          const related = e.relatedTarget;
+          if (related && el.contains(related)) return;
+          el.classList.remove('drag-over-folder');
+          if (dragOverFolderEl === el) dragOverFolderEl = null;
+        });
+
+        el.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          el.classList.remove('drag-over-folder');
+          if (dragOverFolderEl === el) dragOverFolderEl = null;
+
+          if (!draggedItem) return;
+          if (draggedItem.name === it.name) return;
+
+          const source = draggedItem;
+          draggedItem = null;
+          draggedItemEl = null;
+          clearDragOverHighlights();
+
+          await moveItem(source, it.name);
+        });
+      }
+
       grid.appendChild(el);
     });
 
     updateToolbarState();
   }
 
+  function clearDragOverHighlights() {
+    grid.querySelectorAll('.drag-over-folder').forEach(n => n.classList.remove('drag-over-folder'));
+    dragOverFolderEl = null;
+  }
+
+  /* ============================================================================
+     TAP / CLICK HANDLER
+     - Desktop: click = select, dblclick = open
+     - Touch:   tap = open (folder) OR preview (file)   ← iOS fix
+     ============================================================================ */
   function handleItemClick(e, idx, it) {
+    // ===== TOUCH DEVICES =====
+    if (IS_TOUCH_DEVICE) {
+      // If user selected multi items earlier via long-press, tap clears & opens
+      // Direct open (folder) or preview (file)
+      if (isFolder(it)) {
+        handleItemDblClick(it);
+      } else {
+        openPreview(it);
+      }
+      return;
+    }
+
+    // ===== DESKTOP (unchanged behavior) =====
     const isMac = navigator.platform.toUpperCase().includes('MAC');
     const multiKey = isMac ? e.metaKey : e.ctrlKey;
     const shiftKey = e.shiftKey;
@@ -5369,13 +5955,19 @@
     });
   }
 
-  /* ---------------- DRAG & DROP ---------------- */
+  /* ---------------- DRAG & DROP (UPLOAD FILES INTO CURRENT FOLDER) ---------------- */
   let dragDepth = 0;
   ['dragenter','dragover'].forEach(ev => {
     dropzone.addEventListener(ev, (e) => {
       if (!rootExists) {
         e.preventDefault();
         if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+        return;
+      }
+      // If dragging an existing item (internal move), don't show the upload hint
+      if (draggedItem) {
+        e.preventDefault();
+        try { e.dataTransfer.dropEffect = 'none'; } catch (err) {}
         return;
       }
       e.preventDefault();
@@ -5395,6 +5987,11 @@
     }
   });
   dropzone.addEventListener('drop', async (e) => {
+    // If it's an internal move, ignore — folder drops handle it
+    if (draggedItem) {
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
     dragDepth = 0;
     dropzone.classList.remove('drag-over');
@@ -5499,6 +6096,11 @@
   });
   renameModal.addEventListener('click', (e) => { if (e.target === renameModal) closeRenameModal(); });
 
+  // Move-To modal events
+  moveCancel.addEventListener('click', closeMoveModal);
+  moveConfirm.addEventListener('click', confirmMoveTo);
+  moveModal.addEventListener('click', (e) => { if (e.target === moveModal) closeMoveModal(); });
+
   progressCancelBtn.addEventListener('click', () => {
     if (activeUploadController && !uploadCancelRequested) {
       uploadCancelRequested = true;
@@ -5579,7 +6181,9 @@
 
   document.addEventListener('keydown', (e) => {
     const pendingModal = document.getElementById('fm-pending-modal');
-    if (!modal.hidden || !fullModal.hidden || !manageModal.hidden || !renameModal.hidden || !conflictModal.hidden || !previewOverlay.hidden || (pendingModal && !pendingModal.hidden)) return;
+    if (!modal.hidden || !fullModal.hidden || !manageModal.hidden || !renameModal.hidden
+        || !conflictModal.hidden || !previewOverlay.hidden || !moveModal.hidden
+        || (pendingModal && !pendingModal.hidden)) return;
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
       e.preventDefault();
