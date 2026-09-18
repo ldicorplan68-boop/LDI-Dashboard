@@ -180,12 +180,19 @@
     }
     .content.sales-content { max-width: none; margin: 0; padding: 0; width: 100%; }
 
+    /* ===================================================================
+       LAYOUT
+       NOTE: overflow-x is intentionally NOT set here. Setting overflow-x
+       on this element makes it a scroll container, which breaks
+       position:sticky for the sidebar on iOS Safari (causing a visible
+       gap between the topbar and the sidebar). Horizontal overflow from
+       the sidebar slide-out is clipped by body's overflow-x:hidden.
+       =================================================================== */
     .layout {
       display: flex; gap: 0; align-items: stretch;
       min-height: calc(100vh - var(--topbar-h));
       min-height: calc(100dvh - var(--topbar-h));
       position: relative;
-      overflow-x: hidden;
     }
 
     /* ================= SIDEBAR ================= */
@@ -246,10 +253,41 @@
       -webkit-tap-highlight-color: transparent;
     }
     .side-btn:hover { background: rgba(255,255,255,.24); color: #fff; }
+
+    /* ===================================================================
+       ACTIVE / CURRENT PAGE BUTTON
+       The "Files" button (the page you're currently on) is styled with a
+       WHITE background and BLUE text/icon so it clearly stands out from
+       the other (blue-glass) sidebar buttons — like a "selected" tab.
+       =================================================================== */
     .side-btn.active {
-      background: #fff; color: var(--royal);
-      border-color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+      background: #ffffff;
+      color: var(--royal);
+      border-color: #ffffff;
+      box-shadow: 0 3px 14px rgba(0,0,0,.28),
+                  inset 0 1px 0 rgba(255,255,255,.85);
+      font-weight: 700;
     }
+    .side-btn.active:hover {
+      background: #f0f4ff;
+      color: var(--royal-deep);
+    }
+    .side-btn.active .side-icon {
+      color: var(--royal);
+    }
+    .side-btn.active::after {
+      content: '';
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--royal);
+      opacity: .85;
+      pointer-events: none;
+    }
+
     .side-btn .side-icon {
       font-size: 16px; flex-shrink: 0;
       display: inline-flex; align-items: center; justify-content: center;
@@ -544,9 +582,7 @@
       60% { transform: scale(1.25) rotate(6deg); opacity: 1; }
       100% { transform: scale(1) rotate(0); opacity: 1; }
     }
-    .fm-item.drag-forbidden {
-      cursor: not-allowed;
-    }
+    .fm-item.drag-forbidden { cursor: not-allowed; }
 
     /* ================= CONTEXT MENU ================= */
     .fm-context-menu {
@@ -1339,6 +1375,8 @@
         gap: 10px;
         flex-wrap: wrap;
         align-items: center;
+        /* Softer shadow so it doesn't look like a gap above the sidebar on mobile */
+        box-shadow: 0 2px 8px rgba(13,13,122,.4);
       }
       .brand {
         justify-content: flex-start;
@@ -1361,6 +1399,9 @@
         gap: 6px; border-radius: 8px;
       }
       .side-btn .side-icon { font-size: 13px; width: 15px; height: 15px; }
+      .side-btn.active::after {
+        right: 7px; width: 5px; height: 5px;
+      }
 
       .side-show { width: 34px; height: 34px; font-size: 14px; top: 10px; left: calc(var(--sidebar-w) - 17px); }
       .layout.side-hidden .side-show { left: 8px; }
@@ -1452,6 +1493,7 @@
         gap: 6px; border-radius: 7px;
       }
       .side-btn .side-icon { font-size: 12px; width: 14px; height: 14px; }
+      .side-btn.active::after { right: 6px; width: 4px; height: 4px; }
       .side-show { width: 32px; height: 32px; font-size: 13px; left: calc(var(--sidebar-w) - 16px); top: 9px; }
       .layout.side-hidden .side-show { left: 6px; }
 
@@ -1561,6 +1603,7 @@
       .manage-icon-btn:active, .icon-choice:active, .role-choice:active { transform: scale(.96); }
       .fm-item:hover { transform: none; }
       .side-btn:hover { background: rgba(255,255,255,.12); }
+      .side-btn.active:hover { background: #ffffff; color: var(--royal); }
       .button.primary:hover { transform: none; box-shadow: 0 2px 8px rgba(27,27,179,.35); }
       .hero-btn:hover { transform: none; box-shadow: 0 4px 12px rgba(0,0,0,.22); }
       .hero-refresh:hover { background: rgba(255,255,255,.14); color: #fff; }
@@ -1992,6 +2035,8 @@
    - Touch-friendly single-tap-to-open on mobile devices
    - Drag & drop to move files/folders between folders
    - "Move to…" context menu fallback for touch devices
+   - Robust topbar height sync for iOS Safari (URL bar / safe-area)
+   - "Files" button highlighted with white background + blue text
    ============================================================================ */
 (function(){
   'use strict';
@@ -2060,11 +2105,9 @@
   /* ---------------- Touch detection ---------------- */
   const IS_TOUCH_DEVICE = (function(){
     if (typeof window === 'undefined') return false;
-    // Primary: media query
     if (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) {
       return true;
     }
-    // Fallback: touch events support + no fine pointer
     if ('ontouchstart' in window && navigator.maxTouchPoints > 0) {
       const finePointer = window.matchMedia && window.matchMedia('(any-pointer: fine)').matches;
       return !finePointer;
@@ -2190,17 +2233,42 @@
     navLogo.addEventListener('error', () => { navLogo.style.display = 'none'; });
   }
 
-  /* ---------------- Topbar height sync ---------------- */
+  /* ============================================================================
+     TOPBAR HEIGHT SYNC
+     Robust version for iOS Safari — repeats at multiple intervals, on resize,
+     orientationchange, load, and throttled scroll. Fixes the gap between the
+     topbar and the sidebar on iPhone.
+     ============================================================================ */
   function syncTopbarHeight() {
     const topbar = document.querySelector('.topbar');
     if (!topbar) return;
     const h = Math.ceil(topbar.getBoundingClientRect().height);
-    document.documentElement.style.setProperty('--topbar-h', h + 'px');
+    if (h > 0) {
+      document.documentElement.style.setProperty('--topbar-h', h + 'px');
+    }
   }
   syncTopbarHeight();
+  setTimeout(syncTopbarHeight, 50);
+  setTimeout(syncTopbarHeight, 200);
+  setTimeout(syncTopbarHeight, 600);
+  setTimeout(syncTopbarHeight, 1500);
+
   window.addEventListener('resize', syncTopbarHeight);
-  window.addEventListener('orientationchange', () => setTimeout(syncTopbarHeight, 100));
+  window.addEventListener('orientationchange', () => {
+    setTimeout(syncTopbarHeight, 100);
+    setTimeout(syncTopbarHeight, 400);
+  });
   window.addEventListener('load', syncTopbarHeight);
+
+  let __syncScrollTimer = null;
+  window.addEventListener('scroll', () => {
+    if (__syncScrollTimer) return;
+    __syncScrollTimer = setTimeout(() => {
+      syncTopbarHeight();
+      __syncScrollTimer = null;
+    }, 150);
+  }, { passive: true });
+
   if (window.ResizeObserver) {
     const ro = new ResizeObserver(syncTopbarHeight);
     const tb = document.querySelector('.topbar');
@@ -2251,12 +2319,6 @@
   let moveTargets      = [];
   let moveSelectedName = null;
   let moveSourceItem   = null;
-
-  // Touch long-press-to-select state (para sa mobile)
-  let touchLongPressTimer = null;
-  let touchStartX = 0, touchStartY = 0;
-  let touchMoved = false;
-  let touchStartedOnItem = null;
 
   /* ============================================================================
      HELPERS
@@ -2789,7 +2851,12 @@
       el.type = 'button';
       el.className = 'side-btn';
       el.dataset.id = btn.id;
-      if (btn.isFiles) el.classList.add('active');
+      // The "Files" button (current page) is highlighted.
+      if (btn.isFiles) {
+        el.classList.add('active');
+        el.setAttribute('aria-current', 'page');
+        el.title = 'Current page';
+      }
 
       const iconSpan = document.createElement('span');
       iconSpan.className = 'side-icon';
@@ -3528,7 +3595,6 @@
     const sourceName = sourceItem.name;
     const sourceIsFolder = isFolder(sourceItem);
 
-    // Can't move into itself
     if (sourceIsFolder && sourceName === targetFolderName) {
       showToast('Cannot move a folder into itself', 3000);
       return;
@@ -3537,7 +3603,6 @@
     const sourcePrefix = fullPathFor(sourceName);
     const targetFolderPrefix = fullPathFor(targetFolderName) + '/';
 
-    // Can't move folder into its own descendant
     if (sourceIsFolder && (targetFolderPrefix === sourcePrefix + '/'
         || targetFolderPrefix.startsWith(sourcePrefix + '/'))) {
       showToast('Cannot move a folder into its own subfolder', 3200);
@@ -3549,7 +3614,6 @@
     progressCancelBtn.hidden = true;
 
     try {
-      // Collect source paths
       let sources;
       if (sourceIsFolder) {
         sources = await collectAllUnder(sourcePrefix + '/');
@@ -3557,7 +3621,6 @@
         sources = [sourcePrefix];
       }
       if (!sources.length) {
-        // Empty folder — just recreate at target
         await createFolderApi(targetFolderPrefix + sourceName + '/');
         try { await deleteMany([sourcePrefix + '/' + PLACEHOLDER]); } catch (e) {}
         progressEnd();
@@ -3567,7 +3630,6 @@
         return;
       }
 
-      // Check for name conflict at target
       const targetEntries = await listFolder(targetFolderPrefix);
       const conflicting = targetEntries.find(e => e.name === sourceName);
       if (conflicting) {
@@ -3580,7 +3642,6 @@
         if (!proceed) return;
         progressStart('Moving "' + sourceName + '"…');
 
-        // Delete existing target
         const existingPath = targetFolderPrefix + sourceName;
         let existingPaths;
         if (isFolder(conflicting)) {
@@ -3596,7 +3657,6 @@
         }
       }
 
-      // Copy each source to target
       const total = sources.length;
       let done = 0;
       for (const srcPath of sources) {
@@ -3615,7 +3675,6 @@
         progressUpdate(done, total, srcPath.split('/').pop());
       }
 
-      // Delete sources (old location)
       const CHUNK = 100;
       for (let i = 0; i < sources.length; i += CHUNK) {
         await deleteMany(sources.slice(i, i + CHUNK));
@@ -3637,21 +3696,19 @@
     }
   }
 
-  /* ---------------- MOVE-TO MODAL (mobile fallback) ---------------- */
+  /* ---------------- MOVE-TO MODAL ---------------- */
   function openMoveToModal(sourceItem) {
     if (!sourceItem) return;
 
     moveSourceItem = sourceItem;
     moveSelectedName = null;
 
-    // Collect all folders in the current directory (excluding the source itself if it's a folder)
     moveTargets = items.filter(it => {
       if (!isFolder(it)) return false;
       if (it.name === sourceItem.name) return false;
       return true;
     });
 
-    // Also allow "move to parent" if we're inside a subfolder
     const allowMoveUp = !!currentPath;
 
     moveHint.textContent = 'Move "' + sourceItem.name + '" to:';
@@ -3733,7 +3790,6 @@
     closeMoveModal();
 
     if (target === '__parent__') {
-      // Move up one level — need to compute destination folder name
       await moveToParent(source);
     } else {
       await moveItem(source, target);
@@ -3742,9 +3798,7 @@
 
   async function moveToParent(sourceItem) {
     if (!currentPath) return;
-    // Current path like "A/B/" — parent is "A/". The target folder name is "B" (relative to A).
-    // But moveItem works with folder in the SAME directory. So we need a different approach.
-    const parentPath = currentPath.replace(/[^\/]+\/$/, ''); // remove last segment
+    const parentPath = currentPath.replace(/[^\/]+\/$/, '');
     const currentFolderName = currentPath.replace(/\/$/, '').split('/').pop();
     if (!currentFolderName) return;
 
@@ -3753,10 +3807,9 @@
     const sourceIsFolder = isFolder(sourceItem);
 
     const sourcePrefix = fullPathFor(sourceName);
-    const targetFolderPrefix = ROOT + '/' + parentPath; // e.g. ROOT/A/
+    const targetFolderPrefix = ROOT + '/' + parentPath;
     const targetPrefix = targetFolderPrefix + currentFolderName + '/';
 
-    // Guard: can't move folder into itself
     if (sourceIsFolder) {
       const checkPrefix = sourcePrefix + '/';
       if (targetPrefix.startsWith(checkPrefix) || targetPrefix === checkPrefix) {
@@ -3782,7 +3835,6 @@
         return;
       }
 
-      // Check conflict at parent level
       const targetEntries = await listFolder(targetFolderPrefix);
       const conflicting = targetEntries.find(e => e.name === sourceName);
       if (conflicting) {
@@ -3882,7 +3934,6 @@
       menu.appendChild(sepPreview);
     }
 
-    // ===== MOVE TO =====
     const moveItemBtn = document.createElement('button');
     moveItemBtn.type = 'button';
     moveItemBtn.className = 'fm-context-item';
@@ -3925,7 +3976,6 @@
     document.body.appendChild(menu);
     contextMenuEl = menu;
 
-    // Position: use touch/pointer coords
     const menuRect = menu.getBoundingClientRect();
     let x = (event.clientX || (event.touches && event.touches[0] && event.touches[0].clientX) || window.innerWidth / 2);
     let y = (event.clientY || (event.touches && event.touches[0] && event.touches[0].clientY) || window.innerHeight / 2);
@@ -4268,8 +4318,6 @@
       el.dataset.isFolder = isDir ? '1' : '0';
       if (selected.has(it.name)) el.classList.add('selected');
 
-      // Enable drag on desktop (HTML5 DnD works only on non-touch)
-      // We still set draggable=true — iOS will just ignore it.
       el.setAttribute('draggable', 'true');
 
       const icon = document.createElement('div');
@@ -4290,18 +4338,13 @@
       el.appendChild(name);
       el.appendChild(meta);
 
-      // ===== CLICK HANDLER =====
       el.addEventListener('click', (e) => handleItemClick(e, idx, it));
 
-      // ===== DOUBLE-CLICK HANDLER (desktop only, for backwards-compat) =====
-      // On touch devices, this normally doesn't fire; single tap handles it via handleItemClick
       el.addEventListener('dblclick', (e) => {
-        // On touch devices, prevent double-processing
         if (IS_TOUCH_DEVICE) { e.preventDefault(); return; }
         handleItemDblClick(it);
       });
 
-      // ===== CONTEXT MENU (right-click + long-press) =====
       el.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -4314,9 +4357,7 @@
         buildContextMenu(it, e);
       });
 
-      // ===== DESKTOP HTML5 DRAG SOURCE =====
       el.addEventListener('dragstart', (e) => {
-        // Cancel on touch devices (HTML5 drag doesn't work well there anyway)
         if (IS_TOUCH_DEVICE) {
           e.preventDefault();
           return;
@@ -4326,12 +4367,10 @@
         try {
           e.dataTransfer.effectAllowed = 'move';
           e.dataTransfer.setData('text/plain', it.name);
-          // Custom drag image
           try {
             e.dataTransfer.setDragImage(el, el.offsetWidth / 2, el.offsetHeight / 2);
           } catch (err) {}
         } catch (err) {}
-        // Delay so the drag image isn't affected
         setTimeout(() => el.classList.add('dragging'), 0);
       });
 
@@ -4343,18 +4382,15 @@
         clearDragOverHighlights();
       });
 
-      // ===== FOLDER DROP TARGETS =====
       if (isDir) {
         el.addEventListener('dragover', (e) => {
           if (!draggedItem) return;
           if (draggedItem.name === it.name) return;
 
-          // Prevent folder into itself / into descendant
           if (isFolder(draggedItem)) {
             const srcName = draggedItem.name;
             const tgtName = it.name;
             if (tgtName === srcName) return;
-            // If we are inside a descendant path, forbid
             if (currentPath && currentPath.startsWith(srcName + '/')) return;
           }
 
@@ -4376,7 +4412,6 @@
         });
 
         el.addEventListener('dragleave', (e) => {
-          // Only remove if we actually left the element (not entered a child)
           const related = e.relatedTarget;
           if (related && el.contains(related)) return;
           el.classList.remove('drag-over-folder');
@@ -4414,14 +4449,9 @@
 
   /* ============================================================================
      TAP / CLICK HANDLER
-     - Desktop: click = select, dblclick = open
-     - Touch:   tap = open (folder) OR preview (file)   ← iOS fix
      ============================================================================ */
   function handleItemClick(e, idx, it) {
-    // ===== TOUCH DEVICES =====
     if (IS_TOUCH_DEVICE) {
-      // If user selected multi items earlier via long-press, tap clears & opens
-      // Direct open (folder) or preview (file)
       if (isFolder(it)) {
         handleItemDblClick(it);
       } else {
@@ -4430,7 +4460,6 @@
       return;
     }
 
-    // ===== DESKTOP (unchanged behavior) =====
     const isMac = navigator.platform.toUpperCase().includes('MAC');
     const multiKey = isMac ? e.metaKey : e.ctrlKey;
     const shiftKey = e.shiftKey;
@@ -5952,10 +5981,12 @@
       const hidden = layout.classList.toggle('side-hidden');
       sideToggle.innerHTML = hidden ? '&#10095;' : '&#10094;';
       sideToggle.title = hidden ? 'Show sidebar' : 'Hide sidebar';
+      // Re-sync topbar height in case it changes on this viewport
+      setTimeout(syncTopbarHeight, 320);
     });
   }
 
-  /* ---------------- DRAG & DROP (UPLOAD FILES INTO CURRENT FOLDER) ---------------- */
+  /* ---------------- DRAG & DROP (UPLOAD INTO CURRENT FOLDER) ---------------- */
   let dragDepth = 0;
   ['dragenter','dragover'].forEach(ev => {
     dropzone.addEventListener(ev, (e) => {
@@ -5964,7 +5995,6 @@
         if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
         return;
       }
-      // If dragging an existing item (internal move), don't show the upload hint
       if (draggedItem) {
         e.preventDefault();
         try { e.dataTransfer.dropEffect = 'none'; } catch (err) {}
@@ -5987,7 +6017,6 @@
     }
   });
   dropzone.addEventListener('drop', async (e) => {
-    // If it's an internal move, ignore — folder drops handle it
     if (draggedItem) {
       e.preventDefault();
       return;
