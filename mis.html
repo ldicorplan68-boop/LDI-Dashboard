@@ -171,6 +171,7 @@
     .topbar-right {
       display: flex; align-items: center; gap: 10px;
       flex-wrap: wrap; flex-shrink: 0;
+      margin-left: auto;
     }
 
     .content {
@@ -202,13 +203,14 @@
       height: calc(100vh - var(--topbar-h));
       height: calc(100dvh - var(--topbar-h));
       overflow-y: auto;
-      transition: transform var(--smooth), opacity var(--smooth), visibility var(--smooth);
-      will-change: transform;
+      transition: transform var(--smooth), opacity var(--smooth), visibility var(--smooth), margin-left var(--smooth);
+      will-change: transform, margin-left;
       -webkit-overflow-scrolling: touch;
     }
     .layout.side-hidden .sidebar {
       transform: translateX(-100%); opacity: 0; visibility: hidden;
       pointer-events: none;
+      margin-left: calc(-1 * var(--sidebar-w));
     }
 
     .side-title {
@@ -267,13 +269,11 @@
       flex: 1; min-width: 0;
       padding: 24px 22px 40px;
       padding-bottom: calc(40px + var(--safe-bottom));
-      transition: transform var(--smooth);
+      transition: margin-left var(--smooth), transform var(--smooth);
     }
     .main-col-inner {
       width: 100%; max-width: 1180px; min-width: 0; margin: 0 auto;
-      transition: transform var(--smooth);
     }
-    .layout.side-hidden .main-col-inner { transform: translateX(-80px); }
 
     /* ================= HERO ================= */
     .hero {
@@ -1179,6 +1179,7 @@
     /* ==========================================================================
        RESPONSIVE BREAKPOINTS
        Sidebar ALWAYS stays docked on the side — never stacked.
+       Main content SLIDES to fill the space when the sidebar hides.
        ========================================================================== */
 
     @media (min-width: 1441px) {
@@ -1234,7 +1235,6 @@
       .layout.side-hidden .side-show { left: 10px; }
 
       .main-col { padding: 18px 12px 30px; }
-      .layout.side-hidden .main-col-inner { transform: none; }
 
       .hero-title { font-size: 20px; }
       .hero-actions { justify-content: flex-start; }
@@ -1252,21 +1252,27 @@
     @media (max-width: 768px) {
       :root { --sidebar-w: clamp(110px, 34vw, 160px); }
 
+      /* Topbar: logo + text sa KALIWA, back button sa KANAN — hindi naka-stack */
       .topbar {
         padding: 10px 16px;
         padding-top: calc(10px + var(--safe-top));
-        gap: 12px;
-        flex-direction: column;
-        align-items: stretch;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
       }
-      .brand { justify-content: center; }
+      .brand {
+        justify-content: flex-start;
+        flex: 0 1 auto;
+        min-width: 0;
+      }
       .brand strong { font-size: 14px; }
-      .topbar-right {
-        justify-content: center;
-        width: 100%;
-      }
-      .topbar-right .button { flex: 1; justify-content: center; }
+      .brand small { font-size: 10.5px; }
       .nav-logo { height: 36px; }
+      .topbar-right {
+        margin-left: auto;
+        justify-content: flex-end;
+        flex-shrink: 0;
+      }
 
       .sidebar { padding: 14px 8px; gap: 6px; }
       .side-title { font-size: 9.5px; padding-left: 0; }
