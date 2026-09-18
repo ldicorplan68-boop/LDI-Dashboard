@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Folder Setting — LDI Sales Dashboard</title>
+
+<!-- 1) Load centralised host + anon key -->
+<script src="../connect.js"></script>
+
+<!-- 2) Turn HOSTNAME into CSS variables -->
+<script>
+(function(){
+  var H = window.HOSTNAME;
+  var r = document.documentElement.style;
+  r.setProperty('--img-background', "url('" + H + "/storage/v1/object/public/image/background.png')");
+  r.setProperty('--img-ldi1',       "url('" + H + "/storage/v1/object/public/image/ldi1.png')");
+  r.setProperty('--img-logo',       "url('" + H + "/storage/v1/object/public/image/logo.gif')");
+})();
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --royal:#1b1bb3;--royal-2:#2020c8;--royal-deep:#0d0d7a;
+  --red:#e31e24;--red-dark:#b9161b;
+  --amber:#f5a623;--sky:#2e9bd6;
+  --surface:#ffffff;--bg:#f4f6fb;
+  --text:#101425;--text-2:#4a5572;--muted:#8d97b0;
+  --border:#e3e7f2;--border-strong:#cdd4e6;
+  --shadow-sm:0 1px 3px rgba(16,20,37,.07);
+  --shadow-md:0 6px 20px rgba(16,20,37,.09);
+  --shadow-lg:0 16px 48px rgba(16,20,37,.16);
+  --r-sm:8px;--r-md:12px;--r-lg:18px;
+  --fast:150ms ease;--smooth:280ms cubic-bezier(.4,0,.2,1);
+  --img-background: url('');
+  --img-ldi1: url('');
+  --img-logo: url('');
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:'DM Sans',sans-serif;color:var(--text);
+  background:var(--royal-deep);
+  background-image:linear-gradient(180deg,rgba(27,27,179,.42) 0%,rgba(13,13,122,.72) 100%),var(--img-background);
+  background-size:cover,cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed,fixed;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit}
+input,select{font-family:inherit}
+.num{font-variant-numeric:tabular-nums}
+
+.button{border:0;border-radius:var(--r-sm);padding:10px 16px;font:600 13px/1 'DM Sans',sans-serif;cursor:pointer;transition:transform var(--fast),box-shadow var(--fast),background var(--fast);display:inline-flex;align-items:center;gap:6px}
+.button.primary{background:linear-gradient(135deg,var(--royal-2),var(--royal));color:#fff;box-shadow:0 2px 8px rgba(27,27,179,.35)}
+.button.primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(27,27,179,.45)}
+.button.primary:active{transform:translateY(0)}
+.button.secondary{background:rgba(255,255,255,.14);color:#e8ecff;border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(6px)}
+.button.secondary:hover{background:rgba(255,255,255,.24);color:#fff}
+.button.ghost{background:#eef1f9;color:var(--text-2);border:1px solid var(--border-strong)}
+.button.ghost:hover{background:#e2e7f5;color:var(--text)}
+.button.danger{background:var(--red);color:#fff}
+.button.danger:hover{background:var(--red-dark)}
+.button.small{padding:6px 12px;font-size:12px;border-radius:7px}
+.button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+a.button{text-decoration:none}
+
+.app{min-height:100vh;display:flex;flex-direction:column}
+.topbar{
+  position:sticky;top:0;z-index:50;min-height:68px;
+  background-image:linear-gradient(90deg,rgba(13,13,122,.88) 0%,rgba(27,27,179,.78) 45%,rgba(13,13,122,.88) 100%),var(--img-ldi1);
+  background-size:cover;background-position:center;
+  border-bottom:3px solid var(--amber);
+  box-shadow:0 4px 18px rgba(13,13,122,.45);
+  padding:10px 22px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  backdrop-filter:blur(8px);
+}
+.brand{display:flex;align-items:center;gap:12px}
+.nav-logo{height:40px;width:auto;border-radius:8px;background:#fff;padding:3px 6px;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.header-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.user-chip{color:#dbe2ff;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);white-space:nowrap}
+.user-chip:empty{display:none}
+
+.content{flex:1;max-width:1440px;margin:0 auto;padding:28px 22px 40px;width:100%}
+.card{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-sm);border:1px solid var(--border);transition:box-shadow var(--smooth),transform var(--smooth)}
+.card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:14px;flex-wrap:wrap}
+.card-head h2{font-size:17px;margin:0;font-family:'Space Grotesk',sans-serif;letter-spacing:-.2px}
+.panel-hint{margin:6px 0 0;font-size:13px;color:var(--text-2)}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-sm)}
+.monitor-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1500px}
+.monitor-table th,.monitor-table td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle}
+.monitor-table thead th{background:linear-gradient(135deg,var(--royal-2),var(--royal));color:#fff;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px}
+.monitor-table tbody tr:nth-child(even){background:#f7f9fd}
+.monitor-table tbody tr{cursor:pointer;transition:background var(--fast)}
+.monitor-table tbody tr:hover{background:#eef2ff}
+.monitor-table tbody tr.selected td{background:#e6ebff}
+.monitor-table tbody tr.selected td:first-child{box-shadow:inset 3px 0 0 var(--royal)}
+.monitor-table td.empty{text-align:center;color:var(--muted);padding:28px;cursor:default;white-space:normal}
+.monitor-table tbody tr.empty-row:hover{background:transparent}
+.col-check{width:38px}
+.col-check input{pointer-events:none;accent-color:var(--royal);width:15px;height:15px;cursor:pointer}
+.cell-muted{color:var(--muted)}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge.active{background:#e2f6ea;color:#0f7a3d}
+.badge.inactive{background:#fde6e7;color:#b9161b}
+.badge.pending{background:#fdf1dc;color:#a36a00}
+.badge.neutral{background:#eceffa;color:var(--text-2)}
+
+.content.settings-content{max-width:none;margin:0;padding:0;width:100%}
+
+/* ---- No-sidebar layout ---- */
+.main-col{flex:1;min-width:0;padding:24px 22px 40px}
+.main-col-inner{width:100%;max-width:1280px;min-width:0;margin:0 auto}
+
+.panel{display:block;background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden;animation:panelIn .26s ease}
+@keyframes panelIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.panel-body{padding:22px 24px 26px}
+.panel-body > .card-head{margin-bottom:16px}
+
+.hero{
+  position:relative;color:#fff;padding:28px 24px 26px;
+  background-image:linear-gradient(115deg,rgba(13,13,122,.95) 0%,rgba(27,27,179,.86) 48%,rgba(227,30,36,.60) 100%),var(--img-ldi1);
+  background-size:cover;background-position:center;
+  border-bottom:3px solid var(--amber);
+}
+.hero::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 150% at 100% 0%,rgba(255,255,255,.20),transparent 55%)}
+.hero-inner{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between}
+.hero-eyebrow{margin:0 0 7px;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:#ffd98a;font-weight:700}
+.hero-title{margin:0;font-family:'Space Grotesk',sans-serif;font-size:27px;letter-spacing:-.6px;line-height:1.1}
+.hero-sub{margin:9px 0 0;font-size:13px;line-height:1.5;color:rgba(255,255,255,.80);max-width:62ch}
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+.hero-btn{border:0;cursor:pointer;border-radius:999px;padding:12px 20px;font:700 13px/1 'DM Sans',sans-serif;letter-spacing:.2px;display:inline-flex;align-items:center;gap:8px;transition:transform var(--fast),box-shadow var(--fast),background var(--fast),opacity var(--fast),border-color var(--fast);box-shadow:0 8px 20px rgba(0,0,0,.28)}
+.hero-btn .hi{font-size:14px;line-height:1}
+.hero-btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(0,0,0,.34)}
+.hero-btn:active{transform:translateY(0)}
+.hero-btn.primary{background:#fff;color:var(--royal)}
+.hero-btn.primary:hover{background:#eef1ff}
+.hero-btn.edit{background:var(--amber);color:#3d2800}
+.hero-btn.edit:hover{background:#ffb845}
+.hero-btn.danger{background:var(--red);color:#fff}
+.hero-btn.danger:hover{background:var(--red-dark)}
+.hero-btn.success{background:#1aa05a;color:#fff}
+.hero-btn.success:hover{background:#148049}
+.hero-btn.ghost{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.42);backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.20)}
+.hero-btn.ghost:hover{background:rgba(255,255,255,.28)}
+.hero-btn:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.search-input{flex:1;min-width:200px;max-width:340px;border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:9px 12px;font-size:13px;background:#fff;color:var(--text);transition:border-color var(--fast),box-shadow var(--fast)}
+.search-input:focus{outline:none;border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.toolbar-info{font-size:12px;color:var(--text-2);font-weight:600;background:#eef1f9;border:1px solid var(--border);padding:7px 12px;border-radius:999px;white-space:nowrap}
+.toolbar-info.highlight{background:#e6ebff;border-color:#c7d1ff;color:var(--royal)}
+
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+@media(max-width:640px){.field-grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:15px}
+.field > span{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-2)}
+.field > span em{font-style:normal;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px}
+.field input,.field select{border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:10px 12px;font-size:13.5px;color:var(--text);background:#fff;width:100%;transition:border-color var(--fast),box-shadow var(--fast)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.field input::placeholder{color:#a9b2c8}
+.field input:disabled,.field select:disabled{background:#f1f3f9;color:var(--muted);cursor:not-allowed;border-color:var(--border)}
+
+.modal-backdrop{position:fixed;inset:0;z-index:200;padding:20px;background:rgba(9,11,26,.62);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center}
+.modal-backdrop.open{display:flex;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:#fff;border-radius:var(--r-lg);width:100%;max-width:720px;max-height:90vh;overflow:auto;box-shadow:var(--shadow-lg);border-top:4px solid var(--amber);animation:modalIn .24s cubic-bezier(.4,0,.2,1)}
+@keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 22px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:5;border-radius:var(--r-lg) var(--r-lg) 0 0}
+.modal-head h3{margin:0;font-family:'Space Grotesk',sans-serif;font-size:16.5px;letter-spacing:-.2px}
+.modal-close{border:0;background:#eef1f9;color:var(--text-2);width:32px;height:32px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer;transition:all var(--fast)}
+.modal-close:hover{background:var(--red);color:#fff}
+.modal-body{padding:20px 22px}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px 20px;border-top:1px solid var(--border);flex-wrap:wrap;position:sticky;bottom:0;background:#fff;border-radius:0 0 var(--r-lg) var(--r-lg)}
+.modal-text{margin:0;font-size:13.5px;color:var(--text-2);line-height:1.65}
+.modal-text strong{color:var(--text)}
+
+.danger-card{margin-top:14px;padding:12px 14px;border-radius:var(--r-sm);background:#fdeeee;border:1px solid #f6bcc0;color:#8a1216;font-size:12.5px;line-height:1.6}
+.danger-card ul{margin:8px 0 0;padding-left:18px}
+.danger-card li{margin:2px 0}
+.danger-card.final{margin-top:0;padding:16px 18px;background:linear-gradient(160deg,#fdeaea,#fbdcde);border:1px solid #f2a8ad;color:#7a0b10}
+.danger-card.final .dc-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;letter-spacing:-.2px;color:#b9161b;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.danger-card.final .dc-loud{margin:12px 0 0;padding:10px 12px;background:#fff;border-radius:6px;color:#b9161b;font-weight:700;font-size:12.5px;letter-spacing:.2px;border:1px dashed #e97b81}
+.ack-row{display:flex;align-items:flex-start;gap:10px;margin-top:14px;padding:12px 14px;border-radius:var(--r-sm);background:#fff7e6;border:1px solid #ffe0a3;font-size:12.5px;line-height:1.55;color:#7a4d00;cursor:pointer;user-select:none}
+.ack-row input{accent-color:var(--red);width:16px;height:16px;margin:2px 0 0;cursor:pointer;flex-shrink:0}
+.ack-row:hover{background:#fff3da}
+.ack-row:has(input:checked){background:#e2f6ea;border-color:#a9e0c1;color:#0f7a3d}
+
+.toast-wrap{position:fixed;right:18px;bottom:18px;z-index:800;display:flex;flex-direction:column;gap:10px;max-width:min(420px,calc(100vw - 36px))}
+.toast{background:#101425;color:#fff;padding:12px 16px;border-radius:10px;font-size:12.5px;font-weight:500;box-shadow:var(--shadow-lg);border-left:4px solid var(--royal);transition:opacity .22s ease,transform .22s ease;white-space:pre-wrap;word-break:break-word;line-height:1.45}
+.toast.ok{border-left-color:#1aa05a}
+.toast.error{border-left-color:var(--red)}
+.toast.warn{border-left-color:var(--amber)}
+
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:linear-gradient(160deg,#f8faff,#eef2fd);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px}
+.stat .stat-label{font-size:10.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)}
+.stat .stat-value{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-top:6px;letter-spacing:-.5px;color:var(--text);line-height:1.1}
+.stat .stat-sub{font-size:11.5px;color:var(--text-2);margin-top:4px}
+.stat.warn{background:linear-gradient(160deg,#fff8ec,#fdeed3);border-color:#ffdda1}
+.stat.danger{background:linear-gradient(160deg,#fdeeee,#fbdcdd);border-color:#f6bcc0}
+
+.monitor-table.folder-table{min-width:1040px}
+.bar{position:relative;display:block;height:8px;border-radius:999px;background:#e6eaf5;overflow:hidden;width:100%;min-width:110px}
+.bar > i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--royal-2),var(--royal));transition:width var(--smooth)}
+.bar.ok > i{background:linear-gradient(90deg,#2fbe78,#0f7a3d)}
+.bar.warn > i{background:linear-gradient(90deg,#ffc44d,var(--amber))}
+.bar.over > i{background:linear-gradient(90deg,#f0555b,var(--red))}
+.bar-cell{display:flex;flex-direction:column;gap:5px;min-width:140px}
+.bar-cell .bar-text{font-size:11px;font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums}
+
+.warning-box{display:none;margin-bottom:16px;padding:14px 16px;border-radius:var(--r-sm);background:#fff7e6;border:1px solid #ffe0a3;color:#7a4d00;font-size:12.5px;line-height:1.6}
+.warning-box strong{color:#a36a00}
+.warning-box pre{margin:10px 0 0;padding:10px 12px;border-radius:6px;background:#101425;color:#d7e2ff;font-size:11px;line-height:1.55;overflow-x:auto;white-space:pre}
+
+@media(max-width:900px){
+  .main-col{padding:18px 14px 30px}
+  .hero{padding:22px 18px}
+  .hero-title{font-size:22px}
+  .hero-inner{align-items:flex-start}
+  .hero-actions{width:100%}
+  .hero-btn{flex:1;justify-content:center;padding:11px 14px}
+}
+@media(max-width:560px){
+  .content{padding:18px 14px 30px}
+  .topbar{padding:10px 14px}
+  .header-actions{width:100%}
+  .panel-body{padding:18px 16px 22px}
+  .search-input{max-width:none}
+  .modal-backdrop{padding:0}
+  .modal{max-height:100vh;border-radius:0;min-height:100vh}
+  .modal-head{border-radius:0}
+  .modal-foot{border-radius:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand">
+    <img data-img="logo.gif" alt="LDI" class="nav-logo">
+  </div>
+  <div class="header-actions">
+    <span class="user-chip" id="current-user"></span>
+    <a class="button secondary" href="#" id="btn-back">&#8592; Back</a>
+  </div>
+</header>
+
+<main class="content settings-content">
+  <div class="main-col">
+    <div class="main-col-inner">
+
+      <section class="panel active" id="panel-option-2">
+        <div class="hero">
+          <div class="hero-inner">
+            <div>
+              <p class="hero-eyebrow">Settings &middot; Storage</p>
+              <h2 class="hero-title">Folder Setting — Department Storage</h2>
+              <p class="hero-sub">
+                Monitor how much space each folder inside the <strong>department</strong> bucket is using.
+                Create new folders, set per-folder limits, or delete a folder entirely.
+                Rows that exceed their limit are flagged in red.
+              </p>
+            </div>
+            <div class="hero-actions">
+              <button class="hero-btn success" id="btn-new-folder" type="button">
+                <span class="hi">&#43;</span> New Folder
+              </button>
+              <button class="hero-btn primary" id="btn-scan" type="button">
+                <span class="hi">&#8635;</span> Rescan Storage
+              </button>
+              <button class="hero-btn edit" id="btn-set-limit" type="button" disabled>
+                <span class="hi">&#9998;</span> Set Limit
+              </button>
+              <button class="hero-btn ghost" id="btn-clear-limit" type="button" disabled>
+                <span class="hi">&#10005;</span> Remove Limit
+              </button>
+              <button class="hero-btn danger" id="btn-delete-folder" type="button" disabled>
+                <span class="hi">&#128465;</span> Delete Folder
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="warning-box" id="folder-db-warning"></div>
+
+          <div class="stat-row" id="storage-stats"></div>
+
+          <div class="toolbar">
+            <input id="folder-search" class="search-input" type="search" placeholder="Search folder name&hellip;">
+            <button class="button ghost small" id="btn-scan-2" type="button">&#8635; Rescan</button>
+            <button class="button ghost small" id="btn-new-folder-2" type="button">&#43; New Folder</button>
+            <span class="toolbar-info" id="folder-count">0 folders</span>
+            <span class="toolbar-info highlight" id="folder-selected-info">No folder selected</span>
+          </div>
+
+          <div class="table-wrap">
+            <table class="monitor-table folder-table">
+              <thead>
+                <tr>
+                  <th class="col-check"></th>
+                  <th>Folder</th>
+                  <th>Files</th>
+                  <th>Size Used</th>
+                  <th>Limit</th>
+                  <th>Usage</th>
+                  <th>Status</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody id="folders-tbody">
+                <tr class="empty-row"><td class="empty" colspan="8">Loading storage&hellip;</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ============================ MODAL ============================ -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <h3 id="modal-title">Modal</h3>
+      <button class="modal-close" id="modal-close" type="button" title="Close">&#215;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- Back button — returns to previous page -->
+<script>
+document.getElementById('btn-back').addEventListener('click', function(e){
+  e.preventDefault();
+  if (history.length > 1){
+    history.back();
+  } else {
+    location.href = '../dashboard.html';
+  }
+});
+</script>
+
+<!-- Resolve data-img placeholders using HOSTNAME -->
+<script>
+document.querySelectorAll('[data-img]').forEach(function(el){
+  el.src = window.HOSTNAME + '/storage/v1/object/public/image/' + el.dataset.img;
+});
+</script>
+
+<script>
+(async () => {
+/* ============================================================
+   Inlined Supabase client — uses window.HOSTNAME / window.ANON_KEY
+   ============================================================ */
+const SUPABASE_URL      = window.HOSTNAME;
+const SUPABASE_ANON_KEY = window.ANON_KEY;
+
+class QB {
+  constructor(t){
+    this.t = t;
+    this.url = SUPABASE_URL + '/rest/v1/' + t;
+    this.p = [];
+    this.m = 'GET';
+    this.b = null;
+    this.rr = false;
+  }
+  select(f='*'){ this.p.push('select=' + encodeURIComponent(f)); return this; }
+  eq(f,v){ this.p.push(f + '=eq.' + encodeURIComponent(v)); return this; }
+  neq(f,v){ this.p.push(f + '=not.' + encodeURIComponent(v)); return this; }
+  gt(f,v){ this.p.push(f + '=gt.' + encodeURIComponent(v)); return this; }
+  lt(f,v){ this.p.push(f + '=lt.' + encodeURIComponent(v)); return this; }
+  gte(f,v){ this.p.push(f + '=gte.' + encodeURIComponent(v)); return this; }
+  lte(f,v){ this.p.push(f + '=lte.' + encodeURIComponent(v)); return this; }
+  like(f,v){ this.p.push(f + '=like.' + encodeURIComponent(v)); return this; }
+  ilike(f,v){ this.p.push(f + '=ilike.' + encodeURIComponent(v)); return this; }
+  in(f,vs){ this.p.push(f + '=in.(' + vs.map(encodeURIComponent).join(',') + ')'); return this; }
+  order(f,o={}){ this.p.push('order=' + f + '.' + (o.ascending === false ? 'desc' : 'asc')); return this; }
+  limit(n){ this.p.push('limit=' + n); return this; }
+  offset(n){ this.p.push('offset=' + n); return this; }
+
+  _url(){ return this.p.length ? this.url + '?' + this.p.join('&') : this.url; }
+
+  _h(e={}){
+    const h = {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+      'ngrok-skip-browser-warning': 'true',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...e
+    };
+    if (this.rr) h.Prefer = 'return=representation';
+    return h;
+  }
+
+  _build(){
+    const init = { method: this.m, headers: this._h() };
+    if (this.b != null) init.body = JSON.stringify(this.b);
+    return init;
+  }
+
+  async _run(){
+    const r = await fetch(this._url(), this._build());
+    const text = await r.text();
+    if (!r.ok) throw new Error('API Error: ' + text);
+    if (!text) return [];
+    try { return JSON.parse(text); }
+    catch(e){ return text; }
+  }
+
+  then(onF, onR){ return this._run().then(onF, onR); }
+  catch(onR){ return this._run().catch(onR); }
+
+  async single(){
+    this.p.push('limit=1');
+    const r = await this._run();
+    return (r && r.length) ? r[0] : null;
+  }
+  async insert(rows){
+    this.m = 'POST';
+    this.b = Array.isArray(rows) ? rows : [rows];
+    this.rr = true;
+    return await this._run();
+  }
+  async update(changes){
+    this.m = 'PATCH';
+    this.b = changes;
+    this.rr = true;
+    return await this._run();
+  }
+  async delete(){
+    this.m = 'DELETE';
+    this.rr = true;
+    return await this._run();
+  }
+}
+
+const supabase = {
+  from(t){ return new QB(t); },
+  auth:{
+    currentUser: null,
+    session: null,
+    async signInWithPassword({ email, password }){
+      try {
+        const u = await supabase.from('users').select('*').eq('username', email).single();
+        if (!u) return { data: null, error: { message: 'User not found' } };
+        if (u.password !== password) return { data: null, error: { message: 'Wrong password' } };
+        if (u.status === 'pending') return { data: null, error: { message: 'Account pending admin approval' } };
+        if (u.status === 'inactive') return { data: null, error: { message: 'Account is inactive' } };
+        supabase.auth.currentUser = u;
+        supabase.auth.session = { user: u };
+        try { sessionStorage.setItem('ldi_session', JSON.stringify(u)); } catch(e){}
+        return { data: { user: u, session: supabase.auth.session }, error: null };
+      } catch(e){
+        console.error('Login error:', e);
+        return { data: null, error: { message: e.message || 'Login failed' } };
+      }
+    },
+    async signUp({ email, password }){
+      try {
+        const ex = await supabase.from('users').select('id').eq('username', email).single();
+        if (ex) return { data: null, error: { message: 'Username already exists' } };
+        const c = await supabase.from('users').insert({
+          username: email, password, role: 'sales_rep', status: 'pending',
+          assigned_companies: [], assigned_sales_rep_codes: [], assigned_areas: []
+        });
+        const user = Array.isArray(c) ? c[0] : c;
+        return { data: { user }, error: null };
+      } catch(e){
+        console.error('SignUp error:', e);
+        return { data: null, error: { message: e.message || 'Sign up failed' } };
+      }
+    },
+    async signOut(){
+      supabase.auth.currentUser = null;
+      supabase.auth.session = null;
+      try { sessionStorage.removeItem('ldi_session'); } catch(e){}
+      return { error: null };
+    },
+    async getSession(){
+      try {
+        const raw = sessionStorage.getItem('ldi_session');
+        if (raw){
+          const u = JSON.parse(raw);
+          supabase.auth.currentUser = u;
+          supabase.auth.session = { user: u };
+        }
+      } catch(e){}
+      return { data: { session: supabase.auth.session }, error: null };
+    }
+  },
+  async init(){}
+};
+
+await supabase.init();
+const session = await supabase.auth.getSession();
+if (!session?.data?.session?.user){
+  location.replace('../index.html');
+  return;
+}
+
+/* ============================================================
+   FOLDER SETTING APP
+   ============================================================ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => (
+  { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+));
+
+function friendlyError(err){
+  const raw = String(err?.message || err || '');
+  const jsonStart = raw.indexOf('{');
+  if (jsonStart >= 0){
+    try {
+      const obj = JSON.parse(raw.slice(jsonStart));
+      if (obj.message) return obj.message + (obj.code ? ' [' + obj.code + ']' : '');
+    } catch(e){}
+  }
+  return raw;
+}
+
+function toast(msg, kind = 'ok'){
+  let wrap = $('#toast-wrap');
+  if (!wrap){
+    wrap = document.createElement('div');
+    wrap.id = 'toast-wrap';
+    wrap.className = 'toast-wrap';
+    document.body.appendChild(wrap);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(8px)';
+    setTimeout(() => el.remove(), 240);
+  }, 4200);
+}
+
+/* ---------- modal ---------- */
+const backdrop = $('#modal-backdrop');
+function openModal({ title, bodyHTML, footHTML }){
+  $('#modal-title').textContent = title;
+  $('#modal-body').innerHTML = bodyHTML;
+  $('#modal-foot').innerHTML = footHTML;
+  backdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(){
+  backdrop.classList.remove('open');
+  document.body.style.overflow = '';
+  $('#modal-body').innerHTML = '';
+  $('#modal-foot').innerHTML = '';
+}
+$('#modal-close').addEventListener('click', closeModal);
+backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && backdrop.classList.contains('open')) closeModal();
+});
+
+/* ============================================================
+   OPTION 2 — FOLDER STORAGE MONITORING
+   ============================================================ */
+const STORAGE_BUCKET     = 'department';
+const FOLDER_TABLE       = 'folder_limits';
+const FOLDER_SCAN_DEPTH  = 6;
+const STORAGE_PAGE       = 100;
+const STORAGE_MAX_PAGES  = 200;
+const PLACEHOLDER_NAME   = '.emptyFolderPlaceholder';
+
+const UNIT = { KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3, TB: 1024 ** 4 };
+
+const storage = {
+  folders: [],
+  limits: new Map(),
+  limitsTableMissing: false,
+  selected: null,
+  totalBytes: 0,
+  totalFiles: 0,
+  loaded: false,
+  loading: false,
+  scanning: false
+};
+
+const tbodyFolders = document.getElementById('folders-tbody');
+
+function humanBytes(n){
+  n = Number(n) || 0;
+  if (n < 1024) return n + ' B';
+  const units = ['KB','MB','GB','TB','PB'];
+  let i = -1;
+  do { n /= 1024; i++; } while (n >= 1024 && i < units.length - 1);
+  const dec = n >= 100 ? 0 : n >= 10 ? 1 : 2;
+  return n.toFixed(dec) + ' ' + units[i];
+}
+function splitBytes(bytes){
+  const gb = 1024 ** 3, mb = 1024 ** 2, tb = 1024 ** 4;
+  if (bytes >= tb) return { unit: 'TB', value: +(bytes / tb).toFixed(3) };
+  if (bytes >= gb) return { unit: 'GB', value: +(bytes / gb).toFixed(3) };
+  if (bytes >= mb) return { unit: 'MB', value: +(bytes / mb).toFixed(2) };
+  return { unit: 'KB', value: +(bytes / 1024).toFixed(2) };
+}
+
+async function storageListPage(prefix, limit, offset){
+  const url = SUPABASE_URL + '/storage/v1/object/list/' + encodeURIComponent(STORAGE_BUCKET);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      prefix: prefix || '',
+      limit,
+      offset,
+      sortBy: { column: 'name', order: 'asc' }
+    })
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || ('HTTP ' + res.status));
+  if (!text) return [];
+  try { return JSON.parse(text); }
+  catch(e){ return []; }
+}
+async function listAllEntries(prefix){
+  const out = [];
+  let offset = 0;
+  for (let page = 0; page < STORAGE_MAX_PAGES; page++){
+    const batch = await storageListPage(prefix, STORAGE_PAGE, offset);
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    out.push(...batch);
+    if (batch.length < STORAGE_PAGE) break;
+    offset += batch.length;
+  }
+  return out;
+}
+async function walkStorage(prefix, files, topFolders, depth){
+  if (depth > FOLDER_SCAN_DEPTH) return;
+  const entries = await listAllEntries(prefix);
+  const subFolders = [];
+
+  for (const entry of entries){
+    if (entry.name === PLACEHOLDER_NAME) continue;
+    const full = prefix ? prefix + '/' + entry.name : entry.name;
+    const isFolder = !entry.id || !entry.metadata;
+    if (isFolder){
+      if (depth === 0) topFolders.add(entry.name);
+      subFolders.push(full);
+    } else {
+      files.push({ path: full, size: Number(entry.metadata?.size || 0) });
+    }
+  }
+
+  const BATCH = 4;
+  for (let i = 0; i < subFolders.length; i += BATCH){
+    await Promise.all(
+      subFolders.slice(i, i + BATCH).map(s => walkStorage(s, files, topFolders, depth + 1))
+    );
+  }
+}
+function aggregateByTopFolder(files, topFolders){
+  const map = new Map();
+  topFolders.forEach(name => map.set(name, { name, files: 0, bytes: 0 }));
+  for (const f of files){
+    const parts = f.path.split('/');
+    const top = parts.length > 1 ? parts[0] : '(root files)';
+    let rec = map.get(top);
+    if (!rec){ rec = { name: top, files: 0, bytes: 0 }; map.set(top, rec); }
+    rec.files += 1;
+    rec.bytes += f.size;
+  }
+  return Array.from(map.values()).sort((a, b) => b.bytes - a.bytes);
+}
+
+async function loadFolderLimits(){
+  try {
+    const rows = await supabase.from(FOLDER_TABLE).select('*');
+    storage.limits = new Map();
+    (Array.isArray(rows) ? rows : []).forEach(r => {
+      storage.limits.set(String(r.folder), {
+        id: r.id,
+        limit_bytes: r.limit_bytes == null ? null : Number(r.limit_bytes),
+        note: r.note || ''
+      });
+    });
+    storage.limitsTableMissing = false;
+  } catch (err){
+    console.warn('[folder_limits] unavailable:', friendlyError(err));
+    storage.limits = new Map();
+    storage.limitsTableMissing = true;
+  }
+  renderFolderDbWarning();
+}
+async function saveFolderLimit(folder, limitBytes, note){
+  const existing = storage.limits.get(folder);
+  if (existing && existing.id != null){
+    await supabase.from(FOLDER_TABLE).eq('id', existing.id).update({
+      limit_bytes: limitBytes,
+      note
+    });
+    storage.limits.set(folder, { ...existing, limit_bytes: limitBytes, note });
+  } else {
+    const inserted = await supabase.from(FOLDER_TABLE).insert({
+      bucket: STORAGE_BUCKET,
+      folder,
+      limit_bytes: limitBytes,
+      note
+    });
+    const row = Array.isArray(inserted) ? inserted[0] : inserted;
+    storage.limits.set(folder, {
+      id: row?.id ?? null,
+      limit_bytes: limitBytes,
+      note
+    });
+  }
+}
+async function deleteFolderLimit(folder){
+  const rec = storage.limits.get(folder);
+  if (!rec) return;
+  if (rec.id != null){
+    await supabase.from(FOLDER_TABLE).eq('id', rec.id).delete();
+  }
+  storage.limits.delete(folder);
+}
+
+function sanitizeFolderPath(input){
+  let clean = String(input || '').trim().replace(/\\/g, '/');
+  clean = clean.replace(/^\/+|\/+$/g, '');
+  clean = clean.replace(/\/{2,}/g, '/');
+
+  if (!clean) throw new Error('Folder name is required.');
+  if (clean.length > 200) throw new Error('Folder name is too long (200 chars max).');
+
+  const segments = clean.split('/');
+  for (const seg of segments){
+    if (!seg) throw new Error('Folder path contains an empty segment.');
+    if (seg === '.' || seg === '..') throw new Error('Folder path cannot contain "." or "..".');
+    if (seg.length > 80) throw new Error('Each folder segment must be 80 chars or less.');
+  }
+  if (!/^[A-Za-z0-9 _.\-()&/]+$/.test(clean)){
+    throw new Error('Folder name contains invalid characters. Allowed: letters, numbers, spaces, and . _ - ( ) & /');
+  }
+  return clean;
+}
+async function createStorageFolder(rawPath){
+  const clean = sanitizeFolderPath(rawPath);
+  const exists = await listAllEntries(clean);
+  if (Array.isArray(exists) && exists.length > 0){
+    throw new Error('A folder or file named "' + clean + '" already exists.');
+  }
+  const placeholderPath = clean + '/' + PLACEHOLDER_NAME;
+  const encodedPath = placeholderPath.split('/').map(encodeURIComponent).join('/');
+  const url = SUPABASE_URL + '/storage/v1/object/' +
+              encodeURIComponent(STORAGE_BUCKET) + '/' + encodedPath;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'text/plain',
+      'x-upsert': 'true',
+      'cache-control': 'no-cache'
+    },
+    body: new Blob([''], { type: 'text/plain' })
+  });
+  const text = await res.text();
+  if (!res.ok){
+    let msg = text;
+    try { const j = JSON.parse(text); msg = j.message || j.error || j.statusCode || text; } catch(e){}
+    throw new Error(msg || ('HTTP ' + res.status));
+  }
+  return clean;
+}
+
+async function collectFolderFilePaths(prefix, out){
+  const entries = await listAllEntries(prefix);
+  const subFolders = [];
+  for (const entry of entries){
+    const full = prefix ? prefix + '/' + entry.name : entry.name;
+    const isFolder = !entry.id || !entry.metadata;
+    if (isFolder){
+      subFolders.push(full);
+    } else {
+      out.push(full);
+    }
+  }
+  const BATCH = 4;
+  for (let i = 0; i < subFolders.length; i += BATCH){
+    await Promise.all(
+      subFolders.slice(i, i + BATCH).map(s => collectFolderFilePaths(s, out))
+    );
+  }
+  return out;
+}
+async function deleteStorageFolder(folderName){
+  const clean = sanitizeFolderPath(folderName);
+  const exists = await listAllEntries(clean);
+  if (!Array.isArray(exists) || exists.length === 0){
+    throw new Error('Folder "' + clean + '" no longer exists in the bucket.');
+  }
+  const paths = [];
+  await collectFolderFilePaths(clean, paths);
+  if (paths.length){
+    const url = SUPABASE_URL + '/storage/v1/object/' + encodeURIComponent(STORAGE_BUCKET);
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ prefixes: paths })
+    });
+    const text = await res.text();
+    if (!res.ok){
+      let msg = text;
+      try { const j = JSON.parse(text); msg = j.message || j.error || text; } catch(e){}
+      throw new Error(msg || ('HTTP ' + res.status));
+    }
+  }
+  try {
+    if (storage.limits.has(clean)){
+      await deleteFolderLimit(clean);
+    }
+  } catch (err){
+    console.warn('[delete folder] could not remove limit:', err);
+  }
+  return { folder: clean, filesDeleted: paths.length };
+}
+
+function setScanBusy(busy){
+  const b1 = document.getElementById('btn-scan');
+  const b2 = document.getElementById('btn-scan-2');
+  if (b1){
+    b1.disabled = busy;
+    b1.innerHTML = busy
+      ? '<span class="hi">&#8635;</span> Scanning…'
+      : '<span class="hi">&#8635;</span> Rescan Storage';
+  }
+  if (b2) b2.disabled = busy;
+}
+async function scanStorage(){
+  if (storage.scanning) return;
+  storage.scanning = true;
+  setScanBusy(true);
+  if (tbodyFolders){
+    tbodyFolders.innerHTML =
+      '<tr class="empty-row"><td class="empty" colspan="8">Scanning bucket “' + esc(STORAGE_BUCKET) + '”…</td></tr>';
+  }
+  try {
+    const files = [];
+    const topFolders = new Set();
+    await walkStorage('', files, topFolders, 0);
+    storage.folders    = aggregateByTopFolder(files, topFolders);
+    storage.totalBytes = files.reduce((s, f) => s + f.size, 0);
+    storage.totalFiles = files.length;
+    storage.loaded = true;
+    console.log('[scanStorage] ' + files.length + ' file(s), ' +
+                humanBytes(storage.totalBytes) + ' across ' +
+                storage.folders.length + ' top-level folder(s).');
+  } catch (err){
+    console.error('[scanStorage] failed:', err);
+    if (tbodyFolders){
+      tbodyFolders.innerHTML =
+        '<tr class="empty-row"><td class="empty" colspan="8">Scan failed: ' +
+        esc(friendlyError(err)) + '</td></tr>';
+    }
+  } finally {
+    storage.scanning = false;
+    setScanBusy(false);
+  }
+  renderFolders();
+}
+async function loadFolderSettings(){
+  if (storage.loading) return;
+  storage.loading = true;
+  try {
+    await loadFolderLimits();
+    await scanStorage();
+  } finally {
+    storage.loading = false;
+  }
+}
+
+function folderRowHTML(f){
+  const lim = storage.limits.get(f.name);
+  const limitBytes = lim && lim.limit_bytes != null ? lim.limit_bytes : null;
+  const sel = storage.selected === f.name;
+
+  let usageCell, statusCell;
+
+  if (limitBytes == null){
+    usageCell  = '<span class="cell-muted">No limit</span>';
+    statusCell = '<span class="badge neutral">Unlimited</span>';
+  } else if (limitBytes <= 0){
+    usageCell  = '<span class="cell-muted">—</span>';
+    statusCell = '<span class="badge neutral">Blocked</span>';
+  } else {
+    const p = (f.bytes / limitBytes) * 100;
+    const w = Math.max(2, Math.min(100, p));
+    let barCls;
+    if (p >= 100){
+      barCls = 'bar over';
+      statusCell = '<span class="badge inactive">Over limit</span>';
+    } else if (p >= 80){
+      barCls = 'bar warn';
+      statusCell = '<span class="badge pending">Near limit</span>';
+    } else {
+      barCls = 'bar ok';
+      statusCell = '<span class="badge active">OK</span>';
+    }
+    usageCell = `
+      <div class="bar-cell">
+        <span class="bar-text">${p.toFixed(1)}%</span>
+        <span class="${barCls}"><i style="width:${w}%"></i></span>
+      </div>`;
+  }
+
+  return `
+    <tr data-folder="${esc(f.name)}" class="${sel ? 'selected' : ''}">
+      <td class="col-check"><input type="checkbox" ${sel ? 'checked' : ''} tabindex="-1"></td>
+      <td><strong>${esc(f.name)}</strong></td>
+      <td class="num">${f.files}</td>
+      <td class="num">${humanBytes(f.bytes)}</td>
+      <td class="num">${limitBytes == null ? '<span class="cell-muted">—</span>' : humanBytes(limitBytes)}</td>
+      <td>${usageCell}</td>
+      <td>${statusCell}</td>
+      <td>${lim && lim.note ? esc(lim.note) : '<span class="cell-muted">—</span>'}</td>
+    </tr>`;
+}
+
+function renderFolders(){
+  if (!tbodyFolders) return;
+
+  const q = (document.getElementById('folder-search')?.value || '').trim().toLowerCase();
+  const rows = storage.folders.filter(f => !q || f.name.toLowerCase().includes(q));
+
+  const totalLimit = Array.from(storage.limits.values())
+    .reduce((s, v) => s + (v.limit_bytes || 0), 0);
+
+  const overCount = storage.folders.filter(f => {
+    const l = storage.limits.get(f.name);
+    return l && l.limit_bytes > 0 && f.bytes > l.limit_bytes;
+  }).length;
+
+  const nearCount = storage.folders.filter(f => {
+    const l = storage.limits.get(f.name);
+    if (!l || !(l.limit_bytes > 0)) return false;
+    const p = (f.bytes / l.limit_bytes) * 100;
+    return p >= 80 && p < 100;
+  }).length;
+
+  const statsEl = document.getElementById('storage-stats');
+  if (statsEl){
+    statsEl.innerHTML = `
+      <div class="stat">
+        <div class="stat-label">Bucket Used</div>
+        <div class="stat-value">${humanBytes(storage.totalBytes)}</div>
+        <div class="stat-sub">${storage.totalFiles} file${storage.totalFiles === 1 ? '' : 's'} · ${storage.folders.length} folder${storage.folders.length === 1 ? '' : 's'}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Total Limits Set</div>
+        <div class="stat-value">${totalLimit ? humanBytes(totalLimit) : '—'}</div>
+        <div class="stat-sub">${storage.limits.size} folder${storage.limits.size === 1 ? '' : 's'} limited</div>
+      </div>
+      <div class="stat ${nearCount ? 'warn' : ''}">
+        <div class="stat-label">Near Limit</div>
+        <div class="stat-value">${nearCount}</div>
+        <div class="stat-sub">80% or more used</div>
+      </div>
+      <div class="stat ${overCount ? 'danger' : ''}">
+        <div class="stat-label">Over Limit</div>
+        <div class="stat-value">${overCount}</div>
+        <div class="stat-sub">folders exceeding their limit</div>
+      </div>
+    `;
+  }
+
+  if (!rows.length){
+    tbodyFolders.innerHTML =
+      '<tr class="empty-row"><td class="empty" colspan="8">' +
+      (storage.folders.length
+        ? 'No folder matches your search.'
+        : 'No folders found in the “' + esc(STORAGE_BUCKET) + '” bucket.') +
+      '</td></tr>';
+  } else {
+    tbodyFolders.innerHTML = rows.map(folderRowHTML).join('');
+  }
+
+  const countEl = document.getElementById('folder-count');
+  if (countEl){
+    countEl.textContent = storage.folders.length + (storage.folders.length === 1 ? ' folder' : ' folders');
+  }
+  updateFolderSelectionUI();
+}
+
+function updateFolderSelectionUI(){
+  const has = !!storage.selected;
+  const hasLimit = has && storage.limits.has(storage.selected);
+
+  const b1 = document.getElementById('btn-set-limit');
+  const b2 = document.getElementById('btn-clear-limit');
+  const b3 = document.getElementById('btn-delete-folder');
+  if (b1) b1.disabled = !has;
+  if (b2) b2.disabled = !hasLimit;
+  if (b3) b3.disabled = !has;
+
+  const info = document.getElementById('folder-selected-info');
+  if (info){
+    info.textContent = has ? ('Selected: ' + storage.selected) : 'No folder selected';
+  }
+}
+
+function renderFolderDbWarning(){
+  const el = document.getElementById('folder-db-warning');
+  if (!el) return;
+  if (!storage.limitsTableMissing){
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  el.style.display = 'block';
+  el.innerHTML = `
+    <strong>The <code>folder_limits</code> table was not found.</strong>
+    Storage monitoring, folder creation and deletion still work, but limits cannot be saved yet.
+    Run this once in the Supabase SQL editor:
+    <pre>create table if not exists public.folder_limits (
+  id          bigserial primary key,
+  bucket      text not null default 'department',
+  folder      text not null,
+  limit_bytes bigint,
+  note        text default '',
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create unique index if not exists folder_limits_bucket_folder_key
+  on public.folder_limits (bucket, folder);
+
+alter table public.folder_limits enable row level security;
+
+create policy "folder_limits read"   on public.folder_limits for select using (true);
+create policy "folder_limits insert" on public.folder_limits for insert with check (true);
+create policy "folder_limits update" on public.folder_limits for update using (true);
+create policy "folder_limits delete" on public.folder_limits for delete using (true);</pre>
+  `;
+}
+
+function openCreateFolderModal(){
+  openModal({
+    title: 'Create New Folder',
+    bodyHTML: `
+      <p class="modal-text" style="margin-bottom:16px">
+        Create a new folder inside the <strong>${esc(STORAGE_BUCKET)}</strong> bucket.
+        Use <code>/</code> to nest sub-folders, e.g. <code>Finance/2024/Q1</code>.
+      </p>
+      <form id="folder-form" autocomplete="off" novalidate>
+        <label class="field"><span>Folder Name</span>
+          <input id="folder-name" type="text" autocomplete="off"
+                 placeholder="e.g. Finance or Finance/2024/Q1"
+                 maxlength="200">
+        </label>
+        <p class="panel-hint" style="margin:0">
+          Allowed characters: letters, numbers, spaces, and <code>. _ - ( ) &amp; /</code>
+        </p>
+      </form>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="folder-cancel">Cancel</button>
+      <button class="button primary" type="button" id="folder-create">Create Folder</button>`
+  });
+
+  const input = document.getElementById('folder-name');
+  const createBtn = document.getElementById('folder-create');
+  setTimeout(() => input?.focus(), 90);
+
+  const submit = async () => {
+    const name = input.value.trim();
+    createBtn.disabled = true;
+    createBtn.textContent = 'Creating…';
+    try {
+      const created = await createStorageFolder(name);
+      closeModal();
+      toast('Folder "' + created + '" created.');
+      storage.selected = created.split('/')[0];
+      await scanStorage();
+    } catch (err){
+      console.error('[create folder] failed:', err);
+      toast('Could not create folder: ' + friendlyError(err), 'error');
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create Folder';
+    }
+  };
+
+  document.getElementById('folder-cancel').addEventListener('click', closeModal);
+  createBtn.addEventListener('click', submit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); submit(); }
+  });
+}
+
+async function openDeleteFolderModal(folderName){
+  let allPaths = [];
+  try {
+    await collectFolderFilePaths(folderName, allPaths);
+  } catch (err){
+    console.error('[delete folder] could not list contents:', err);
+    toast('Could not list folder contents: ' + friendlyError(err), 'error');
+    return;
+  }
+
+  const realFiles = allPaths.filter(p => p.split('/').pop() !== PLACEHOLDER_NAME);
+  const fileCount = realFiles.length;
+  const hasFiles  = fileCount > 0;
+
+  const rec = storage.folders.find(f => f.name === folderName) || null;
+  const totalBytes = rec ? rec.bytes : 0;
+  const hasLimit   = storage.limits.has(folderName);
+
+  const subs = new Set();
+  allPaths.forEach(p => {
+    const rest = p.slice(folderName.length + 1);
+    const first = rest.split('/')[0];
+    if (rest.includes('/') && first) subs.add(first);
+  });
+  const subCount = subs.size;
+
+  const infoLines = [
+    `<li><strong>${fileCount}</strong> file${fileCount === 1 ? '' : 's'} (${humanBytes(totalBytes)})</li>`,
+    `<li><strong>${subCount}</strong> sub-folder${subCount === 1 ? '' : 's'}</li>`
+  ];
+  if (hasLimit) infoLines.push('<li>The storage limit entry for this folder</li>');
+
+  openModal({
+    title: 'Delete Folder · ' + folderName,
+    bodyHTML: `
+      <p class="modal-text">
+        You are about to delete the folder <strong>${esc(folderName)}</strong>
+        from the <strong>${esc(STORAGE_BUCKET)}</strong> bucket.
+      </p>
+      <div class="danger-card">
+        <strong>This will remove:</strong>
+        <ul>${infoLines.join('')}</ul>
+        <br>
+        <strong>Deletion cannot be returned.</strong>
+      </div>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="folder-del-cancel">Cancel</button>
+      <button class="button danger" type="button" id="folder-del-continue">
+        ${hasFiles ? 'Continue' : 'Delete Folder'}
+      </button>`
+  });
+
+  document.getElementById('folder-del-cancel').addEventListener('click', closeModal);
+
+  const continueBtn = document.getElementById('folder-del-continue');
+
+  if (!hasFiles){
+    continueBtn.addEventListener('click', () => {
+      performFolderDelete(folderName, continueBtn, 'Delete Folder');
+    });
+    return;
+  }
+
+  continueBtn.addEventListener('click', () => {
+    openFinalDeleteConfirm(folderName, { fileCount, totalBytes, subCount, hasLimit });
+  });
+}
+
+function openFinalDeleteConfirm(folderName, meta){
+  const { fileCount, totalBytes, subCount } = meta;
+
+  openModal({
+    title: '⚠️ Final Confirmation — Deletion Cannot Be Returned',
+    bodyHTML: `
+      <div class="danger-card final">
+        <p class="dc-title">
+          <span style="font-size:18px">⚠️</span>
+          Do you want to continue to delete?
+        </p>
+        <p style="margin:0">
+          The folder <strong>${esc(folderName)}</strong> contains
+          <strong>${fileCount}</strong> file${fileCount === 1 ? '' : 's'}
+          (${humanBytes(totalBytes)})${subCount ? ` across <strong>${subCount}</strong> sub-folder${subCount === 1 ? '' : 's'}` : ''}.
+        </p>
+        <p class="dc-loud">
+          DELETION CANNOT BE RETURNED. This action is permanent.
+        </p>
+      </div>
+
+      <label class="ack-row">
+        <input type="checkbox" id="final-del-ack">
+        <span>I understand that this deletion cannot be undone and I want to proceed.</span>
+      </label>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="final-del-cancel">Cancel</button>
+      <button class="button danger" type="button" id="final-del-confirm" disabled>
+        Yes, Delete Permanently
+      </button>`
+  });
+
+  const ack        = document.getElementById('final-del-ack');
+  const confirmBtn = document.getElementById('final-del-confirm');
+  const cancelBtn  = document.getElementById('final-del-cancel');
+
+  ack.addEventListener('change', () => {
+    confirmBtn.disabled = !ack.checked;
+  });
+  cancelBtn.addEventListener('click', closeModal);
+  confirmBtn.addEventListener('click', () => {
+    performFolderDelete(folderName, confirmBtn, 'Yes, Delete Permanently');
+  });
+}
+
+async function performFolderDelete(folderName, btn, restoreLabel){
+  if (btn){
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+  }
+  try {
+    const result = await deleteStorageFolder(folderName);
+    closeModal();
+    toast('Folder "' + result.folder + '" deleted (' +
+          result.filesDeleted + ' file' + (result.filesDeleted === 1 ? '' : 's') + ' removed).');
+    if (storage.selected === folderName) storage.selected = null;
+    await scanStorage();
+  } catch (err){
+    console.error('[delete folder] failed:', err);
+    toast('Could not delete folder: ' + friendlyError(err), 'error');
+    if (btn && document.body.contains(btn)){
+      btn.disabled = false;
+      btn.textContent = restoreLabel || 'Delete Folder';
+    }
+  }
+}
+
+function openSetLimitModal(folderName){
+  const rec = storage.folders.find(f => f.name === folderName) || { name: folderName, bytes: 0, files: 0 };
+  const lim = storage.limits.get(folderName);
+  const cur = lim && lim.limit_bytes ? splitBytes(lim.limit_bytes) : { unit: 'MB', value: 500 };
+
+  openModal({
+    title: 'Set Storage Limit · ' + folderName,
+    bodyHTML: `
+      <p class="modal-text" style="margin-bottom:16px">
+        Current usage for <strong>${esc(folderName)}</strong> is
+        <strong>${humanBytes(rec.bytes)}</strong>
+        across ${rec.files} file${rec.files === 1 ? '' : 's'}.
+      </p>
+      <form id="limit-form" autocomplete="off" novalidate>
+        <div class="field-grid">
+          <label class="field"><span>Limit Amount</span>
+            <input id="limit-value" type="number" min="0" step="any" value="${cur.value}">
+          </label>
+          <label class="field"><span>Unit</span>
+            <select id="limit-unit">
+              <option value="KB"${cur.unit === 'KB' ? ' selected' : ''}>KB</option>
+              <option value="MB"${cur.unit === 'MB' ? ' selected' : ''}>MB</option>
+              <option value="GB"${cur.unit === 'GB' ? ' selected' : ''}>GB</option>
+              <option value="TB"${cur.unit === 'TB' ? ' selected' : ''}>TB</option>
+            </select>
+          </label>
+        </div>
+        <label class="field"><span>Note <em>optional</em></span>
+          <input id="limit-note" type="text" maxlength="160"
+                 placeholder="e.g. Finance department shared drive"
+                 value="${esc(lim?.note || '')}">
+        </label>
+        <p class="panel-hint" style="margin:0">
+          Set the amount to <strong>0</strong> to mark the folder as blocked.
+          Use <em>Remove Limit</em> to make it unlimited again.
+        </p>
+      </form>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="limit-cancel">Cancel</button>
+      <button class="button primary" type="button" id="limit-save">Save Limit</button>`
+  });
+
+  document.getElementById('limit-cancel').addEventListener('click', closeModal);
+  document.getElementById('limit-save').addEventListener('click', async () => {
+    const raw = parseFloat(document.getElementById('limit-value').value);
+    if (!Number.isFinite(raw) || raw < 0){
+      toast('Enter a valid limit amount (0 or greater).', 'error');
+      return;
+    }
+    const unit  = document.getElementById('limit-unit').value;
+    const bytes = Math.round(raw * (UNIT[unit] || 1));
+    const note  = document.getElementById('limit-note').value.trim();
+
+    const btn = document.getElementById('limit-save');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      await saveFolderLimit(folderName, bytes, note);
+      closeModal();
+      toast('Limit for "' + folderName + '" set to ' + humanBytes(bytes) + '.');
+      renderFolders();
+    } catch (err){
+      console.error('[set limit] failed:', err);
+      toast('Could not save limit: ' + friendlyError(err), 'error');
+      btn.disabled = false;
+      btn.textContent = 'Save Limit';
+    }
+  });
+}
+
+function openClearLimitModal(folderName){
+  const lim = storage.limits.get(folderName);
+  if (!lim) return;
+
+  openModal({
+    title: 'Remove Storage Limit',
+    bodyHTML: `<p class="modal-text">
+                 Remove the limit on <strong>${esc(folderName)}</strong>
+                 (currently <strong>${humanBytes(lim.limit_bytes)}</strong>)?<br>
+                 The folder itself and its files will not be touched —
+                 it will just become unlimited again.</p>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="limit-cancel">Cancel</button>
+      <button class="button danger" type="button" id="limit-remove">Remove Limit</button>`
+  });
+
+  document.getElementById('limit-cancel').addEventListener('click', closeModal);
+  document.getElementById('limit-remove').addEventListener('click', async () => {
+    const btn = document.getElementById('limit-remove');
+    btn.disabled = true;
+    btn.textContent = 'Removing…';
+    try {
+      await deleteFolderLimit(folderName);
+      closeModal();
+      toast('Limit removed for "' + folderName + '".');
+      renderFolders();
+    } catch (err){
+      console.error('[remove limit] failed:', err);
+      toast('Could not remove limit: ' + friendlyError(err), 'error');
+      btn.disabled = false;
+      btn.textContent = 'Remove Limit';
+    }
+  });
+}
+
+/* ---------- panel wiring ---------- */
+(function wireFolderPanel(){
+  if (!tbodyFolders) return;
+
+  tbodyFolders.addEventListener('click', e => {
+    const tr = e.target.closest('tr[data-folder]');
+    if (!tr) return;
+    const name = tr.dataset.folder;
+    storage.selected = storage.selected === name ? null : name;
+    renderFolders();
+  });
+
+  const search = document.getElementById('folder-search');
+  if (search) search.addEventListener('input', renderFolders);
+
+  const scan1 = document.getElementById('btn-scan');
+  const scan2 = document.getElementById('btn-scan-2');
+  if (scan1) scan1.addEventListener('click', () => scanStorage());
+  if (scan2) scan2.addEventListener('click', () => scanStorage());
+
+  const newBtn1 = document.getElementById('btn-new-folder');
+  const newBtn2 = document.getElementById('btn-new-folder-2');
+  if (newBtn1) newBtn1.addEventListener('click', openCreateFolderModal);
+  if (newBtn2) newBtn2.addEventListener('click', openCreateFolderModal);
+
+  const setBtn = document.getElementById('btn-set-limit');
+  if (setBtn){
+    setBtn.addEventListener('click', () => {
+      if (!storage.selected){ toast('Select a folder first.', 'error'); return; }
+      openSetLimitModal(storage.selected);
+    });
+  }
+
+  const clrBtn = document.getElementById('btn-clear-limit');
+  if (clrBtn){
+    clrBtn.addEventListener('click', () => {
+      if (!storage.selected){ toast('Select a folder first.', 'error'); return; }
+      openClearLimitModal(storage.selected);
+    });
+  }
+
+  const delBtn = document.getElementById('btn-delete-folder');
+  if (delBtn){
+    delBtn.addEventListener('click', () => {
+      if (!storage.selected){ toast('Select a folder first.', 'error'); return; }
+      openDeleteFolderModal(storage.selected);
+    });
+  }
+
+  const statsEl = document.getElementById('storage-stats');
+  if (statsEl){
+    statsEl.innerHTML = `
+      <div class="stat">
+        <div class="stat-label">Bucket Used</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub">Not scanned yet</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Total Limits Set</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Near Limit</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub">80% or more used</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Over Limit</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub">folders exceeding their limit</div>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+const me = session.data.session.user;
+$('#current-user').textContent = me?.username ? ('Signed in as ' + (me.full_name || me.username)) : '';
+
+loadFolderSettings();
+})();
+</script>
+</body>
+</html>

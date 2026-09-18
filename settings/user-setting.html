@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>User Details — LDI Sales Dashboard</title>
+
+<!-- 1) Load centralised host + anon key -->
+<script src="../connect.js"></script>
+
+<!-- 2) Turn HOSTNAME into CSS variables -->
+<script>
+(function(){
+  var H = window.HOSTNAME;
+  var r = document.documentElement.style;
+  r.setProperty('--img-background', "url('" + H + "/storage/v1/object/public/image/background.png')");
+  r.setProperty('--img-ldi1',       "url('" + H + "/storage/v1/object/public/image/ldi1.png')");
+  r.setProperty('--img-logo',       "url('" + H + "/storage/v1/object/public/image/logo.gif')");
+})();
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --royal:#1b1bb3;--royal-2:#2020c8;--royal-deep:#0d0d7a;
+  --red:#e31e24;--red-dark:#b9161b;
+  --amber:#f5a623;--sky:#2e9bd6;
+  --surface:#ffffff;--bg:#f4f6fb;
+  --text:#101425;--text-2:#4a5572;--muted:#8d97b0;
+  --border:#e3e7f2;--border-strong:#cdd4e6;
+  --shadow-sm:0 1px 3px rgba(16,20,37,.07);
+  --shadow-md:0 6px 20px rgba(16,20,37,.09);
+  --shadow-lg:0 16px 48px rgba(16,20,37,.16);
+  --r-sm:8px;--r-md:12px;--r-lg:18px;
+  --fast:150ms ease;--smooth:280ms cubic-bezier(.4,0,.2,1);
+  --img-background: url('');
+  --img-ldi1: url('');
+  --img-logo: url('');
+}
+*{box-sizing:border-box}
+html{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+body{
+  margin:0;font-family:'DM Sans',sans-serif;color:var(--text);
+  background:var(--royal-deep);
+  background-image:linear-gradient(180deg,rgba(27,27,179,.42) 0%,rgba(13,13,122,.72) 100%),var(--img-background);
+  background-size:cover,cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed,fixed;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+button{font-family:inherit}
+input,select{font-family:inherit}
+.num{font-variant-numeric:tabular-nums}
+
+.button{border:0;border-radius:var(--r-sm);padding:10px 16px;font:600 13px/1 'DM Sans',sans-serif;cursor:pointer;transition:transform var(--fast),box-shadow var(--fast),background var(--fast);display:inline-flex;align-items:center;gap:6px}
+.button.primary{background:linear-gradient(135deg,var(--royal-2),var(--royal));color:#fff;box-shadow:0 2px 8px rgba(27,27,179,.35)}
+.button.primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(27,27,179,.45)}
+.button.primary:active{transform:translateY(0)}
+.button.secondary{background:rgba(255,255,255,.14);color:#e8ecff;border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(6px)}
+.button.secondary:hover{background:rgba(255,255,255,.24);color:#fff}
+.button.ghost{background:#eef1f9;color:var(--text-2);border:1px solid var(--border-strong)}
+.button.ghost:hover{background:#e2e7f5;color:var(--text)}
+.button.danger{background:var(--red);color:#fff}
+.button.danger:hover{background:var(--red-dark)}
+.button.small{padding:6px 12px;font-size:12px;border-radius:7px}
+.button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+a.button{text-decoration:none}
+
+.app{min-height:100vh;display:flex;flex-direction:column}
+.topbar{
+  position:sticky;top:0;z-index:50;min-height:68px;
+  background-image:linear-gradient(90deg,rgba(13,13,122,.88) 0%,rgba(27,27,179,.78) 45%,rgba(13,13,122,.88) 100%),var(--img-ldi1);
+  background-size:cover;background-position:center;
+  border-bottom:3px solid var(--amber);
+  box-shadow:0 4px 18px rgba(13,13,122,.45);
+  padding:10px 22px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  backdrop-filter:blur(8px);
+  padding-left:max(22px, env(safe-area-inset-left));
+  padding-right:max(22px, env(safe-area-inset-right));
+}
+.brand{display:flex;align-items:center;gap:12px}
+.nav-logo{height:40px;width:auto;border-radius:8px;background:#fff;padding:3px 6px;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.header-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.user-chip{color:#dbe2ff;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);white-space:nowrap}
+.user-chip:empty{display:none}
+
+.content{flex:1;max-width:1440px;margin:0 auto;padding:28px 22px 40px;width:100%}
+.card{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-sm);border:1px solid var(--border);transition:box-shadow var(--smooth),transform var(--smooth)}
+.card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:14px;flex-wrap:wrap}
+.card-head h2{font-size:17px;margin:0;font-family:'Space Grotesk',sans-serif;letter-spacing:-.2px}
+.panel-hint{margin:6px 0 0;font-size:13px;color:var(--text-2)}
+
+/* ============================================
+   TABLE + STICKY FIRST COLUMN
+   ============================================ */
+.table-wrap{
+  overflow-x:auto;
+  overflow-y:visible;
+  border:1px solid var(--border);
+  border-radius:var(--r-sm);
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+}
+.monitor-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;min-width:1500px}
+.monitor-table th,.monitor-table td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle}
+.monitor-table thead th{background:linear-gradient(135deg,var(--royal-2),var(--royal));color:#fff;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;border-bottom:0}
+.monitor-table tbody tr{cursor:pointer;transition:background var(--fast)}
+.monitor-table tbody tr:hover{background:#eef2ff}
+.monitor-table tbody tr.selected td{background:#e6ebff}
+.monitor-table tbody tr.selected td:first-child{box-shadow:inset 3px 0 0 var(--royal)}
+.monitor-table td.empty{text-align:center;color:var(--muted);padding:28px;cursor:default;white-space:normal}
+.monitor-table tbody tr.empty-row:hover{background:transparent}
+.col-check{width:38px}
+
+/* Sticky first column so the checkbox + selected indicator is always visible */
+.monitor-table th.col-check,
+.monitor-table td.col-check{
+  position:sticky;left:0;
+  z-index:2;
+  width:38px;
+}
+.monitor-table thead th.col-check{
+  z-index:3;
+  background:var(--royal);
+  border-right:1px solid rgba(255,255,255,.12);
+}
+.monitor-table tbody td.col-check{
+  background:#fff;
+  border-right:1px solid var(--border);
+}
+.monitor-table tbody tr:nth-child(even) td.col-check{background:#f7f9fd}
+.monitor-table tbody tr:hover td.col-check{background:#eef2ff}
+.monitor-table tbody tr.selected td.col-check{background:#e6ebff}
+.col-check input{pointer-events:none;accent-color:var(--royal);width:15px;height:15px;cursor:pointer}
+.cell-muted{color:var(--muted)}
+.cell-contact{font-variant-numeric:tabular-nums}
+.cell-email{color:var(--text-2)}
+.cell-tags{display:inline-flex;flex-wrap:nowrap;gap:4px;align-items:center;max-width:100%}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge.active{background:#e2f6ea;color:#0f7a3d}
+.badge.inactive{background:#fde6e7;color:#b9161b}
+.badge.pending{background:#fdf1dc;color:#a36a00}
+.badge.neutral{background:#eceffa;color:var(--text-2)}
+.badge.hero,.badge.approver,.badge.hero-all,.badge.hero-none,.badge.more{padding:2px 7px;font-size:10px;letter-spacing:.3px;font-weight:600;text-transform:none;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle;line-height:1.4}
+.badge.hero{background:#e6ebff;color:var(--royal)}
+.badge.hero-all{background:linear-gradient(135deg,var(--royal-2),var(--royal));color:#fff;box-shadow:0 1px 3px rgba(27,27,179,.28);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.badge.hero-none{background:#f1f3f9;color:var(--muted)}
+.badge.approver{background:#e8f4ff;color:#1167a8}
+.badge.more{background:#eef1f9;color:var(--text-2);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+
+.content.settings-content{max-width:none;margin:0;padding:0;width:100%}
+
+/* ---- No-sidebar layout ---- */
+.main-col{
+  flex:1;min-width:0;
+  padding:clamp(16px, 1.8vw, 24px) clamp(12px, 1.6vw, 22px) clamp(28px, 3vw, 40px);
+}
+.main-col-inner{width:100%;max-width:1280px;min-width:0;margin:0 auto}
+
+.panel{display:block;background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden;animation:panelIn .26s ease}
+@keyframes panelIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.panel-body{padding:clamp(14px, 1.6vw, 22px) clamp(14px, 1.8vw, 24px) clamp(18px, 1.8vw, 26px)}
+.panel-body > .card-head{margin-bottom:16px}
+
+.hero{
+  position:relative;color:#fff;
+  padding:clamp(18px, 2.2vw, 28px) clamp(14px, 2vw, 24px) clamp(16px, 2vw, 26px);
+  background-image:linear-gradient(115deg,rgba(13,13,122,.95) 0%,rgba(27,27,179,.86) 48%,rgba(227,30,36,.60) 100%),var(--img-ldi1);
+  background-size:cover;background-position:center;
+  border-bottom:3px solid var(--amber);
+}
+.hero::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 150% at 100% 0%,rgba(255,255,255,.20),transparent 55%)}
+.hero-inner{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:clamp(12px, 1.6vw, 20px);align-items:flex-end;justify-content:space-between}
+.hero-eyebrow{margin:0 0 7px;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:#ffd98a;font-weight:700}
+.hero-title{
+  margin:0;font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(20px, 2.4vw + 12px, 27px);
+  letter-spacing:-.6px;line-height:1.1;
+}
+.hero-sub{
+  margin:9px 0 0;
+  font-size:clamp(12px, 1vw + 8px, 13px);
+  line-height:1.5;color:rgba(255,255,255,.80);max-width:62ch;
+}
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+.hero-btn{
+  border:0;cursor:pointer;border-radius:999px;
+  padding:12px 20px;font:700 13px/1 'DM Sans',sans-serif;letter-spacing:.2px;
+  display:inline-flex;align-items:center;gap:8px;
+  transition:transform var(--fast),box-shadow var(--fast),background var(--fast),opacity var(--fast),border-color var(--fast);
+  box-shadow:0 8px 20px rgba(0,0,0,.28);
+  min-height:44px;
+}
+.hero-btn .hi{font-size:14px;line-height:1}
+.hero-btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(0,0,0,.34)}
+.hero-btn:active{transform:translateY(0)}
+.hero-btn.primary{background:#fff;color:var(--royal)}
+.hero-btn.primary:hover{background:#eef1ff}
+.hero-btn.edit{background:var(--amber);color:#3d2800}
+.hero-btn.edit:hover{background:#ffb845}
+.hero-btn.danger{background:var(--red);color:#fff}
+.hero-btn.danger:hover{background:var(--red-dark)}
+.hero-btn.success{background:#1aa05a;color:#fff}
+.hero-btn.success:hover{background:#148049}
+.hero-btn.ghost{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.42);backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.20)}
+.hero-btn.ghost:hover{background:rgba(255,255,255,.28)}
+.hero-btn:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.search-input{
+  flex:1;min-width:180px;max-width:340px;
+  border:1px solid var(--border-strong);border-radius:var(--r-sm);
+  padding:10px 12px;font-size:13px;background:#fff;color:var(--text);
+  transition:border-color var(--fast),box-shadow var(--fast);
+  min-height:40px;
+}
+.search-input:focus{outline:none;border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.toolbar-info{font-size:12px;color:var(--text-2);font-weight:600;background:#eef1f9;border:1px solid var(--border);padding:7px 12px;border-radius:999px;white-space:nowrap}
+.toolbar-info.highlight{background:#e6ebff;border-color:#c7d1ff;color:var(--royal)}
+
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:15px}
+.field > span{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-2)}
+.field > span em{font-style:normal;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px}
+.field input,.field select{border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:10px 12px;font-size:13.5px;color:var(--text);background:#fff;width:100%;transition:border-color var(--fast),box-shadow var(--fast);min-height:42px}
+.field input:focus,.field select:focus{outline:none;border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.field input::placeholder{color:#a9b2c8}
+.field input:disabled,.field select:disabled{background:#f1f3f9;color:var(--muted);cursor:not-allowed;border-color:var(--border)}
+.form-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.lock-notice{margin:0 0 16px;padding:12px 14px;border-radius:var(--r-sm);background:#fff7e6;border:1px solid #ffe0a3;color:#7a4d00;font-size:12.5px;line-height:1.55}
+.lock-notice strong{color:#a36a00}
+
+.ms{position:relative}
+.ms-trigger{position:relative;min-height:44px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:#fff;padding:6px 40px 6px 8px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;cursor:pointer;transition:border-color var(--fast),box-shadow var(--fast)}
+.ms-trigger:hover{border-color:var(--royal)}
+.ms.is-open .ms-trigger{border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.ms-placeholder{color:#a9b2c8;font-size:13.5px;padding-left:4px}
+.ms-chip{display:inline-flex;align-items:center;gap:6px;background:#e8f4ff;color:#1167a8;padding:4px 6px 4px 10px;border-radius:999px;font-size:12px;font-weight:600;line-height:1}
+.ms-chip .ms-chip-name{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-chip button{background:rgba(17,103,168,.12);border:0;color:#1167a8;cursor:pointer;font-size:13px;line-height:1;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:background var(--fast)}
+.ms-chip button:hover{background:#1167a8;color:#fff}
+.ms-caret{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:10px;transition:transform var(--fast)}
+.ms.is-open .ms-caret{transform:translateY(-50%) rotate(180deg)}
+.ms-panel{position:fixed;background:#fff;border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:var(--shadow-lg);z-index:600;max-height:min(280px, 60vh);overflow:hidden;display:none;flex-direction:column}
+.ms.is-open .ms-panel{display:flex}
+.ms-search{border:0;border-bottom:1px solid var(--border);padding:11px 13px;font-size:13px;width:100%;outline:none;background:#fff}
+.ms-search:focus{background:#f7f9fd}
+.ms-options{overflow-y:auto;padding:6px;flex:1;display:flex;flex-direction:column;gap:2px;-webkit-overflow-scrolling:touch}
+.ms-option{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;cursor:pointer;font-size:13px;transition:background var(--fast);user-select:none}
+.ms-option:hover{background:#eef2ff}
+.ms-option input{accent-color:var(--royal);width:16px;height:16px;margin:0;cursor:pointer}
+.ms-option.selected{background:#e8f4ff}
+.ms-option.disabled{opacity:.5;cursor:not-allowed}
+.ms-option.disabled:hover{background:transparent}
+.ms-option .ms-name{font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-empty{padding:18px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.5}
+.ms-hint{font-size:11.5px;color:var(--muted);margin-top:4px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ms-hint .ms-count{font-weight:600}
+.ms-hint .ms-count.over{color:var(--red)}
+
+.check-group{display:flex;flex-wrap:wrap;gap:8px}
+.check-item{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:#f2f5fd;border:1px solid var(--border-strong);font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;user-select:none;transition:all var(--fast);min-height:38px}
+.check-item:hover{background:#e6ebff;border-color:#c7d1ff}
+.check-item input{accent-color:var(--royal);width:15px;height:15px;cursor:pointer;margin:0}
+.check-item:has(input:checked){background:#e6ebff;border-color:var(--royal);color:var(--royal);box-shadow:0 2px 8px rgba(27,27,179,.18)}
+.check-item .hi-href{font-size:10.5px;color:var(--muted);font-weight:500;margin-left:2px}
+.check-item:has(input:checked) .hi-href{color:var(--royal);opacity:.75}
+.check-item.all-item{background:linear-gradient(135deg,#eef1ff,#e0e6ff);border:1px dashed var(--royal);color:var(--royal);font-weight:700}
+.check-item.all-item:hover{background:linear-gradient(135deg,#e3e8ff,#d5ddff)}
+.check-item.all-item:has(input:checked){background:linear-gradient(135deg,var(--royal-2),var(--royal));border:1px solid var(--royal);color:#fff;box-shadow:0 4px 14px rgba(27,27,179,.35)}
+.check-item.all-item:has(input:checked) .hi-href{color:#cfd6ff;opacity:1}
+.check-item.is-locked{opacity:.85}
+.check-item.is-locked input{cursor:not-allowed}
+.check-item.is-locked:hover{background:#e6ebff;border-color:var(--royal)}
+.check-item.all-item.is-locked:hover{background:linear-gradient(135deg,var(--royal-2),var(--royal))}
+.check-empty{padding:10px 14px;border-radius:var(--r-sm);background:#fff7e6;border:1px solid #ffe0a3;color:#a36a00;font-size:12.5px;font-weight:600}
+
+/* ============================================
+   MODAL (responsive)
+   ============================================ */
+.modal-backdrop{
+  position:fixed;inset:0;z-index:200;
+  padding:max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  background:rgba(9,11,26,.62);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;
+}
+.modal-backdrop.open{display:flex;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:#fff;border-radius:var(--r-lg);width:100%;max-width:720px;
+  max-height:90vh;overflow:auto;box-shadow:var(--shadow-lg);
+  border-top:4px solid var(--amber);
+  animation:modalIn .24s cubic-bezier(.4,0,.2,1);
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+@keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.modal-head{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:18px 22px 14px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:#fff;z-index:5;
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+}
+.modal-head h3{margin:0;font-family:'Space Grotesk',sans-serif;font-size:16.5px;letter-spacing:-.2px}
+.modal-close{border:0;background:#eef1f9;color:var(--text-2);width:36px;height:36px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer;transition:all var(--fast);flex-shrink:0}
+.modal-close:hover{background:var(--red);color:#fff}
+.modal-body{padding:20px 22px}
+.modal-foot{
+  display:flex;justify-content:flex-end;gap:10px;
+  padding:14px 22px calc(20px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--border);flex-wrap:wrap;
+  position:sticky;bottom:0;background:#fff;
+  border-radius:0 0 var(--r-lg) var(--r-lg);
+}
+.modal-foot .button{min-height:42px}
+.modal-text{margin:0;font-size:13.5px;color:var(--text-2);line-height:1.65}
+.modal-text strong{color:var(--text)}
+
+.danger-card{margin-top:14px;padding:12px 14px;border-radius:var(--r-sm);background:#fdeeee;border:1px solid #f6bcc0;color:#8a1216;font-size:12.5px;line-height:1.6}
+.danger-card ul{margin:8px 0 0;padding-left:18px}
+.danger-card li{margin:2px 0}
+
+.toast-wrap{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:800;display:flex;flex-direction:column;gap:10px;max-width:min(420px,calc(100vw - 36px))}
+.toast{background:#101425;color:#fff;padding:12px 16px;border-radius:10px;font-size:12.5px;font-weight:500;box-shadow:var(--shadow-lg);border-left:4px solid var(--royal);transition:opacity .22s ease,transform .22s ease;white-space:pre-wrap;word-break:break-word;line-height:1.45}
+.toast.ok{border-left-color:#1aa05a}
+.toast.error{border-left-color:var(--red)}
+.toast.warn{border-left-color:var(--amber)}
+
+/* ============================================
+   RESPONSIVE — Laptop, Tablet, Phone
+   ============================================ */
+
+/* Laptop (<=1200px) */
+@media(max-width:1200px){
+  .main-col-inner{max-width:100%}
+  .monitor-table{min-width:1400px}
+}
+
+/* Small laptop / Landscape tablet (<=1024px) */
+@media(max-width:1024px){
+  .main-col{padding:20px 16px 32px}
+  .hero{padding:22px 18px 20px}
+  .hero-title{font-size:clamp(20px, 2.4vw + 10px, 25px)}
+  .panel-body{padding:18px 16px 22px}
+  .monitor-table{min-width:1300px}
+  .modal{max-width:680px}
+}
+
+/* Tablet portrait (<=900px) */
+@media(max-width:900px){
+  .topbar{padding:10px 16px;gap:14px;min-height:62px}
+  .nav-logo{height:36px}
+  .user-chip{font-size:12px;padding:6px 11px}
+  .hero-inner{gap:14px}
+  .hero-actions{width:100%}
+  .hero-btn{flex:1 1 calc(50% - 5px);justify-content:center;padding:11px 14px}
+  .search-input{max-width:none;flex:1 1 220px}
+  .monitor-table{min-width:1200px;font-size:12px}
+  .monitor-table th,.monitor-table td{padding:8px 10px}
+}
+
+/* Large phone / small tablet (<=768px) */
+@media(max-width:768px){
+  .topbar{padding:10px 14px;min-height:60px}
+  .brand .nav-logo{height:34px}
+  .main-col{padding:16px 12px 28px}
+  .hero{padding:20px 16px 18px}
+  .hero-eyebrow{font-size:10px;letter-spacing:1.2px}
+  .hero-title{font-size:clamp(19px, 5vw, 23px)}
+  .hero-sub{font-size:12.5px;margin-top:7px}
+  .hero-btn{padding:10px 14px;font-size:12.5px;min-height:42px}
+  .panel-body{padding:16px 14px 20px}
+  .toolbar{gap:8px;margin-bottom:12px}
+  .search-input{font-size:13px}
+  .toolbar-info{font-size:11.5px;padding:6px 10px}
+  .monitor-table{min-width:1100px;font-size:11.5px}
+  .monitor-table th,.monitor-table td{padding:8px 9px}
+  .badge{font-size:10px;padding:2px 8px}
+  .col-check{width:34px}
+  .col-check input{width:14px;height:14px}
+  .button.small{padding:7px 12px;font-size:12px;min-height:36px}
+  .modal{max-width:100%;max-height:92vh}
+  .modal-body{padding:16px 16px}
+  .modal-head{padding:14px 16px 12px}
+  .modal-head h3{font-size:15.5px}
+  .modal-foot{padding:12px 16px calc(16px + env(safe-area-inset-bottom))}
+}
+
+/* Phone (<=560px) */
+@media(max-width:560px){
+  .topbar{padding:8px 12px;min-height:56px;gap:10px}
+  .brand .nav-logo{height:30px;padding:2px 4px}
+  .header-actions{gap:6px}
+  .user-chip{font-size:11px;padding:5px 9px;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+  .button.secondary{padding:8px 12px;font-size:12px;min-height:36px}
+  .main-col{padding:12px 10px 24px}
+  .hero{padding:16px 14px 14px}
+  .hero-title{font-size:19px;letter-spacing:-.4px}
+  .hero-sub{font-size:12px;line-height:1.45}
+  .hero-actions{gap:8px}
+  .hero-btn{flex:1 1 100%;padding:11px 12px;font-size:12.5px;min-height:42px}
+  .panel-body{padding:14px 12px 18px}
+  .toolbar{gap:6px;margin-bottom:10px}
+  .search-input{flex:1 1 100%;min-height:42px;font-size:13px}
+  .toolbar-info{font-size:11px;padding:5px 9px}
+  .monitor-table{min-width:980px;font-size:11.5px}
+  .monitor-table th,.monitor-table td{padding:7px 8px}
+  .col-check{width:30px}
+  .col-check input{width:14px;height:14px}
+  .form-actions .button{flex:1 1 100%;justify-content:center}
+  .field input,.field select{min-height:44px;font-size:16px} /* 16px para hindi mag-zoom ang iOS */
+  .ms-chip button{width:22px;height:22px;font-size:14px}
+  .ms-option{padding:11px 12px;font-size:13.5px}
+  /* Full-screen modal on phone */
+  .modal-backdrop{padding:0}
+  .modal{max-height:100dvh;min-height:100dvh;border-radius:0;border-top-width:3px}
+  .modal-head{border-radius:0}
+  .modal-foot{border-radius:0}
+  .modal-foot .button{flex:1;justify-content:center}
+  .toast-wrap{right:10px;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:none}
+}
+
+/* Small phone (<=400px) */
+@media(max-width:400px){
+  .brand .nav-logo{height:28px}
+  .user-chip{display:none}
+  .hero-title{font-size:18px}
+  .hero-sub{font-size:11.5px}
+  .hero-btn{font-size:12px;padding:10px 10px}
+  .panel-body{padding:12px 10px 16px}
+  .monitor-table{min-width:900px;font-size:11px}
+  .monitor-table th,.monitor-table td{padding:7px}
+  .badge{font-size:9.5px;padding:2px 6px}
+  .modal-head h3{font-size:15px}
+}
+
+/* Landscape phone — pigilan ang sobrang laking modal */
+@media(max-height:520px) and (orientation:landscape){
+  .modal{max-height:100dvh;min-height:100dvh;border-radius:0;max-width:100%}
+  .modal-head{border-radius:0}
+  .modal-foot{border-radius:0}
+  .hero{padding:14px 16px}
+  .hero-actions{gap:6px}
+  .hero-btn{padding:9px 12px;font-size:12px;min-height:38px;flex:1 1 auto}
+}
+
+/* Prefers-reduced-motion */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand">
+    <img data-img="logo.gif" alt="LDI" class="nav-logo">
+  </div>
+  <div class="header-actions">
+    <span class="user-chip" id="current-user"></span>
+    <a class="button secondary" href="#" id="btn-back">&#8592; Back</a>
+  </div>
+</header>
+
+<main class="content settings-content">
+  <div class="main-col">
+    <div class="main-col-inner">
+
+      <section class="panel active" id="panel-option-1">
+
+        <div class="hero">
+          <div class="hero-inner">
+            <div>
+              <p class="hero-eyebrow">Settings &middot; User Management</p>
+              <h2 class="hero-title">User Details</h2>
+              <p class="hero-sub">
+                Review every account in the system, then add, edit or remove a user.
+                Select a row in the table below to enable <strong>Edit</strong> and <strong>Delete</strong>.
+              </p>
+            </div>
+            <div class="hero-actions">
+              <button class="hero-btn primary" id="btn-add" type="button">
+                <span class="hi">&#43;</span> Add User
+              </button>
+              <button class="hero-btn edit" id="btn-edit" type="button" disabled>
+                <span class="hi">&#9998;</span> Edit User
+              </button>
+              <button class="hero-btn danger" id="btn-delete" type="button" disabled>
+                <span class="hi">&#128465;</span> Delete User
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="toolbar">
+            <input id="user-search" class="search-input" type="search" placeholder="Search name, username, email, contact, approver, role&hellip;">
+            <button class="button primary small" id="btn-refresh" type="button">&#8635; Refresh</button>
+            <span class="toolbar-info" id="user-count">0 users</span>
+            <span class="toolbar-info highlight" id="selected-info">No user selected</span>
+          </div>
+
+          <div class="table-wrap">
+            <table class="monitor-table">
+              <thead>
+                <tr>
+                  <th class="col-check"></th>
+                  <th>ID</th>
+                  <th>Full Name</th>
+                  <th>Username</th>
+                  <th>Email Address</th>
+                  <th>Contact Number</th>
+                  <th>Approvers</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Allowed Hero Buttons</th>
+                  <th>Assigned Companies</th>
+                  <th>Sales Rep Codes</th>
+                  <th>Assigned Areas</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody">
+                <tr class="empty-row"><td class="empty" colspan="13">Loading users&hellip;</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ============================ MODAL ============================ -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <h3 id="modal-title">Modal</h3>
+      <button class="modal-close" id="modal-close" type="button" title="Close">&#215;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- Back button — returns to previous page -->
+<script>
+document.getElementById('btn-back').addEventListener('click', function(e){
+  e.preventDefault();
+  if (history.length > 1){
+    history.back();
+  } else {
+    location.href = '../dashboard.html';
+  }
+});
+</script>
+
+<!-- Resolve data-img placeholders using HOSTNAME -->
+<script>
+document.querySelectorAll('[data-img]').forEach(function(el){
+  el.src = window.HOSTNAME + '/storage/v1/object/public/image/' + el.dataset.img;
+});
+</script>
+
+<script>
+(async () => {
+/* ============================================================
+   Inlined Supabase client — uses window.HOSTNAME / window.ANON_KEY
+   ============================================================ */
+const SUPABASE_URL      = window.HOSTNAME;
+const SUPABASE_ANON_KEY = window.ANON_KEY;
+
+class QB {
+  constructor(t){
+    this.t = t;
+    this.url = SUPABASE_URL + '/rest/v1/' + t;
+    this.p = [];
+    this.m = 'GET';
+    this.b = null;
+    this.rr = false;
+  }
+  select(f='*'){ this.p.push('select=' + encodeURIComponent(f)); return this; }
+  eq(f,v){ this.p.push(f + '=eq.' + encodeURIComponent(v)); return this; }
+  neq(f,v){ this.p.push(f + '=not.' + encodeURIComponent(v)); return this; }
+  gt(f,v){ this.p.push(f + '=gt.' + encodeURIComponent(v)); return this; }
+  lt(f,v){ this.p.push(f + '=lt.' + encodeURIComponent(v)); return this; }
+  gte(f,v){ this.p.push(f + '=gte.' + encodeURIComponent(v)); return this; }
+  lte(f,v){ this.p.push(f + '=lte.' + encodeURIComponent(v)); return this; }
+  like(f,v){ this.p.push(f + '=like.' + encodeURIComponent(v)); return this; }
+  ilike(f,v){ this.p.push(f + '=ilike.' + encodeURIComponent(v)); return this; }
+  in(f,vs){ this.p.push(f + '=in.(' + vs.map(encodeURIComponent).join(',') + ')'); return this; }
+  order(f,o={}){ this.p.push('order=' + f + '.' + (o.ascending === false ? 'desc' : 'asc')); return this; }
+  limit(n){ this.p.push('limit=' + n); return this; }
+  offset(n){ this.p.push('offset=' + n); return this; }
+
+  _url(){ return this.p.length ? this.url + '?' + this.p.join('&') : this.url; }
+
+  _h(e={}){
+    const h = {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+      'ngrok-skip-browser-warning': 'true',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...e
+    };
+    if (this.rr) h.Prefer = 'return=representation';
+    return h;
+  }
+
+  _build(){
+    const init = { method: this.m, headers: this._h() };
+    if (this.b != null) init.body = JSON.stringify(this.b);
+    return init;
+  }
+
+  async _run(){
+    const r = await fetch(this._url(), this._build());
+    const text = await r.text();
+    if (!r.ok) throw new Error('API Error: ' + text);
+    if (!text) return [];
+    try { return JSON.parse(text); }
+    catch(e){ return text; }
+  }
+
+  then(onF, onR){ return this._run().then(onF, onR); }
+  catch(onR){ return this._run().catch(onR); }
+
+  async single(){
+    this.p.push('limit=1');
+    const r = await this._run();
+    return (r && r.length) ? r[0] : null;
+  }
+  async insert(rows){
+    this.m = 'POST';
+    this.b = Array.isArray(rows) ? rows : [rows];
+    this.rr = true;
+    return await this._run();
+  }
+  async update(changes){
+    this.m = 'PATCH';
+    this.b = changes;
+    this.rr = true;
+    return await this._run();
+  }
+  async delete(){
+    this.m = 'DELETE';
+    this.rr = true;
+    return await this._run();
+  }
+}
+
+const supabase = {
+  from(t){ return new QB(t); },
+  auth:{
+    currentUser: null,
+    session: null,
+    async signInWithPassword({ email, password }){
+      try {
+        const u = await supabase.from('users').select('*').eq('username', email).single();
+        if (!u) return { data: null, error: { message: 'User not found' } };
+        if (u.password !== password) return { data: null, error: { message: 'Wrong password' } };
+        if (u.status === 'pending') return { data: null, error: { message: 'Account pending admin approval' } };
+        if (u.status === 'inactive') return { data: null, error: { message: 'Account is inactive' } };
+        supabase.auth.currentUser = u;
+        supabase.auth.session = { user: u };
+        try { sessionStorage.setItem('ldi_session', JSON.stringify(u)); } catch(e){}
+        return { data: { user: u, session: supabase.auth.session }, error: null };
+      } catch(e){
+        console.error('Login error:', e);
+        return { data: null, error: { message: e.message || 'Login failed' } };
+      }
+    },
+    async signUp({ email, password }){
+      try {
+        const ex = await supabase.from('users').select('id').eq('username', email).single();
+        if (ex) return { data: null, error: { message: 'Username already exists' } };
+        const c = await supabase.from('users').insert({
+          username: email, password, role: 'sales_rep', status: 'pending',
+          assigned_companies: [], assigned_sales_rep_codes: [], assigned_areas: []
+        });
+        const user = Array.isArray(c) ? c[0] : c;
+        return { data: { user }, error: null };
+      } catch(e){
+        console.error('SignUp error:', e);
+        return { data: null, error: { message: e.message || 'Sign up failed' } };
+      }
+    },
+    async signOut(){
+      supabase.auth.currentUser = null;
+      supabase.auth.session = null;
+      try { sessionStorage.removeItem('ldi_session'); } catch(e){}
+      return { error: null };
+    },
+    async getSession(){
+      try {
+        const raw = sessionStorage.getItem('ldi_session');
+        if (raw){
+          const u = JSON.parse(raw);
+          supabase.auth.currentUser = u;
+          supabase.auth.session = { user: u };
+        }
+      } catch(e){}
+      return { data: { session: supabase.auth.session }, error: null };
+    }
+  },
+  async init(){}
+};
+
+await supabase.init();
+const session = await supabase.auth.getSession();
+if (!session?.data?.session?.user){
+  location.replace('../index.html');
+  return;
+}
+
+/* ============================================================
+   USER DETAILS APP
+   ============================================================ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+const state = {
+  users: [],
+  activeUsers: [],
+  selectedId: null,
+  heroButtons: [],
+  hasHeroButtonsColumn: true
+};
+
+const HERO_ALL = 'all';
+const MAX_APPROVERS = 3;
+const MAX_HERO_BADGES = 2;
+const STRIPPABLE_COLUMNS = ['allowed_hero_buttons','full_name','approver','contact','email'];
+
+/* ---------- role helpers ---------- */
+function normalizeRole(r){
+  return String(r ?? '').trim().toLowerCase().replace(/[\s_\-]+/g, '');
+}
+function currentUserRole(){
+  const u = session?.data?.session?.user;
+  return normalizeRole(u?.role);
+}
+function currentUser(){ return session?.data?.session?.user || null; }
+
+const SUPERADMIN_ROLES = ['superadmin','super','root','sysadmin','system','owner'];
+function isSuperadmin(u){
+  if (!u) return false;
+  const r = normalizeRole(u.role);
+  if (!r) return false;
+  if (SUPERADMIN_ROLES.includes(r)) return true;
+  if (r.includes('super')) return true;
+  return false;
+}
+function canSeeUser(targetUser){ return true; }
+function canEditUserPassword(targetUser){
+  if (!targetUser) return true;
+  if (!isSuperadmin(targetUser)) return true;
+  return isSuperadmin(currentUser());
+}
+function canDeleteUser(targetUser){
+  if (!targetUser) return false;
+  if (!isSuperadmin(targetUser)) return true;
+  return isSuperadmin(currentUser());
+}
+function canChangeRoleStatus(targetUser){
+  if (!targetUser) return true;
+  if (!isSuperadmin(targetUser)) return true;
+  return isSuperadmin(currentUser());
+}
+
+/* Only a superadmin can assign the superadmin role. */
+function allowedRolesForCurrentUser(){
+  const canAssignSuper = isSuperadmin(currentUser());
+  return canAssignSuper
+    ? ROLES.slice()
+    : ROLES.filter(r => normalizeRole(r) !== 'superadmin');
+}
+
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => (
+  { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+));
+
+function arrToText(v){
+  if (Array.isArray(v)) return v.join(', ');
+  if (typeof v === 'string' && v.trim()){
+    try { const p = JSON.parse(v); return Array.isArray(p) ? p.join(', ') : v; }
+    catch(e){ return v; }
+  }
+  return '';
+}
+function textToArr(t){
+  return String(t || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+function heroSelection(v){
+  let arr = [];
+  if (Array.isArray(v)) arr = v;
+  else if (typeof v === 'string' && v.trim()){
+    try { const p = JSON.parse(v); if (Array.isArray(p)) arr = p; } catch(e){}
+  }
+  const all = arr.some(x => String(x).toLowerCase() === HERO_ALL);
+  const ids = arr.map(x => Number(x)).filter(n => Number.isFinite(n));
+  return { all, ids };
+}
+function parseApprovers(v){
+  if (Array.isArray(v)) return v.map(x => String(x)).filter(Boolean);
+  if (typeof v === 'string' && v.trim()){
+    try {
+      const p = JSON.parse(v);
+      if (Array.isArray(p)) return p.map(x => String(x)).filter(Boolean);
+    } catch(e){}
+    return v.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+const ALLOWED_STATUSES = ['active','inactive','pending'];
+function statusClass(s){ return ALLOWED_STATUSES.includes(s) ? s : 'neutral'; }
+function heroButtonById(id){
+  return state.heroButtons.find(h => String(h.id) === String(id)) || null;
+}
+function userByUsername(username){
+  return state.activeUsers.find(x => x.username === username) || null;
+}
+function approverLabel(username){
+  const u = userByUsername(username);
+  if (!u) return username;
+  const fn = String(u.full_name || '').trim();
+  return fn ? fn : username;
+}
+function isMissingColumn(err, col){
+  const msg = String(err?.message || '');
+  return msg.includes('PGRST204') && msg.includes(col);
+}
+function friendlyError(err){
+  const raw = String(err?.message || err || '');
+  const jsonStart = raw.indexOf('{');
+  if (jsonStart >= 0){
+    try {
+      const obj = JSON.parse(raw.slice(jsonStart));
+      if (obj.message) return obj.message + (obj.code ? ' [' + obj.code + ']' : '');
+    } catch(e){}
+  }
+  return raw;
+}
+async function safeWrite(builder, payload){
+  let working = { ...payload };
+  const stripped = [];
+  for (let attempt = 0; attempt <= STRIPPABLE_COLUMNS.length; attempt++){
+    try {
+      const result = await builder(working);
+      if (stripped.length){
+        toast('Saved without: ' + stripped.join(', ') + ' — column(s) missing from the DB.', 'warn');
+      }
+      return result;
+    } catch (err){
+      const missing = STRIPPABLE_COLUMNS.find(col => (col in working) && isMissingColumn(err, col));
+      if (!missing) throw err;
+      if (missing === 'allowed_hero_buttons') state.hasHeroButtonsColumn = false;
+      delete working[missing];
+      stripped.push(missing);
+    }
+  }
+  throw new Error('Could not save — missing columns: ' + stripped.join(', '));
+}
+
+function toast(msg, kind = 'ok'){
+  let wrap = $('#toast-wrap');
+  if (!wrap){
+    wrap = document.createElement('div');
+    wrap.id = 'toast-wrap';
+    wrap.className = 'toast-wrap';
+    document.body.appendChild(wrap);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(8px)';
+    setTimeout(() => el.remove(), 240);
+  }, 4200);
+}
+
+/* ============================================================
+   MULTI-SELECT — Approvers picker
+   ============================================================ */
+const msRegistry = new Set();
+
+function anyMsOpen(){ return Array.from(msRegistry).some(ms => ms.classList.contains('is-open')); }
+function closeAllMs(){ msRegistry.forEach(ms => ms.classList.remove('is-open')); }
+function closeOtherMs(keep){ msRegistry.forEach(ms => { if (ms !== keep) ms.classList.remove('is-open'); }); }
+
+document.addEventListener('mousedown', e => {
+  if (!anyMsOpen()) return;
+  msRegistry.forEach(ms => { if (!ms.contains(e.target)) ms.classList.remove('is-open'); });
+});
+window.addEventListener('scroll', repositionOpenMs, true);
+window.addEventListener('resize', repositionOpenMs);
+
+function repositionOpenMs(){
+  msRegistry.forEach(ms => { if (ms.classList.contains('is-open')) positionMsPanel(ms); });
+}
+function positionMsPanel(ms){
+  const trigger = ms.querySelector('.ms-trigger');
+  const panel = ms.querySelector('.ms-panel');
+  if (!trigger || !panel) return;
+  const rect = trigger.getBoundingClientRect();
+  const panelHeight = 280;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const openAbove = spaceBelow < panelHeight && rect.top > panelHeight;
+  panel.style.left = rect.left + 'px';
+  panel.style.width = rect.width + 'px';
+  if (openAbove){
+    panel.style.top = 'auto';
+    panel.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+  } else {
+    panel.style.bottom = 'auto';
+    panel.style.top = (rect.bottom + 6) + 'px';
+  }
+}
+function msTemplateHTML(prefix){
+  return `
+    <div class="ms" data-ms="${prefix}">
+      <div class="ms-trigger" id="${prefix}-approver-trigger" tabindex="0">
+        <span class="ms-placeholder">Select 2&ndash;3 approvers&hellip;</span>
+        <span class="ms-caret">&#9660;</span>
+      </div>
+      <div class="ms-panel" id="${prefix}-approver-panel">
+        <input class="ms-search" id="${prefix}-approver-search" type="text" placeholder="Search by full name or username&hellip;" autocomplete="off">
+        <div class="ms-options" id="${prefix}-approver-options"></div>
+      </div>
+    </div>
+    <div class="ms-hint">
+      <span>Pick 2&ndash;3 active users. Selected: <span class="ms-count" id="${prefix}-approver-count">0</span></span>
+      <span>Max ${MAX_APPROVERS}</span>
+    </div>
+  `;
+}
+function renderMsOptions(prefix, filterText = ''){
+  const ms = document.querySelector('[data-ms="' + prefix + '"]');
+  if (!ms) return;
+  const optionsEl = document.getElementById(prefix + '-approver-options');
+  if (!optionsEl) return;
+  const selected = new Set(ms._selected || []);
+  const q = (filterText || '').trim().toLowerCase();
+  const atMax = selected.size >= MAX_APPROVERS;
+  const eligible = state.activeUsers;
+  const list = eligible.filter(u => {
+    if (!q) return true;
+    const hay = (u.full_name || '') + ' ' + u.username;
+    return hay.toLowerCase().includes(q);
+  });
+  if (!list.length){
+    const msg = eligible.length
+      ? 'No matching active users for "' + esc(q) + '".'
+      : 'No active users in the database. Set at least one user to status = "active" first.';
+    optionsEl.innerHTML = '<div class="ms-empty">' + msg + '</div>';
+    return;
+  }
+  optionsEl.innerHTML = list.map(u => {
+    const username = u.username;
+    const isSel = selected.has(username);
+    const disabled = !isSel && atMax;
+    const label = String(u.full_name || '').trim() || username;
+    return `
+      <label class="ms-option ${isSel ? 'selected' : ''} ${disabled ? 'disabled' : ''}" data-username="${esc(username)}">
+        <input type="checkbox" ${isSel ? 'checked' : ''} ${disabled ? 'disabled' : ''} tabindex="-1">
+        <span class="ms-name" title="${esc(label)}">${esc(label)}</span>
+      </label>`;
+  }).join('');
+}
+function updateMsChips(prefix){
+  const ms = document.querySelector('[data-ms="' + prefix + '"]');
+  if (!ms) return;
+  const trigger = document.getElementById(prefix + '-approver-trigger');
+  const countEl = document.getElementById(prefix + '-approver-count');
+  if (!trigger) return;
+  const selected = ms._selected || [];
+  const caret = trigger.querySelector('.ms-caret');
+  trigger.innerHTML = '';
+  if (caret) trigger.appendChild(caret);
+  if (!selected.length){
+    const placeholder = document.createElement('span');
+    placeholder.className = 'ms-placeholder';
+    placeholder.textContent = 'Select 2–3 approvers…';
+    trigger.insertBefore(placeholder, caret);
+  } else {
+    selected.forEach(username => {
+      const chip = document.createElement('span');
+      chip.className = 'ms-chip';
+      chip.innerHTML = `
+        <span class="ms-chip-name">${esc(approverLabel(username))}</span>
+        <button type="button" title="Remove" aria-label="Remove">&#215;</button>
+      `;
+      chip.querySelector('button').addEventListener('click', ev => {
+        ev.stopPropagation();
+        ms._selected = (ms._selected || []).filter(x => x !== username);
+        updateMsChips(prefix);
+        renderMsOptions(prefix, document.getElementById(prefix + '-approver-search')?.value || '');
+      });
+      trigger.insertBefore(chip, caret);
+    });
+  }
+  if (countEl){
+    countEl.textContent = selected.length;
+    countEl.classList.toggle('over', selected.length > MAX_APPROVERS);
+  }
+}
+function wireApproverMs(prefix, initialSelected){
+  const ms = document.querySelector('[data-ms="' + prefix + '"]');
+  if (!ms) return;
+  msRegistry.add(ms);
+  ms._selected = Array.isArray(initialSelected) ? initialSelected.slice() : [];
+  const trigger = document.getElementById(prefix + '-approver-trigger');
+  const search  = document.getElementById(prefix + '-approver-search');
+  const options = document.getElementById(prefix + '-approver-options');
+
+  trigger.addEventListener('click', () => {
+    const willOpen = !ms.classList.contains('is-open');
+    closeOtherMs(ms);
+    ms.classList.toggle('is-open', willOpen);
+    if (willOpen){
+      positionMsPanel(ms);
+      renderMsOptions(prefix, search.value || '');
+      setTimeout(() => search.focus(), 30);
+    }
+  });
+  trigger.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      trigger.click();
+    }
+  });
+  search.addEventListener('input', () => renderMsOptions(prefix, search.value));
+  options.addEventListener('click', e => {
+    const optEl = e.target.closest('.ms-option');
+    if (!optEl || optEl.classList.contains('disabled')) return;
+    e.preventDefault();
+    const username = optEl.dataset.username;
+    const sel = new Set(ms._selected || []);
+    if (sel.has(username)){
+      sel.delete(username);
+    } else {
+      if (sel.size >= MAX_APPROVERS){
+        toast('Maximum ' + MAX_APPROVERS + ' approvers allowed.', 'warn');
+        return;
+      }
+      sel.add(username);
+    }
+    ms._selected = Array.from(sel);
+    updateMsChips(prefix);
+    renderMsOptions(prefix, search.value || '');
+  });
+  updateMsChips(prefix);
+  renderMsOptions(prefix, '');
+}
+
+/* ---------- modal ---------- */
+const backdrop = $('#modal-backdrop');
+function openModal({ title, bodyHTML, footHTML }){
+  $('#modal-title').textContent = title;
+  $('#modal-body').innerHTML = bodyHTML;
+  $('#modal-foot').innerHTML = footHTML;
+  backdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(){
+  closeAllMs();
+  msRegistry.forEach(ms => { if (!document.body.contains(ms)) msRegistry.delete(ms); });
+  backdrop.classList.remove('open');
+  document.body.style.overflow = '';
+  $('#modal-body').innerHTML = '';
+  $('#modal-foot').innerHTML = '';
+}
+$('#modal-close').addEventListener('click', closeModal);
+backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){
+    if (anyMsOpen()){ closeAllMs(); return; }
+    if (backdrop.classList.contains('open')) closeModal();
+  }
+});
+
+/* ============================================================
+   LOAD DATA
+   ============================================================ */
+async function loadHeroButtons(){
+  try {
+    const rows = await supabase.from('hero_buttons')
+      .select('id,label,href,sort_order')
+      .order('sort_order', { ascending: true });
+    state.heroButtons = Array.isArray(rows) ? rows : [];
+  } catch (err) {
+    console.error('Failed to load hero_buttons:', err);
+    state.heroButtons = [];
+  }
+}
+async function loadActiveUsers(){
+  try {
+    const rows = await supabase.from('users').select('*').order('username', { ascending: true });
+    const all = Array.isArray(rows) ? rows : [];
+    state.activeUsers = all.filter(u => String(u.status || '').trim().toLowerCase() === 'active');
+    console.log('[loadActiveUsers] ' + state.activeUsers.length + ' active user(s):',
+                state.activeUsers.map(u => (u.full_name || u.username) + ' / ' + u.role));
+  } catch (err) {
+    console.error('Failed to load active users:', err);
+    state.activeUsers = [];
+  }
+}
+
+/* ============================================================
+   USER FORM
+   ============================================================ */
+const ROLES    = ['superadmin','admin','user'];
+const STATUSES = ['active','inactive','pending'];
+
+function heroButtonsCheckboxesHTML(prefix, u = {}){
+  const sel = heroSelection(u.allowed_hero_buttons);
+  if (!state.heroButtons.length){
+    return `
+      <div class="field">
+        <span>Allowed Hero Buttons <em>from the hero_buttons table</em></span>
+        <div class="check-empty">No hero buttons found in the database.</div>
+      </div>`;
+  }
+  return `
+    <div class="field">
+      <span>Allowed Hero Buttons <em>choose which dashboard buttons this user can see</em></span>
+      <div class="check-group">
+        <label class="check-item all-item" title="Grant access to every hero button, including any added later">
+          <input type="checkbox" id="${prefix}-hb-all" value="${HERO_ALL}" ${sel.all ? 'checked' : ''}>
+          <span>All</span>
+        </label>
+        ${state.heroButtons.map(h => {
+          const idNum = Number(h.id);
+          const checked = sel.all || sel.ids.includes(idNum);
+          return `
+            <label class="check-item" title="${esc(h.href || '')}">
+              <input type="checkbox" id="${prefix}-hb-${esc(h.id)}" value="${esc(h.id)}"
+                     ${checked ? 'checked' : ''}>
+              <span>${esc(h.label || ('#' + h.id))}</span>
+              ${h.href ? `<span class="hi-href">(${esc(h.href)})</span>` : ''}
+            </label>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function wireHeroCheckboxes(prefix){
+  const allCb = document.getElementById(prefix + '-hb-all');
+  if (!allCb) return;
+  const itemCbs = state.heroButtons
+    .map(h => document.getElementById(prefix + '-hb-' + h.id))
+    .filter(Boolean);
+  function applyAllState(){
+    const isAll = allCb.checked;
+    itemCbs.forEach(cb => {
+      cb.checked = isAll;
+      cb.disabled = isAll;
+      const wrap = cb.closest('.check-item');
+      if (wrap) wrap.classList.toggle('is-locked', isAll);
+    });
+  }
+  allCb.addEventListener('change', applyAllState);
+  itemCbs.forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (!cb.checked && allCb.checked){
+        allCb.checked = false;
+        applyAllState();
+      }
+    });
+  });
+  if (allCb.checked) applyAllState();
+}
+
+function userFormHTML(prefix, u = {}){
+  const lockPassword   = !canEditUserPassword(u);
+  const lockRoleStatus = !canChangeRoleStatus(u);
+
+  const roles = allowedRolesForCurrentUser();
+  if (u.role && !roles.includes(u.role)) roles.unshift(u.role);
+
+  const statuses = STATUSES.slice();
+  if (u.status && !statuses.includes(u.status)) statuses.unshift(u.status);
+
+  const roleOpts = roles.map(r =>
+    `<option value="${r}"${(u.role || 'sales_rep') === r ? ' selected' : ''}>${r.replace(/_/g,' ')}</option>`
+  ).join('');
+  const statusOpts = statuses.map(s =>
+    `<option value="${s}"${(u.status || 'pending') === s ? ' selected' : ''}>${s}</option>`
+  ).join('');
+
+  let noticeHTML = '';
+  if (lockPassword || lockRoleStatus){
+    const locked = [];
+    if (lockPassword)   locked.push('password');
+    if (lockRoleStatus) locked.push('role and status');
+    const phrase = locked.length === 2 ? 'password, role and status' : locked[0];
+    noticeHTML = `
+      <div class="lock-notice">
+        <strong>Protected superadmin account.</strong>
+        The ${phrase} field${locked.length === 1 ? ' is' : 's are'} locked and cannot be changed by your role.
+        Other details may still be updated.
+      </div>`;
+  }
+
+  return `
+    ${noticeHTML}
+    <div class="field-grid">
+      <label class="field"><span>Full Name</span>
+        <input id="${prefix}-fullname" type="text" autocomplete="off" placeholder="e.g. Juan Dela Cruz" value="${esc(u.full_name || '')}">
+      </label>
+      <label class="field"><span>Username</span>
+        <input id="${prefix}-username" type="text" autocomplete="off" placeholder="e.g. jdoe" value="${esc(u.username || '')}">
+      </label>
+      <label class="field">
+        <span>Password ${lockPassword ? '<em>locked &mdash; superadmin account</em>' : ''}</span>
+        <input id="${prefix}-password" type="text" autocomplete="off" placeholder="Password"
+               value="${esc(u.password || '')}"
+               ${lockPassword ? 'disabled title="The password of a superadmin account cannot be changed by an admin."' : ''}>
+      </label>
+      <label class="field">
+        <span>Role ${lockRoleStatus ? '<em>locked &mdash; superadmin account</em>' : ''}</span>
+        <select id="${prefix}-role" ${lockRoleStatus ? 'disabled title="The role of a superadmin account cannot be changed by an admin."' : ''}>
+          ${roleOpts}
+        </select>
+      </label>
+      <label class="field"><span>Contact Number</span>
+        <input id="${prefix}-contact" type="text" inputmode="tel" autocomplete="off" placeholder="e.g. 0917 123 4567" value="${esc(u.contact || '')}">
+      </label>
+      <label class="field"><span>Email Address</span>
+        <input id="${prefix}-email" type="text" inputmode="email" autocomplete="off" placeholder="e.g. juan.delacruz@ldi.com" value="${esc(u.email || '')}">
+      </label>
+      <label class="field">
+        <span>Status ${lockRoleStatus ? '<em>locked &mdash; superadmin account</em>' : ''}</span>
+        <select id="${prefix}-status" ${lockRoleStatus ? 'disabled title="The status of a superadmin account cannot be changed by an admin."' : ''}>
+          ${statusOpts}
+        </select>
+      </label>
+    </div>
+
+    <div class="field">
+      <span>Approvers <em>choose 2&ndash;3 active users</em></span>
+      ${msTemplateHTML(prefix)}
+    </div>
+
+    ${heroButtonsCheckboxesHTML(prefix, u)}
+
+    <label class="field"><span>Assigned Companies <em>comma separated</em></span>
+      <input id="${prefix}-companies" type="text" placeholder="Company A, Company B" value="${esc(arrToText(u.assigned_companies))}">
+    </label>
+    <label class="field"><span>Assigned Sales Rep Codes <em>comma separated</em></span>
+      <input id="${prefix}-codes" type="text" placeholder="SR001, SR002" value="${esc(arrToText(u.assigned_sales_rep_codes))}">
+    </label>
+    <label class="field"><span>Assigned Areas <em>comma separated</em></span>
+      <input id="${prefix}-areas" type="text" placeholder="Area 1, Area 2" value="${esc(arrToText(u.assigned_areas))}">
+    </label>
+  `;
+}
+
+function readUserForm(prefix){
+  const username = $('#' + prefix + '-username').value.trim();
+  const pwdEl = $('#' + prefix + '-password');
+  const passwordLocked = !!(pwdEl && pwdEl.disabled);
+  const password = passwordLocked ? '' : (pwdEl?.value || '').trim();
+
+  if (!username) throw new Error('Username is required.');
+  if (!passwordLocked && !password) throw new Error('Password is required.');
+
+  const full_name = $('#' + prefix + '-fullname').value.trim();
+  const contact   = $('#' + prefix + '-contact').value.trim();
+  const email     = $('#' + prefix + '-email').value.trim();
+
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    throw new Error('Please enter a valid email address.');
+  }
+
+  const ms = document.querySelector('[data-ms="' + prefix + '"]');
+  const approver = ms ? (ms._selected || []).slice() : [];
+  if (approver.length > MAX_APPROVERS){
+    throw new Error('Maximum ' + MAX_APPROVERS + ' approvers allowed.');
+  }
+
+  const allCb = document.getElementById(prefix + '-hb-all');
+  let allowed_hero_buttons = [];
+  if (allCb && allCb.checked){
+    allowed_hero_buttons = [HERO_ALL];
+  } else {
+    state.heroButtons.forEach(h => {
+      const el = document.getElementById(prefix + '-hb-' + h.id);
+      if (el && el.checked) allowed_hero_buttons.push(Number(h.id));
+    });
+  }
+
+  const roleEl   = $('#' + prefix + '-role');
+  const statusEl = $('#' + prefix + '-status');
+  const roleLocked   = !!(roleEl   && roleEl.disabled);
+  const statusLocked = !!(statusEl && statusEl.disabled);
+
+  if (!roleLocked && roleEl){
+    const chosen = normalizeRole(roleEl.value);
+    if (chosen === 'superadmin' && !isSuperadmin(currentUser())){
+      throw new Error('Only a superadmin can assign the superadmin role.');
+    }
+  }
+
+  const payload = {
+    full_name,
+    contact,
+    email,
+    approver,
+    username,
+    allowed_hero_buttons,
+    assigned_companies: textToArr($('#' + prefix + '-companies').value),
+    assigned_sales_rep_codes: textToArr($('#' + prefix + '-codes').value),
+    assigned_areas: textToArr($('#' + prefix + '-areas').value)
+  };
+  if (!passwordLocked) payload.password = password;
+  if (!roleLocked)     payload.role   = roleEl.value;
+  if (!statusLocked)   payload.status = statusEl.value;
+  return payload;
+}
+
+/* ============================================================
+   DATA — Users
+   ============================================================ */
+const tbody = $('#users-tbody');
+
+async function loadUsers(){
+  tbody.innerHTML = '<tr class="empty-row"><td class="empty" colspan="13">Loading users&hellip;</td></tr>';
+  try {
+    const rows = await supabase.from('users').select('*').order('id', { ascending: true });
+    const all  = Array.isArray(rows) ? rows : [];
+    state.users = all.filter(canSeeUser);
+    console.log('[loadUsers] current role:', currentUserRole(), '| rows shown:', state.users.length);
+  } catch (err) {
+    console.error(err);
+    state.users = [];
+    state.selectedId = null;
+    tbody.innerHTML = `<tr class="empty-row"><td class="empty" colspan="13">Could not load users: ${esc(friendlyError(err))}</td></tr>`;
+    updateSelectionUI();
+    return;
+  }
+  renderUsers();
+}
+
+function heroBadgesHTML(u){
+  if (!state.hasHeroButtonsColumn && !('allowed_hero_buttons' in (u || {}))){
+    return '<span class="badge hero-none">column missing</span>';
+  }
+  const sel = heroSelection(u.allowed_hero_buttons);
+  if (sel.all){
+    return '<span class="badge hero-all" title="All hero buttons (including future ones)">All</span>';
+  }
+  if (!sel.ids.length){
+    return '<span class="badge hero-none">none</span>';
+  }
+  const labels = sel.ids.map(id => {
+    const h = heroButtonById(id);
+    return h ? (h.label || ('#' + id)) : ('#' + id);
+  });
+  const visible = labels.slice(0, MAX_HERO_BADGES);
+  const overflow = labels.length - visible.length;
+  const fullTitle = labels.join(', ');
+  const chips = visible.map(label =>
+    `<span class="badge hero" title="${esc(fullTitle)}">${esc(label)}</span>`
+  ).join('');
+  const moreChip = overflow > 0
+    ? `<span class="badge more" title="${esc(fullTitle)}">+${overflow}</span>`
+    : '';
+  return `<span class="cell-tags">${chips}${moreChip}</span>`;
+}
+
+function approverBadgesHTML(u){
+  const list = parseApprovers(u.approver);
+  if (!list.length) return '<span class="cell-muted">—</span>';
+  const labels = list.map(username => approverLabel(username));
+  const visible = labels.slice(0, MAX_HERO_BADGES);
+  const overflow = labels.length - visible.length;
+  const fullTitle = labels.join(', ');
+  const chips = visible.map(label =>
+    `<span class="badge approver" title="${esc(fullTitle)}">${esc(label)}</span>`
+  ).join('');
+  const moreChip = overflow > 0
+    ? `<span class="badge more" title="${esc(fullTitle)}">+${overflow}</span>`
+    : '';
+  return `<span class="cell-tags">${chips}${moreChip}</span>`;
+}
+
+function renderUsers(){
+  const q = ($('#user-search').value || '').trim().toLowerCase();
+  const rows = state.users.filter(u => {
+    if (!q) return true;
+    const sel = heroSelection(u.allowed_hero_buttons);
+    const heroText = sel.all
+      ? 'all ' + state.heroButtons.map(h => (h.label + ' ' + (h.href||''))).join(' ')
+      : sel.ids.map(id => { const h = heroButtonById(id); return h ? (h.label + ' ' + (h.href||'')) : ''; }).join(' ');
+    const approverText = parseApprovers(u.approver).map(a => approverLabel(a)).join(' ');
+    return [u.full_name, u.username, u.email, u.contact, u.role, u.status,
+            heroText, approverText,
+            arrToText(u.assigned_companies), arrToText(u.assigned_areas)]
+      .join(' ').toLowerCase().includes(q);
+  });
+
+  if (!rows.length){
+    tbody.innerHTML = `<tr class="empty-row"><td class="empty" colspan="13">No users found.</td></tr>`;
+    updateSelectionUI();
+    return;
+  }
+
+  tbody.innerHTML = rows.map(u => {
+    const sel = String(state.selectedId) === String(u.id);
+    const fn = u.full_name ? esc(u.full_name) : '<span class="cell-muted">—</span>';
+    const email = u.email ? `<span class="cell-email">${esc(u.email)}</span>` : '<span class="cell-muted">—</span>';
+    const contact = u.contact ? `<span class="cell-contact">${esc(u.contact)}</span>` : '<span class="cell-muted">—</span>';
+    return `
+      <tr data-id="${esc(u.id)}" class="${sel ? 'selected' : ''}">
+        <td class="col-check"><input type="checkbox" ${sel ? 'checked' : ''} tabindex="-1"></td>
+        <td class="num">${esc(u.id)}</td>
+        <td>${fn}</td>
+        <td><strong>${esc(u.username)}</strong></td>
+        <td>${email}</td>
+        <td>${contact}</td>
+        <td>${approverBadgesHTML(u)}</td>
+        <td>${esc(u.role || '—')}</td>
+        <td><span class="badge ${statusClass(u.status)}">${esc(u.status || '—')}</span></td>
+        <td>${heroBadgesHTML(u)}</td>
+        <td>${esc(arrToText(u.assigned_companies) || '—')}</td>
+        <td>${esc(arrToText(u.assigned_sales_rep_codes) || '—')}</td>
+        <td>${esc(arrToText(u.assigned_areas) || '—')}</td>
+      </tr>`;
+  }).join('');
+
+  updateSelectionUI();
+}
+
+function updateSelectionUI(){
+  const u = state.users.find(x => String(x.id) === String(state.selectedId)) || null;
+  if (!u) state.selectedId = null;
+
+  const has = !!u;
+  const canDelete = has && canDeleteUser(u);
+
+  $('#btn-edit').disabled = !has;
+  $('#btn-delete').disabled = !canDelete;
+
+  const delBtn = $('#btn-delete');
+  if (delBtn){
+    delBtn.title = (has && !canDelete)
+      ? 'Only a superadmin can delete a superadmin account.'
+      : '';
+  }
+
+  $('#user-count').textContent = state.users.length + (state.users.length === 1 ? ' user' : ' users');
+  $('#selected-info').textContent = has ? ('Selected: ' + (u.full_name || u.username)) : 'No user selected';
+}
+
+tbody.addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-id]');
+  if (!tr) return;
+  const id = tr.dataset.id;
+  state.selectedId = String(state.selectedId) === String(id) ? null : id;
+  renderUsers();
+});
+
+$('#user-search').addEventListener('input', renderUsers);
+$('#btn-refresh').addEventListener('click', async () => {
+  await loadHeroButtons();
+  await loadActiveUsers();
+  await loadUsers();
+});
+
+/* ============================================================
+   HERO ACTIONS — ADD / EDIT / DELETE
+   ============================================================ */
+$('#btn-add').addEventListener('click', openAddUserModal);
+
+$('#btn-edit').addEventListener('click', () => {
+  const u = state.users.find(x => String(x.id) === String(state.selectedId));
+  if (!u){ toast('Select a user first.', 'error'); return; }
+  if (u.id == null){ toast('Cannot edit: selected user has no id.', 'error'); return; }
+
+  const label = u.full_name || u.username;
+
+  openModal({
+    title: 'Edit User · ' + label,
+    bodyHTML: `<form id="edit-user-form" autocomplete="off" novalidate>${userFormHTML('edit', u)}</form>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="modal-cancel">Cancel</button>
+      <button class="button primary" type="button" id="modal-save">Save Changes</button>`
+  });
+
+  wireHeroCheckboxes('edit');
+  wireApproverMs('edit', parseApprovers(u.approver));
+
+  $('#modal-cancel').addEventListener('click', closeModal);
+  $('#modal-save').addEventListener('click', async () => {
+    let data;
+    try { data = readUserForm('edit'); }
+    catch (err){ toast(err.message, 'error'); return; }
+
+    const btn = $('#modal-save');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const result = await safeWrite(
+        payload => supabase.from('users').eq('id', u.id).update(payload),
+        data
+      );
+      if (Array.isArray(result) && result.length === 0){
+        toast('No rows were updated — the user may have been deleted. Refreshing table.', 'warn');
+        closeModal();
+        state.selectedId = null;
+        await loadUsers();
+        return;
+      }
+      closeModal();
+      toast('User "' + data.username + '" updated.');
+      await loadActiveUsers();
+      await loadUsers();
+    } catch (err) {
+      console.error('[EDIT] failed:', err);
+      toast('Update failed: ' + friendlyError(err), 'error');
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    }
+  });
+});
+
+$('#btn-delete').addEventListener('click', () => {
+  const u = state.users.find(x => String(x.id) === String(state.selectedId));
+  if (!u){ toast('Select a user first.', 'error'); return; }
+
+  if (!canDeleteUser(u)){
+    toast('You cannot delete a superadmin account.', 'error');
+    return;
+  }
+
+  const label = u.full_name ? (u.full_name + ' (' + u.username + ')') : u.username;
+  const isSuperadminTarget = isSuperadmin(u);
+
+  const warningBlock = isSuperadminTarget
+    ? `<div class="danger-card">
+         <strong>⚠️ Protected superadmin account</strong><br>
+         Deleting a superadmin is a high-impact action. Make sure another
+         superadmin account still exists before proceeding.
+       </div>`
+    : '';
+
+  openModal({
+    title: 'Delete User',
+    bodyHTML: `<p class="modal-text">Are you sure you want to permanently delete
+                 <strong>${esc(label)}</strong> (ID ${esc(u.id)})?<br>
+                 This action cannot be undone.</p>${warningBlock}`,
+    footHTML: `
+      <button class="button ghost" type="button" id="modal-cancel">Cancel</button>
+      <button class="button danger" type="button" id="modal-confirm">Delete User</button>`
+  });
+
+  $('#modal-cancel').addEventListener('click', closeModal);
+  $('#modal-confirm').addEventListener('click', async () => {
+    const btn = $('#modal-confirm');
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+    try {
+      await supabase.from('users').eq('id', u.id).delete();
+      closeModal();
+      state.selectedId = null;
+      toast('User "' + u.username + '" deleted.');
+      await loadActiveUsers();
+      await loadUsers();
+    } catch (err) {
+      console.error(err);
+      toast('Delete failed: ' + friendlyError(err), 'error');
+      btn.disabled = false;
+      btn.textContent = 'Delete User';
+    }
+  });
+});
+
+/* ============================================================
+   ADD USER MODAL
+   ============================================================ */
+function openAddUserModal(){
+  openModal({
+    title: 'Add User',
+    bodyHTML: `
+      <p class="panel-hint" style="margin:0 0 16px">
+        Create a new account. Fill in the contact number and email address,
+        choose which hero buttons this user is allowed to see,
+        and pick 2&ndash;3 approvers from active users.
+      </p>
+      <form id="add-user-form" autocomplete="off" novalidate>
+        ${userFormHTML('add')}
+      </form>`,
+    footHTML: `
+      <button class="button ghost" type="button" id="add-cancel">Cancel</button>
+      <button class="button primary" type="button" id="add-submit">Create User</button>`
+  });
+
+  wireHeroCheckboxes('add');
+  wireApproverMs('add', []);
+
+  const form = $('#add-user-form');
+  const submitBtn = $('#add-submit');
+
+  form.addEventListener('submit', handleAddSubmit);
+  submitBtn.addEventListener('click', () => form.requestSubmit());
+  $('#add-cancel').addEventListener('click', closeModal);
+
+  const first = $('#add-fullname');
+  if (first) setTimeout(() => first.focus(), 90);
+}
+
+async function handleAddSubmit(e){
+  e.preventDefault();
+  let data;
+  try { data = readUserForm('add'); }
+  catch (err){ toast(err.message, 'error'); return; }
+
+  const submitBtn = $('#add-submit');
+  if (submitBtn){
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating…';
+  }
+
+  try {
+    const existing = await supabase.from('users').select('id').eq('username', data.username).single();
+    if (existing) throw new Error('That username already exists.');
+
+    await safeWrite(payload => supabase.from('users').insert(payload), data);
+
+    closeModal();
+    toast('User "' + data.username + '" created.');
+    state.selectedId = null;
+    await loadActiveUsers();
+    await loadUsers();
+  } catch (err) {
+    console.error('[ADD] failed:', err);
+    toast('Could not create user: ' + friendlyError(err), 'error');
+    if (submitBtn && document.body.contains(submitBtn)){
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Create User';
+    }
+  }
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+const me = session.data.session.user;
+$('#current-user').textContent = me?.username ? ('Signed in as ' + (me.full_name || me.username)) : '';
+
+await loadHeroButtons();
+await loadActiveUsers();
+loadUsers();
+})();
+</script>
+</body>
+</html>
