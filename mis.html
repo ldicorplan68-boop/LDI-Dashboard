@@ -2846,13 +2846,43 @@
       return;
     }
 
-    visible.forEach((btn) => {
+    // ===== Determine kung alin ang CURRENT PAGE button =====
+    // Ang kasalukuyang HTML filename (hal. "art.html") at ROOT ("art").
+    // Isang button ay itinuturing na "current page" kung:
+    //   - walang link (empty string) — ito ang default naming Files button, O
+    //   - ang link ay tumutugma sa current filename o ROOT, O
+    //   - may isFiles flag na true (mula sa local defaults)
+    const path = window.location.pathname;
+    const currentFilename = path.substring(path.lastIndexOf('/') + 1).toLowerCase();
+    const currentBase = currentFilename.replace(/\.html?$/i, '').toLowerCase();
+
+    function isCurrentPageButton(btn) {
+      if (btn.isFiles) return true;
+      const link = String(btn.link || '').trim();
+      // Walang link = current page (kasi hindi ito navigation button)
+      if (!link) return true;
+      // Link matches current filename or base name
+      const linkLower = link.toLowerCase();
+      const linkFilename = linkLower.substring(linkLower.lastIndexOf('/') + 1);
+      const linkBase = linkFilename.replace(/\.html?$/i, '');
+      if (linkFilename === currentFilename) return true;
+      if (linkBase && linkBase === currentBase) return true;
+      return false;
+    }
+
+    // Kung wala talagang may match, i-fallback sa UNANG button
+    const hasMatch = visible.some(isCurrentPageButton);
+    const fallbackIndex = hasMatch ? -1 : 0;
+
+    visible.forEach((btn, visIdx) => {
       const el = document.createElement('button');
       el.type = 'button';
       el.className = 'side-btn';
       el.dataset.id = btn.id;
-      // The "Files" button (current page) is highlighted.
-      if (btn.isFiles) {
+
+      // Mark as active kung ito ang current page (o fallback sa unang button)
+      const isActive = isCurrentPageButton(btn) || visIdx === fallbackIndex;
+      if (isActive) {
         el.classList.add('active');
         el.setAttribute('aria-current', 'page');
         el.title = 'Current page';
