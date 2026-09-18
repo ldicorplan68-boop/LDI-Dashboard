@@ -627,7 +627,7 @@
     .fm-alert-stat-value.danger { color: var(--red); }
 
     /* ================= MANAGE MODAL ================= */
-    .manage-modal { max-width: 600px; }
+    .manage-modal { max-width: 620px; }
     .manage-status-bar {
       display: flex; align-items: center; gap: 8px;
       padding: 8px 12px; border-radius: 10px;
@@ -668,6 +668,18 @@
     .manage-row-link {
       font-size: 11px; color: var(--muted); white-space: nowrap;
       overflow: hidden; text-overflow: ellipsis; font-family: monospace;
+    }
+    .manage-row-roles {
+      display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px;
+    }
+    .role-badge {
+      font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .4px; padding: 2px 6px; border-radius: 4px;
+      background: #eef1fb; color: var(--royal); border: 1px solid #d0d9f5;
+      line-height: 1.3;
+    }
+    .role-badge.all {
+      background: #e8f7ee; color: #0d7a3e; border-color: #b6e5c8;
     }
     .manage-row-actions { display: flex; gap: 4px; flex-shrink: 0; flex-wrap: wrap; }
     .manage-icon-btn {
@@ -736,6 +748,49 @@
     .icon-choice.selected {
       background: #dfe6ff; border-color: var(--royal);
       box-shadow: 0 0 0 2px rgba(27,27,179,.18);
+    }
+
+    /* ================= ROLE PICKER ================= */
+    .role-picker {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      background: #fff;
+      border: 1.5px solid var(--border-strong);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .role-choice {
+      display: flex; align-items: center; gap: 8px;
+      background: #f7f9fd; border: 1.5px solid transparent;
+      border-radius: 8px; padding: 8px 10px;
+      font: 600 12.5px 'DM Sans', sans-serif;
+      color: var(--text-2);
+      cursor: pointer; user-select: none; text-align: left;
+      transition: background var(--fast), border-color var(--fast), color var(--fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .role-choice:hover { background: #eef1fb; }
+    .role-choice.selected {
+      background: #dfe6ff; border-color: var(--royal); color: var(--royal);
+      box-shadow: 0 0 0 2px rgba(27,27,179,.14);
+    }
+    .role-choice .role-check {
+      width: 16px; height: 16px; border-radius: 4px;
+      border: 1.5px solid var(--border-strong); background: #fff;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; line-height: 1; color: transparent; flex-shrink: 0;
+      transition: background var(--fast), border-color var(--fast), color var(--fast);
+    }
+    .role-choice.selected .role-check {
+      background: var(--royal); border-color: var(--royal); color: #fff;
+    }
+    .role-choice.everyone.selected {
+      background: #e8f7ee; border-color: #0d7a3e; color: #0d7a3e;
+      box-shadow: 0 0 0 2px rgba(13,122,62,.16);
+    }
+    .role-choice.everyone.selected .role-check {
+      background: #0d7a3e; border-color: #0d7a3e; color: #fff;
     }
 
     /* ================= PROGRESS / TOAST ================= */
@@ -1175,6 +1230,7 @@
       .hero-storage { min-width: 150px; }
       .manage-form-row { grid-template-columns: 1fr; }
       .icon-picker { grid-template-columns: repeat(8, 1fr); }
+      .role-picker { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
       .fm-grid { grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap: 12px; }
     }
 
@@ -1309,9 +1365,12 @@
       .manage-row-label { font-size: 12px; }
       .manage-row-link { font-size: 10px; }
       .manage-icon-btn { width: 32px; height: 32px; font-size: 12px; }
+      .role-badge { font-size: 9px; padding: 2px 5px; }
 
       .icon-picker { grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 6px; }
       .icon-choice { font-size: 16px; }
+      .role-picker { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; padding: 8px; }
+      .role-choice { font-size: 11.5px; padding: 7px 9px; }
 
       .fm-preview-container { border-radius: 10px; }
       .fm-preview-header { padding: 8px 10px; }
@@ -1358,14 +1417,15 @@
 
     @media (hover: none) and (pointer: coarse) {
       .button, .hero-btn, .side-btn, .fm-item, .manage-icon-btn,
-      .icon-choice, .fm-crumb, .fm-choice-btn, .fm-pending-fab {
+      .icon-choice, .fm-crumb, .fm-choice-btn, .fm-pending-fab,
+      .role-choice {
         -webkit-tap-highlight-color: transparent;
       }
       .button:active, .hero-btn:active, .side-btn:active {
         transform: scale(.97);
       }
       .fm-item:active { transform: scale(.98); }
-      .manage-icon-btn:active, .icon-choice:active { transform: scale(.94); }
+      .manage-icon-btn:active, .icon-choice:active, .role-choice:active { transform: scale(.96); }
       .fm-item:hover { transform: none; }
       .side-btn:hover { background: rgba(255,255,255,.12); }
       .button.primary:hover { transform: none; box-shadow: 0 2px 8px rgba(27,27,179,.35); }
@@ -1373,6 +1433,8 @@
       .hero-refresh:hover { background: rgba(255,255,255,.14); color: #fff; }
       .fm-crumb:hover { background: transparent; }
       .fm-pending-fab:hover { transform: none; }
+      .role-choice:hover { background: #f7f9fd; }
+      .role-choice.selected:hover { background: #dfe6ff; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1566,6 +1628,11 @@
             <label class="fm-label" for="manage-btn-link">Link (optional)</label>
             <input type="text" id="manage-btn-link" placeholder="reports.html or https://…" autocomplete="off">
           </div>
+        </div>
+        <div class="fm-field" style="margin-top:14px">
+          <label class="fm-label">Who can access this button?</label>
+          <div class="role-picker" id="role-picker"></div>
+          <p class="fm-hint" id="role-picker-hint" style="margin:8px 0 0">No role restriction — visible to everyone.</p>
         </div>
         <p class="fm-hint" style="margin:8px 0 0">Leave link empty for a non-navigating button.</p>
         <div class="manage-add-actions">
@@ -1772,6 +1839,7 @@
 <script>
 /* ============================================================================
    ART FILE MANAGER
+   - Role-based sidebar access control
    - Blob-based previews/downloads with connection-aware retry
    - Resumable (TUS) uploads with a Resume button
    - Auto-recovery when the Cloudflare tunnel comes back online
@@ -1822,6 +1890,19 @@
     '\u2B50','\uD83C\uDFE0','\uD83C\uDFE2','\uD83D\uDD0D','\u270F\uFE0F',
     '\uD83D\uDCB0','\uD83D\uDCB5','\uD83D\uDCE7','\uD83D\uDCF1','\uD83C\uDF10'
   ];
+
+  /* ---------------- ROLE DEFINITIONS ----------------
+     Add / rename / remove role entries here to match whatever
+     roles your `users` table actually uses. The `id` must match
+     the value stored in the database (case-insensitive).
+  ------------------------------------------------------- */
+  const AVAILABLE_ROLES = [
+    { id: 'superadmin', label: 'Superadmin' },
+    { id: 'admin',      label: 'Admin' },
+    { id: 'user',       label: 'User' },
+    { id: 'viewer',     label: 'Viewer' }
+  ];
+  const ROLE_LABELS = AVAILABLE_ROLES.reduce((m, r) => { m[r.id] = r.label; return m; }, {});
 
   function deriveRootFromFilename() {
     const path = window.location.pathname;
@@ -1913,6 +1994,8 @@
   const manageFormSave   = document.getElementById('manage-form-save');
   const manageFormCancel = document.getElementById('manage-form-cancel');
   const iconPicker       = document.getElementById('icon-picker');
+  const rolePicker       = document.getElementById('role-picker');
+  const rolePickerHint   = document.getElementById('role-picker-hint');
   const manageTabs       = manageModal.querySelectorAll('.manage-tab');
   const managePanels     = manageModal.querySelectorAll('.manage-tab-panel');
 
@@ -1974,9 +2057,11 @@
   let rootExists       = true;
   let isSuperAdmin     = false;
   let currentUser      = null;
+  let currentUserRoles = [];
   let sidebarButtons   = [];
   let editingButtonId  = null;
   let selectedIcon     = DEFAULT_ICON;
+  let selectedRoles    = new Set();
   let contextMenuEl    = null;
   let renameTarget     = null;
   let renameBusy       = false;
@@ -2020,6 +2105,85 @@
 
   function isOfflineError(err) {
     return !!(err && (err.network || err.offline));
+  }
+
+  /* ============================================================================
+     ROLE HELPERS
+     ============================================================================ */
+  function getUserRoles(user) {
+    if (!user) return [];
+    let raw = user.roles;
+    if (raw == null) raw = user.role;
+    if (raw == null) raw = user.user_role;
+    if (raw == null) return [];
+
+    let arr;
+    if (Array.isArray(raw)) {
+      arr = raw;
+    } else if (typeof raw === 'string') {
+      const s = raw.trim();
+      if (!s) return [];
+      if (s.startsWith('[')) {
+        try {
+          const p = JSON.parse(s);
+          arr = Array.isArray(p) ? p : [s];
+        } catch (e) {
+          arr = s.split(',');
+        }
+      } else {
+        arr = s.split(',');
+      }
+    } else {
+      arr = [raw];
+    }
+    return Array.from(new Set(
+      arr.map(x => String(x).trim().toLowerCase()).filter(Boolean)
+    ));
+  }
+
+  function normalizeRoles(val) {
+    if (val == null) return [];
+    if (Array.isArray(val)) {
+      return Array.from(new Set(
+        val.map(r => String(r).trim().toLowerCase()).filter(Boolean)
+      ));
+    }
+    if (typeof val === 'string') {
+      const s = val.trim();
+      if (!s) return [];
+      let arr;
+      if (s.startsWith('[')) {
+        try {
+          const p = JSON.parse(s);
+          arr = Array.isArray(p) ? p : s.split(',');
+        } catch (e) { arr = s.split(','); }
+      } else {
+        arr = s.split(',');
+      }
+      return Array.from(new Set(
+        arr.map(r => String(r).trim().toLowerCase()).filter(Boolean)
+      ));
+    }
+    return [];
+  }
+
+  /**
+   * Returns true if a user with the given roles can see this button.
+   * - The built-in "Files" button is ALWAYS visible (safety net).
+   * - An empty `roles` array means "visible to everyone".
+   */
+  function canAccessButton(btn, userRoles) {
+    if (!btn) return false;
+    if (btn.isFiles) return true;
+    const roles = Array.isArray(btn.roles) ? btn.roles.filter(Boolean) : [];
+    if (!roles.length) return true;
+    if (!userRoles || !userRoles.length) return false;
+    return roles.some(r => userRoles.includes(String(r).toLowerCase()));
+  }
+
+  function rolesLabel(roles) {
+    if (!roles || !roles.length) return 'Everyone';
+    return roles.map(r => ROLE_LABELS[r] || r).join(', ');
   }
 
   /* ============================================================================
@@ -2134,10 +2298,6 @@
       restartTimer,
       setOnline,
       setReconnectHandler,
-      /**
-       * Called from anywhere in the app when a network fetch fails.
-       * Flips the banner to "offline" and shortens the ping interval.
-       */
       reportNetworkFailure: (reason) => {
         if (online) {
           setOnline(false, reason || 'Server unreachable — Cloudflare tunnel may be down');
@@ -2170,6 +2330,7 @@
       label: b.label || 'Untitled',
       link: b.link || '',
       isFiles: !!b.isFiles,
+      roles: normalizeRoles(b.roles),
       sort_order: typeof b.sort_order === 'number' ? b.sort_order : i
     }));
   }
@@ -2193,11 +2354,11 @@
 
   function getDefaultButtons() {
     return [
-      { id: 'files', icon: '\uD83D\uDCC1', label: 'Files', link: '', isFiles: true, sort_order: 0 },
-      { id: 'opt2',  icon: '\uD83D\uDCC1', label: 'Option 2', link: 'art/option-2.html', sort_order: 1 },
-      { id: 'opt3',  icon: '\uD83D\uDCC1', label: 'Option 3', link: 'art/option-3.html', sort_order: 2 },
-      { id: 'opt4',  icon: '\uD83D\uDCC1', label: 'Option 4', link: 'art/option-4.html', sort_order: 3 },
-      { id: 'opt5',  icon: '\uD83D\uDCC1', label: 'Option 5', link: 'art/option-5.html', sort_order: 4 }
+      { id: 'files', icon: '\uD83D\uDCC1', label: 'Files', link: '', isFiles: true, roles: [], sort_order: 0 },
+      { id: 'opt2',  icon: '\uD83D\uDCC1', label: 'Option 2', link: 'art/option-2.html', roles: [], sort_order: 1 },
+      { id: 'opt3',  icon: '\uD83D\uDCC1', label: 'Option 3', link: 'art/option-3.html', roles: [], sort_order: 2 },
+      { id: 'opt4',  icon: '\uD83D\uDCC1', label: 'Option 4', link: 'art/option-4.html', roles: [], sort_order: 3 },
+      { id: 'opt5',  icon: '\uD83D\uDCC1', label: 'Option 5', link: 'art/option-5.html', roles: [], sort_order: 4 }
     ];
   }
 
@@ -2223,6 +2384,11 @@
     }
   }
 
+  /**
+   * Save the sidebar to Supabase.
+   * Tries to write the `roles` column. If the table doesn't have it yet,
+   * automatically retries without `roles` so nothing breaks.
+   */
   async function persistSidebarToSupabase() {
     try {
       await window.supabase
@@ -2231,18 +2397,37 @@
         .eq('bucket', BUCKET)
         .eq('folder', ROOT);
 
-      const payload = sidebarButtons.map((b, i) => ({
-        id: b.id,
-        bucket: BUCKET,
-        folder: ROOT,
-        sort_order: i,
-        icon: b.icon || DEFAULT_ICON,
-        label: b.label || 'Untitled',
-        link: b.link || ''
-      }));
+      const buildPayload = (includeRoles) => sidebarButtons.map((b, i) => {
+        const row = {
+          id: b.id,
+          bucket: BUCKET,
+          folder: ROOT,
+          sort_order: i,
+          icon: b.icon || DEFAULT_ICON,
+          label: b.label || 'Untitled',
+          link: b.link || ''
+        };
+        if (includeRoles) {
+          row.roles = Array.isArray(b.roles) ? b.roles : [];
+        }
+        return row;
+      });
 
-      if (payload.length) {
-        await window.supabase.from('sidebar_buttons').insert(payload);
+      if (sidebarButtons.length) {
+        try {
+          await window.supabase.from('sidebar_buttons').insert(buildPayload(true));
+        } catch (err) {
+          const msg = String(err.message || '').toLowerCase();
+          const looksLikeMissingColumn =
+            msg.includes('roles') ||
+            (msg.includes('column') && msg.includes('does not exist')) ||
+            msg.includes('pgrst204');
+          if (looksLikeMissingColumn) {
+            await window.supabase.from('sidebar_buttons').insert(buildPayload(false));
+            return { ok: true, noRolesColumn: true };
+          }
+          throw err;
+        }
       }
       return { ok: true };
     } catch (err) {
@@ -2310,7 +2495,12 @@
     setSidebarSaveState('loading', 'Saving to server…');
     const result = await persistSidebarToSupabase();
     if (result.ok) {
-      setSidebarSaveState('ok', 'Saved to server');
+      if (result.noRolesColumn) {
+        setSidebarSaveState('local-only',
+          'Saved — but the "roles" column is missing on sidebar_buttons. Role permissions will NOT persist. Add it with: ALTER TABLE sidebar_buttons ADD COLUMN roles jsonb DEFAULT \'[]\'::jsonb;');
+      } else {
+        setSidebarSaveState('ok', 'Saved to server');
+      }
     } else {
       setSidebarSaveState('local-only', 'Server save failed: ' + (result.error || '').slice(0, 140));
     }
@@ -2346,17 +2536,85 @@
     });
   }
 
+  /* ---------------- ROLE PICKER ---------------- */
+  function buildRolePicker() {
+    if (!rolePicker) return;
+    rolePicker.innerHTML = '';
+
+    // "Everyone" chip — clears all role restrictions.
+    const everyoneEl = document.createElement('button');
+    everyoneEl.type = 'button';
+    everyoneEl.className = 'role-choice everyone';
+    everyoneEl.dataset.role = '__everyone__';
+    everyoneEl.innerHTML = '<span class="role-check">✓</span><span>Everyone</span>';
+    everyoneEl.addEventListener('click', () => {
+      selectedRoles.clear();
+      syncRolePickerUI();
+    });
+    rolePicker.appendChild(everyoneEl);
+
+    AVAILABLE_ROLES.forEach(role => {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'role-choice';
+      el.dataset.role = role.id;
+      el.innerHTML = '<span class="role-check">✓</span><span>' + role.label + '</span>';
+      el.addEventListener('click', () => {
+        if (selectedRoles.has(role.id)) selectedRoles.delete(role.id);
+        else selectedRoles.add(role.id);
+        syncRolePickerUI();
+      });
+      rolePicker.appendChild(el);
+    });
+
+    syncRolePickerUI();
+  }
+
+  function syncRolePickerUI() {
+    if (!rolePicker) return;
+    const isEmpty = selectedRoles.size === 0;
+    rolePicker.querySelectorAll('.role-choice').forEach(el => {
+      const r = el.dataset.role;
+      if (r === '__everyone__') {
+        el.classList.toggle('selected', isEmpty);
+      } else {
+        el.classList.toggle('selected', selectedRoles.has(r));
+      }
+    });
+    if (rolePickerHint) {
+      if (isEmpty) {
+        rolePickerHint.textContent = 'No role restriction — visible to everyone.';
+      } else {
+        const labels = AVAILABLE_ROLES
+          .filter(r => selectedRoles.has(r.id))
+          .map(r => r.label);
+        rolePickerHint.textContent = 'Visible only to: ' + labels.join(', ');
+      }
+    }
+  }
+
+  function setSelectedRoles(roles) {
+    selectedRoles = new Set(normalizeRoles(roles));
+    syncRolePickerUI();
+  }
+
   /* ---------------- SIDEBAR RENDER ---------------- */
   function renderSidebar() {
     sideButtonsContainer.innerHTML = '';
-    if (!sidebarButtons.length) {
+
+    const visible = sidebarButtons.filter(btn => canAccessButton(btn, currentUserRoles));
+
+    if (!visible.length) {
       const emptyMsg = document.createElement('div');
       emptyMsg.className = 'side-empty';
-      emptyMsg.textContent = 'No buttons yet. Use Manage Sidebar to add one.';
+      emptyMsg.textContent = sidebarButtons.length
+        ? 'No buttons available for your role. Contact an administrator.'
+        : 'No buttons yet. Use Manage Sidebar to add one.';
       sideButtonsContainer.appendChild(emptyMsg);
       return;
     }
-    sidebarButtons.forEach((btn) => {
+
+    visible.forEach((btn) => {
       const el = document.createElement('button');
       el.type = 'button';
       el.className = 'side-btn';
@@ -2427,6 +2685,7 @@
     manageBtnLabel.value = '';
     manageBtnLink.value = '';
     setSelectedIcon(DEFAULT_ICON);
+    setSelectedRoles([]);
     manageFormTitle.textContent = 'Add New Button';
     manageFormSave.textContent = 'Add Button';
     editingButtonId = null;
@@ -2453,14 +2712,46 @@
 
       const info = document.createElement('div');
       info.className = 'manage-row-info';
+
       const labelEl = document.createElement('div');
       labelEl.className = 'manage-row-label';
       labelEl.textContent = btn.label || 'Untitled';
+
       const linkEl = document.createElement('div');
       linkEl.className = 'manage-row-link';
       linkEl.textContent = btn.link ? btn.link : '(no link)';
+
+      const rolesEl = document.createElement('div');
+      rolesEl.className = 'manage-row-roles';
+      if (!btn.roles || !btn.roles.length) {
+        const badge = document.createElement('span');
+        badge.className = 'role-badge all';
+        badge.textContent = 'Everyone';
+        badge.title = 'Visible to every role';
+        rolesEl.appendChild(badge);
+      } else {
+        AVAILABLE_ROLES.forEach(r => {
+          if (btn.roles.includes(r.id)) {
+            const badge = document.createElement('span');
+            badge.className = 'role-badge';
+            badge.textContent = r.label;
+            rolesEl.appendChild(badge);
+          }
+        });
+        // Show any custom roles not in AVAILABLE_ROLES so nothing is hidden
+        btn.roles.forEach(r => {
+          if (!ROLE_LABELS[r]) {
+            const badge = document.createElement('span');
+            badge.className = 'role-badge';
+            badge.textContent = r;
+            rolesEl.appendChild(badge);
+          }
+        });
+      }
+
       info.appendChild(labelEl);
       info.appendChild(linkEl);
+      info.appendChild(rolesEl);
 
       const actions = document.createElement('div');
       actions.className = 'manage-row-actions';
@@ -2499,6 +2790,7 @@
         manageBtnLabel.value = btn.label || '';
         manageBtnLink.value = btn.link || '';
         setSelectedIcon(btn.icon || DEFAULT_ICON);
+        setSelectedRoles(btn.roles || []);
         manageFormTitle.textContent = 'Edit Button';
         manageFormSave.textContent = 'Save Changes';
         switchManageTab('add');
@@ -2533,6 +2825,7 @@
     const icon = selectedIcon || DEFAULT_ICON;
     const label = (manageBtnLabel.value || '').trim();
     const link = (manageBtnLink.value || '').trim();
+    const roles = Array.from(selectedRoles);
 
     if (!label) {
       showToast('Please enter a label', 2500);
@@ -2546,8 +2839,9 @@
       btn.icon = icon;
       btn.label = label;
       btn.link = link;
+      btn.roles = roles;
     } else {
-      sidebarButtons.push({ id: uid(), icon, label, link, isFiles: false });
+      sidebarButtons.push({ id: uid(), icon, label, link, roles, isFiles: false });
     }
 
     editingButtonId = null;
@@ -2735,9 +3029,6 @@
 
   /* ============================================================================
      AUTHENTICATED BLOB FETCH
-     Previews and downloads never touch the public bucket URL directly.
-     Retries on transient / network errors, falls back to public URL, and
-     marks the connection offline when the Cloudflare tunnel drops.
      ============================================================================ */
   function singleBlobFetch(url, headers, timeoutMs, outerSignal) {
     return new Promise((resolve, reject) => {
@@ -3646,7 +3937,6 @@
 
     previewBody.appendChild(wrap);
 
-    // Auto-retry when the connection comes back online.
     if (opts.networkError && item) {
       if (previewAutoRetryUnsub) { try { previewAutoRetryUnsub(); } catch (e) {} }
       previewAutoRetryUnsub = Connection.onChange(online => {
@@ -3673,7 +3963,6 @@
 
   async function openPreview(item) {
     if (!item || isFolder(item)) return;
-
     if (!guardOnline()) return;
 
     closePreview(true);
@@ -5292,6 +5581,8 @@
   (async function init() {
     buildIconPicker();
     setSelectedIcon(DEFAULT_ICON);
+    buildRolePicker();
+    setSelectedRoles([]);
 
     loadPersistedSessions();
     renderPendingUploads();
@@ -5304,6 +5595,7 @@
     });
 
     await loadCurrentUser();
+    currentUserRoles = getUserRoles(currentUser);
     isSuperAdmin = isSuperAdminRole(currentUser);
     if (manageSidebarBtn) manageSidebarBtn.hidden = !isSuperAdmin;
 
