@@ -5,12 +5,28 @@
 // ============================================================================
 
 const HOSTS = [
-  'http://192.168.0.5:8000',                                         // 1. local
-  'https://trainers-police-rome-amplifier.trycloudflare.com',      // 2. cloudflare
+//  'http://192.168.0.5:8000',                                         // 1. local
+//  'https://trainers-police-rome-amplifier.trycloudflare.com',      // 2. cloudflare
   'https://scam-retouch-hull.ngrok-free.dev'                          // 3. ngrok 
 ];
 
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
+// --- ngrok free-tier interstitial bypass -------------------------------------
+// Lahat ng request sa tunnel host ay binibigyan ng skip header. Kapag wala ito,
+// ang isinasagot ng ngrok ay ang warning page (ERR_NGROK_6024, text/html) na
+// walang CORS headers, kaya "blocked by CORS policy" / "Failed to fetch".
+(function patchFetch(){
+  const realFetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (!HOSTS.some(h => url.indexOf(h) === 0)) return realFetch(input, init);
+    const merged  = Object.assign({}, init);
+    const headers = new Headers(merged.headers || (input && input.headers) || {});
+    headers.set('ngrok-skip-browser-warning', 'true');
+    merged.headers = headers;
+    return realFetch(url, merged);
+  };
+})();
 
 // --- single host ping with timeout -----------------------------------------
 async function pingHost(url, timeoutMs = 2500) {

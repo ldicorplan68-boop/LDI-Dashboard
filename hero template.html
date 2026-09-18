@@ -716,6 +716,7 @@
       const h = {
         apikey: SUPABASE_ANON_KEY,
         Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+        'ngrok-skip-browser-warning': 'true',
         ...extra
       };
       if (this.m !== 'GET' && this.m !== 'HEAD') {
@@ -1400,7 +1401,8 @@
   function authHeaders(extra) {
     return Object.assign({
       'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'ngrok-skip-browser-warning': 'true'
     }, extra || {});
   }
   function encodePath(p) { return p.split('/').map(encodeURIComponent).join('/'); }

@@ -1767,6 +1767,7 @@
       const h = {
         apikey: SUPABASE_ANON_KEY,
         Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+        'ngrok-skip-browser-warning': 'true',
         ...extra
       };
       if (this.m !== 'GET' && this.m !== 'HEAD') {
@@ -1900,7 +1901,6 @@
     { id: 'superadmin', label: 'Superadmin' },
     { id: 'admin',      label: 'Admin' },
     { id: 'user',       label: 'User' },
-    { id: 'viewer',     label: 'Viewer' }
   ];
   const ROLE_LABELS = AVAILABLE_ROLES.reduce((m, r) => { m[r.id] = r.label; return m; }, {});
 
@@ -2902,7 +2902,8 @@
   function authHeaders(extra) {
     return Object.assign({
       'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'ngrok-skip-browser-warning': 'true'
     }, extra || {});
   }
   function encodePath(p) { return p.split('/').map(encodeURIComponent).join('/'); }

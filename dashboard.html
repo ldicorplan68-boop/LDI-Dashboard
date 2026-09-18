@@ -569,7 +569,7 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     offset(n){ this.p.push('offset='+n); return this }
     _url(){ return this.p.length ? this.url+'?'+this.p.join('&') : this.url }
     _h(e={}){
-      const h={ apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+SUPABASE_ANON_KEY, ...e }
+      const h={ apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+SUPABASE_ANON_KEY, 'ngrok-skip-browser-warning':'true', ...e }
       if(this.rr) h.Prefer='return=representation'
       return h
     }
