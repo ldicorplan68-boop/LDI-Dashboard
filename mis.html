@@ -3169,10 +3169,11 @@
   /* ============================================================================
      SIDEBAR RENDER
      ============================================================================
-     Now includes a FIXED "Shared" button at the top (not manageable).
-     Active state depends on `currentView`:
-       - currentView === 'files'  → Files managed button is active
-       - currentView === 'shared' → Fixed Shared button is active
+     - FIXED: When currentView === 'shared', NO managed button is active.
+       Only the fixed "Shared" button is highlighted.
+     - FIXED: The "Files" default button is detected even when the isFiles
+       flag was not persisted to Supabase (checks id === 'files' or
+       empty-link + label "Files").
      ============================================================================ */
   function renderSidebar() {
     sideButtonsContainer.innerHTML = '';
@@ -3217,21 +3218,40 @@
     const currentFilename = path.substring(path.lastIndexOf('/') + 1).toLowerCase();
     const currentBase = currentFilename.replace(/\.html?$/i, '').toLowerCase();
 
+    // Helper: identify the "Files" default button even when the isFiles
+    // flag was not persisted to Supabase (the column doesn't exist).
+    function isFilesButton(btn) {
+      if (btn.isFiles) return true;
+      if (btn.id === 'files') return true;
+      const link = String(btn.link || '').trim();
+      if (!link && String(btn.label || '').trim().toLowerCase() === 'files') return true;
+      return false;
+    }
+
     visible.forEach((btn) => {
       const el = document.createElement('button');
       el.type = 'button';
       el.className = 'side-btn';
       el.dataset.id = btn.id;
 
+      // ---- Active state ----
+      // Only managed buttons reflect "active" in Files view.
+      // In Shared view, ONLY the fixed Shared button is active.
       let isActive = false;
-      if (btn.isFiles) {
-        isActive = (currentView === 'files');
-      } else if (btn.link) {
-        const linkLower = String(btn.link).toLowerCase();
-        const linkFilename = linkLower.substring(linkLower.lastIndexOf('/') + 1);
-        const linkBase = linkFilename.replace(/\.html?$/i, '');
-        if (linkFilename === currentFilename) isActive = true;
-        else if (linkBase && linkBase === currentBase) isActive = true;
+
+      if (currentView === 'files') {
+        if (isFilesButton(btn)) {
+          isActive = true;
+        } else {
+          const link = String(btn.link || '').trim();
+          if (link) {
+            const linkLower = link.toLowerCase();
+            const linkFilename = linkLower.substring(linkLower.lastIndexOf('/') + 1);
+            const linkBase = linkFilename.replace(/\.html?$/i, '');
+            if (linkFilename === currentFilename) isActive = true;
+            else if (linkBase && linkBase === currentBase) isActive = true;
+          }
+        }
       }
 
       if (isActive) {
@@ -3252,7 +3272,7 @@
       el.appendChild(labelSpan);
 
       el.addEventListener('click', () => {
-        if (btn.isFiles) {
+        if (isFilesButton(btn)) {
           switchView('files');
           return;
         }
@@ -3535,7 +3555,6 @@
       return;
     }
 
-    // Sort: folders first, then files
     const folders = visible.filter(e => isFolder(e));
     const files = visible.filter(e => !isFolder(e));
     const ordered = folders.concat(files);
@@ -3706,16 +3725,13 @@
     shareOwnerName.textContent = currentUsername() || currentUserId() || 'You';
     shareItemName.textContent = (item.name || item.path || '');
 
-    // Reset + default
     shareVisibility = 'company';
     shareAllowedUsers = new Set();
     shareExistingRow = null;
 
     (async () => {
-      // Load users if not loaded
       if (!allUsers.length) await loadAllUsers();
 
-      // Look for existing share row
       let existing = null;
       if (editMode && item.id) {
         existing = item;
@@ -3740,7 +3756,6 @@
         }
       }
 
-      // Password UI
       sharePassword.value = '';
       sharePasswordConfirm.value = '';
       if (existing && existing.password_hash) {
@@ -4034,7 +4049,7 @@
   }
 
   /* ============================================================================
-     SET PASSWORD MODAL (for user's own uploaded files)
+     SET PASSWORD MODAL
      ============================================================================ */
   async function openSetPasswordModal(item) {
     if (!item || isFolder(item)) return;
@@ -4642,7 +4657,6 @@
     const name = fileName || fullPath.split('/').pop();
     if (!guardOnline()) return;
 
-    // Password check
     if (sourceItem) {
       if (sourceItem._shared) {
         const ok = await ensureSharedUnlocked(sourceItem._sharedRow || sourceItem);
@@ -4652,7 +4666,6 @@
         if (!ok) return;
       }
     } else if (sourceItem === undefined) {
-      // No item passed — try to look up protected status by path
       if (passwordProtectedPaths.has(fullPath) && !(currentUser && currentUser.role === 'superadmin')) {
         if (!unlockedPaths.has(fullPath)) {
           const rec = await getFilePasswordRecord(fullPath);
@@ -5635,7 +5648,6 @@
       el.appendChild(name);
       el.appendChild(meta);
 
-      // Password-protected badge (files only)
       if (!isDir && passwordProtectedPaths.has(folderPrefix() + it.name)) {
         const lock = document.createElement('div');
         lock.className = 'fm-meta';
@@ -5805,7 +5817,6 @@
     deleteBtn.disabled = sel === 0;
     deleteBtn.innerHTML = sel > 1 ? '&#128465;&#65039; Delete (' + sel + ')' : '&#128465;&#65039; Delete';
 
-    // NEW: Share button enabled only when exactly 1 item is selected
     if (shareHeroBtn) {
       shareHeroBtn.disabled = sel !== 1;
     }
@@ -5932,11 +5943,9 @@
 
   async function openPreview(item) {
     if (!item) return;
-    // Handle shared items — they come in with _shared flag and are never folders
     if (!item._shared && isFolder(item)) return;
     if (!guardOnline()) return;
 
-    // Password check
     if (item._shared) {
       const ok = await ensureSharedUnlocked(item._sharedRow || item);
       if (!ok) return;
@@ -7699,7 +7708,6 @@
     await loadSidebar();
     renderSidebar();
 
-    // Load users list and password-protected paths (best-effort)
     loadAllUsers().catch(err => console.warn('[init] users load:', err.message));
     loadPasswordProtectedPaths().catch(err => console.warn('[init] passwords load:', err.message));
 
