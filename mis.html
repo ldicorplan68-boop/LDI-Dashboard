@@ -467,19 +467,19 @@
       position: absolute; left: 10px; font-size: 12px;
       color: var(--muted); pointer-events: none; line-height: 1;
     }
-    #fm-search, #shared-search {
+    #fm-search {
       padding: 8px 30px 8px 30px;
       border: 1px solid var(--border-strong); border-radius: 8px;
       font-size: 12.5px; outline: none; background: #fff;
       color: var(--text); width: 210px;
       transition: border var(--fast), box-shadow var(--fast), width var(--fast);
     }
-    #fm-search:focus, #shared-search:focus {
+    #fm-search:focus {
       border-color: var(--royal);
       box-shadow: 0 0 0 3px rgba(27,27,179,.14);
       width: 250px;
     }
-    #fm-search::placeholder, #shared-search::placeholder { color: var(--muted); }
+    #fm-search::placeholder { color: var(--muted); }
     .fm-search-clear {
       position: absolute; right: 6px; background: transparent;
       border: 0; color: var(--muted); font-size: 16px;
@@ -1297,142 +1297,6 @@
     .fm-pending-row.resuming { border-color: var(--royal); background: #eef1fb; }
 
     /* ==========================================================================
-       SHARED VIEW / SHARE MODAL / USER PICKER (NEW)
-       ========================================================================== */
-    .shared-by {
-      font-size: 10px;
-      color: var(--royal);
-      font-weight: 700;
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-top: 2px;
-    }
-    .fm-item .fm-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3px;
-      justify-content: center;
-      margin-top: 3px;
-    }
-    .fm-item .fm-badge {
-      font-size: 8.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .3px;
-      padding: 1px 5px;
-      border-radius: 4px;
-      background: #eef1fb;
-      color: var(--royal);
-      border: 1px solid #d0d9f5;
-      line-height: 1.4;
-    }
-    .fm-item .fm-badge.company { background: #e8f7ee; color: #0d7a3e; border-color: #b6e5c8; }
-    .fm-item .fm-badge.admin { background: #fff6e0; color: #9b6a00; border-color: #f3d894; }
-    .fm-item .fm-badge.specific { background: #f0e8ff; color: #6a2eb8; border-color: #d5c0f0; }
-    .fm-item .fm-badge.lock { background: #fdeaea; color: #a4171c; border-color: #f2bcbc; }
-
-    .share-options {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-    .share-option {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: #f7f9fd;
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      padding: 11px 13px;
-      cursor: pointer;
-      text-align: left;
-      font: 600 13px 'DM Sans', sans-serif;
-      color: var(--text);
-      transition: background var(--fast), border-color var(--fast);
-      width: 100%;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .share-option:hover { background: #eef1fb; border-color: var(--border-strong); }
-    .share-option.selected {
-      background: #dfe6ff; border-color: var(--royal);
-      box-shadow: 0 0 0 3px rgba(27,27,179,.12);
-    }
-    .share-option-radio {
-      width: 18px; height: 18px; border-radius: 50%;
-      border: 2px solid var(--border-strong); background: #fff;
-      flex-shrink: 0; position: relative;
-      transition: border-color var(--fast);
-    }
-    .share-option.selected .share-option-radio {
-      border-color: var(--royal);
-    }
-    .share-option.selected .share-option-radio::after {
-      content: ''; position: absolute; inset: 3px;
-      border-radius: 50%; background: var(--royal);
-    }
-    .share-option-text { flex: 1; min-width: 0; }
-    .share-option-label { font-weight: 700; color: var(--text); font-size: 13px; display: block; }
-    .share-option-desc { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 2px; display: block; }
-
-    .user-picker {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 6px;
-      background: #fff;
-      border: 1.5px solid var(--border-strong);
-      border-radius: 10px;
-      padding: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .user-choice {
-      display: flex; align-items: center; gap: 8px;
-      background: #f7f9fd; border: 1.5px solid transparent;
-      border-radius: 8px; padding: 7px 10px;
-      font: 600 12px 'DM Sans', sans-serif;
-      color: var(--text-2);
-      cursor: pointer; user-select: none; text-align: left;
-      transition: background var(--fast), border-color var(--fast), color var(--fast);
-      -webkit-tap-highlight-color: transparent;
-    }
-    .user-choice:hover { background: #eef1fb; }
-    .user-choice.selected {
-      background: #dfe6ff; border-color: var(--royal); color: var(--royal);
-      box-shadow: 0 0 0 2px rgba(27,27,179,.14);
-    }
-    .user-choice .role-check {
-      width: 15px; height: 15px; border-radius: 4px;
-      border: 1.5px solid var(--border-strong); background: #fff;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 10px; line-height: 1; color: transparent; flex-shrink: 0;
-      transition: background var(--fast), border-color var(--fast), color var(--fast);
-    }
-    .user-choice.selected .role-check {
-      background: var(--royal); border-color: var(--royal); color: #fff;
-    }
-
-    .share-modal { max-width: 540px; }
-    .share-owner-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px; background: #f0f4ff; border: 1px solid #d0d9f5;
-      border-radius: 10px; margin-bottom: 14px;
-    }
-    .share-owner-icon {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: var(--royal); color: #fff;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 13px; flex-shrink: 0;
-    }
-    .share-owner-info { flex: 1; min-width: 0; }
-    .share-owner-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--royal); }
-    .share-owner-name { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 1px; }
-    .share-item-name { font-size: 12px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* ==========================================================================
        RESPONSIVE BREAKPOINTS
        ========================================================================== */
 
@@ -1511,6 +1375,7 @@
         gap: 10px;
         flex-wrap: wrap;
         align-items: center;
+        /* Softer shadow so it doesn't look like a gap above the sidebar on mobile */
         box-shadow: 0 2px 8px rgba(13,13,122,.4);
       }
       .brand {
@@ -1558,8 +1423,8 @@
       .fm-crumb-list { justify-content: center; }
       .fm-search-sort { margin-left: 0; width: 100%; flex-wrap: wrap; }
       .fm-search-wrap { flex: 1; min-width: 0; }
-      #fm-search, #shared-search { width: 100%; padding: 10px 32px; font-size: 13px; }
-      #fm-search:focus, #shared-search:focus { width: 100%; }
+      #fm-search { width: 100%; padding: 10px 32px; font-size: 13px; }
+      #fm-search:focus { width: 100%; }
       .fm-sort-select { flex-shrink: 0; padding: 10px 12px; font-size: 13px; }
 
       .fm-dropzone { min-height: 340px; padding: 14px; }
@@ -1609,8 +1474,6 @@
       .fm-pending-fab { right: 14px; bottom: calc(14px + var(--safe-bottom)); padding: 10px 14px 10px 12px; font-size: 12px; }
       .fm-pending-modal { max-width: 100%; }
       .fm-pending-row-actions { width: 100%; justify-content: flex-end; }
-
-      .share-modal { max-width: 100%; }
     }
 
     @media (max-width: 480px) {
@@ -1647,7 +1510,7 @@
       .fm-crumb-bar { padding: 10px; gap: 8px; }
       .fm-crumb { font-size: 12px; padding: 5px 8px; }
       .fm-search-sort { gap: 6px; }
-      #fm-search, #shared-search { padding: 9px 30px; font-size: 12.5px; }
+      #fm-search { padding: 9px 30px; font-size: 12.5px; }
       .fm-sort-select { padding: 9px 10px; font-size: 12px; }
 
       .fm-dropzone { min-height: 280px; padding: 10px; }
@@ -1696,8 +1559,6 @@
 
       .fm-pending-fab { padding: 9px 12px 9px 10px; font-size: 11.5px; gap: 6px; }
       .fm-pending-fab-count { padding: 2px 6px; font-size: 10px; }
-
-      .user-picker { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
     }
 
     @media (max-width: 359px) {
@@ -1732,15 +1593,14 @@
     @media (hover: none) and (pointer: coarse) {
       .button, .hero-btn, .side-btn, .fm-item, .manage-icon-btn,
       .icon-choice, .fm-crumb, .fm-choice-btn, .fm-pending-fab,
-      .role-choice, .share-option, .user-choice {
+      .role-choice {
         -webkit-tap-highlight-color: transparent;
       }
       .button:active, .hero-btn:active, .side-btn:active {
         transform: scale(.97);
       }
       .fm-item:active { transform: scale(.98); }
-      .manage-icon-btn:active, .icon-choice:active, .role-choice:active,
-      .share-option:active, .user-choice:active { transform: scale(.96); }
+      .manage-icon-btn:active, .icon-choice:active, .role-choice:active { transform: scale(.96); }
       .fm-item:hover { transform: none; }
       .side-btn:hover { background: rgba(255,255,255,.12); }
       .side-btn.active:hover { background: #ffffff; color: var(--royal); }
@@ -1751,10 +1611,6 @@
       .fm-pending-fab:hover { transform: none; }
       .role-choice:hover { background: #f7f9fd; }
       .role-choice.selected:hover { background: #dfe6ff; }
-      .share-option:hover { background: #f7f9fd; }
-      .share-option.selected:hover { background: #dfe6ff; }
-      .user-choice:hover { background: #f7f9fd; }
-      .user-choice.selected:hover { background: #dfe6ff; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1831,25 +1687,21 @@
               </div>
             </div>
             <div class="hero-actions" id="hero-actions">
-              <div class="hero-group" data-group="select">
+              <div class="hero-group">
                 <span class="hero-count zero" id="fm-count">0 selected</span>
                 <button class="hero-btn glass" id="fm-select-all-btn" type="button">&#9745; Select All</button>
               </div>
-              <div class="hero-divider" data-divider="after-select"></div>
-              <div class="hero-group" data-group="newfolder">
+              <div class="hero-divider"></div>
+              <div class="hero-group">
                 <button class="hero-btn glass" id="fm-new-folder-btn" type="button">&#128193; New Folder</button>
               </div>
-              <div class="hero-divider" data-divider="after-newfolder"></div>
-              <div class="hero-group" data-group="upload">
+              <div class="hero-divider"></div>
+              <div class="hero-group">
                 <button class="hero-btn solid" id="fm-upload-btn" type="button">&#11014;&#65039; Add Files</button>
                 <button class="hero-btn solid" id="fm-upload-folder-btn" type="button">&#128193; Upload Folder</button>
               </div>
-              <div class="hero-divider" data-divider="after-upload"></div>
-              <div class="hero-group" data-group="share">
-                <button class="hero-btn glass" id="fm-share-btn" type="button" disabled>&#128279; Share</button>
-              </div>
               <div class="hero-spacer"></div>
-              <div class="hero-group" data-group="delete">
+              <div class="hero-group">
                 <button class="hero-btn red" id="fm-delete-btn" type="button" disabled>&#128465;&#65039; Delete</button>
               </div>
             </div>
@@ -1881,33 +1733,6 @@
               <div class="fm-empty" id="fm-empty" hidden>
                 <span class="empty-icon" id="fm-empty-icon">&#128194;</span>
                 <p id="fm-empty-text">This folder is empty. Drag files or folders here, or click "Add Files" / "Upload Folder".</p>
-              </div>
-            </div>
-          </div>
-
-          <div id="shared-view" hidden>
-            <div class="fm-crumb-bar">
-              <div class="fm-crumb-list" id="shared-breadcrumbs"></div>
-              <div class="fm-search-sort">
-                <div class="fm-search-wrap">
-                  <span class="fm-search-icon">&#128269;</span>
-                  <input type="text" id="shared-search" placeholder="Search shared…" autocomplete="off" aria-label="Search shared items">
-                  <button type="button" class="fm-search-clear" id="shared-search-clear" hidden aria-label="Clear search">&times;</button>
-                </div>
-                <select id="shared-sort" class="fm-sort-select" aria-label="Sort shared items">
-                  <option value="name-asc">Name (A–Z)</option>
-                  <option value="name-desc">Name (Z–A)</option>
-                  <option value="newest">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                </select>
-              </div>
-            </div>
-            <div class="fm-dropzone" id="shared-dropzone">
-              <div class="fm-loading" id="shared-loading" hidden>Loading&#8230;</div>
-              <div class="fm-grid" id="shared-grid" hidden></div>
-              <div class="fm-empty" id="shared-empty" hidden>
-                <span class="empty-icon">&#129309;</span>
-                <p id="shared-empty-text">Nothing has been shared with you yet.</p>
               </div>
             </div>
           </div>
@@ -2103,101 +1928,6 @@
   </div>
 </div>
 
-<!-- ============ NEW: SHARE MODAL ============ -->
-<div class="fm-modal-overlay" id="share-modal" hidden>
-  <div class="fm-modal share-modal">
-    <h3>&#128279; Share</h3>
-    <div class="share-owner-row">
-      <div class="share-owner-icon" id="share-owner-icon">?</div>
-      <div class="share-owner-info">
-        <div class="share-owner-label">Owner</div>
-        <div class="share-owner-name" id="share-owner-name">—</div>
-        <div class="share-item-name" id="share-item-name">—</div>
-      </div>
-    </div>
-
-    <label class="fm-label">Who can see this?</label>
-    <div class="share-options" id="share-options">
-      <button type="button" class="share-option" data-vis="specific">
-        <span class="share-option-radio"></span>
-        <span class="share-option-text">
-          <span class="share-option-label">Specific users</span>
-          <span class="share-option-desc">Only the people you pick below</span>
-        </span>
-      </button>
-      <button type="button" class="share-option" data-vis="admin">
-        <span class="share-option-radio"></span>
-        <span class="share-option-text">
-          <span class="share-option-label">Admins only</span>
-          <span class="share-option-desc">Admins and superadmins only</span>
-        </span>
-      </button>
-      <button type="button" class="share-option" data-vis="company">
-        <span class="share-option-radio"></span>
-        <span class="share-option-text">
-          <span class="share-option-label">Whole company</span>
-          <span class="share-option-desc">Everyone with an account</span>
-        </span>
-      </button>
-    </div>
-
-    <div id="share-users-wrap" hidden>
-      <label class="fm-label">Pick users</label>
-      <div class="user-picker" id="share-user-picker"></div>
-    </div>
-
-    <div style="margin-top:14px">
-      <label class="fm-label">Password (optional)</label>
-      <input type="password" id="share-password" placeholder="Leave empty for no password" autocomplete="new-password" style="margin-bottom:8px">
-      <input type="password" id="share-password-confirm" placeholder="Confirm password" autocomplete="new-password" style="margin-bottom:8px">
-      <p class="fm-hint" id="share-password-hint" style="margin:0">Set a password to lock previews and downloads.</p>
-    </div>
-
-    <div class="fm-modal-actions" style="justify-content:space-between;margin-top:16px">
-      <button class="button fm-btn-light" id="share-cancel" type="button">Cancel</button>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="button danger" id="share-remove" type="button" hidden>Unshare</button>
-        <button class="button primary" id="share-save" type="button">Share</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============ NEW: PASSWORD PROMPT MODAL ============ -->
-<div class="fm-modal-overlay" id="password-modal" hidden>
-  <div class="fm-modal" style="max-width:400px">
-    <div class="fm-alert-icon warn" style="color:var(--royal);text-shadow:0 4px 12px rgba(27,27,179,.3)">&#128274;</div>
-    <h3 id="password-modal-title" style="text-align:center">Password Required</h3>
-    <p class="fm-alert-message" id="password-modal-msg" style="text-align:center">This item is password-protected. Enter the password to continue.</p>
-    <input type="password" id="password-modal-input" placeholder="Password" autocomplete="current-password" style="margin-bottom:8px">
-    <p class="fm-hint" id="password-modal-error" style="color:var(--red);margin:0 0 12px;display:none"></p>
-    <div class="fm-modal-actions">
-      <button class="button fm-btn-light" id="password-cancel" type="button">Cancel</button>
-      <button class="button primary" id="password-confirm" type="button">Unlock</button>
-    </div>
-  </div>
-</div>
-
-<!-- ============ NEW: SET PASSWORD MODAL ============ -->
-<div class="fm-modal-overlay" id="setpw-modal" hidden>
-  <div class="fm-modal" style="max-width:400px">
-    <h3 id="setpw-title">&#128274; Set Password</h3>
-    <p class="fm-hint" id="setpw-hint" style="margin-top:-8px">Protect this file with a password.</p>
-    <label class="fm-label">New password</label>
-    <input type="password" id="setpw-input" placeholder="Enter password" autocomplete="new-password" style="margin-bottom:8px">
-    <label class="fm-label">Confirm</label>
-    <input type="password" id="setpw-confirm" placeholder="Confirm password" autocomplete="new-password" style="margin-bottom:8px">
-    <p class="fm-hint" id="setpw-error" style="color:var(--red);display:none;margin:0 0 12px"></p>
-    <div class="fm-modal-actions" style="justify-content:space-between">
-      <button class="button fm-btn-light" id="setpw-cancel" type="button">Cancel</button>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="button danger" id="setpw-remove" type="button" hidden>Remove password</button>
-        <button class="button primary" id="setpw-save" type="button">Save</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script src="connect.js"></script>
 <script>
 /* ============================================================================
@@ -2307,8 +2037,6 @@
    - "Move to…" context menu fallback for touch devices
    - Robust topbar height sync for iOS Safari (URL bar / safe-area)
    - "Files" button highlighted with white background + blue text
-   - Sidebar order: "Files" first, then the fixed "Shared" button (2nd slot)
-   - NEW: "Shared" sidebar button + Shared view + Share modal + passwords
    ============================================================================ */
 (function(){
   'use strict';
@@ -2392,7 +2120,6 @@
   const sideToggle    = document.getElementById('side-toggle');
   const heroTitle     = document.getElementById('hero-title');
   const heroEyebrow   = document.getElementById('hero-eyebrow');
-  const heroActions   = document.getElementById('hero-actions');
   const sideTitleLabel= document.getElementById('side-title-label');
   const topbarTitle   = document.getElementById('topbar-title');
   const heroRefresh   = document.getElementById('hero-refresh');
@@ -2409,7 +2136,6 @@
   const deleteBtn     = document.getElementById('fm-delete-btn');
   const selectAllBtn  = document.getElementById('fm-select-all-btn');
   const countPill     = document.getElementById('fm-count');
-  const shareHeroBtn  = document.getElementById('fm-share-btn');
   const fileInput     = document.getElementById('fm-file-input');
   const folderInput   = document.getElementById('fm-folder-input');
   const modal         = document.getElementById('fm-modal');
@@ -2493,52 +2219,6 @@
   const connRetry   = document.getElementById('conn-retry');
   const navLogo     = document.getElementById('nav-logo');
 
-  /* ---------------- NEW: shared view refs ---------------- */
-  const filesView        = document.getElementById('files-view');
-  const sharedView       = document.getElementById('shared-view');
-  const sharedBreadcrumbs= document.getElementById('shared-breadcrumbs');
-  const sharedGrid       = document.getElementById('shared-grid');
-  const sharedEmpty      = document.getElementById('shared-empty');
-  const sharedEmptyText  = document.getElementById('shared-empty-text');
-  const sharedLoading    = document.getElementById('shared-loading');
-  const sharedSearch     = document.getElementById('shared-search');
-  const sharedSearchClear= document.getElementById('shared-search-clear');
-  const sharedSort       = document.getElementById('shared-sort');
-
-  /* ---------------- NEW: share modal refs ---------------- */
-  const shareModal       = document.getElementById('share-modal');
-  const shareOwnerIcon   = document.getElementById('share-owner-icon');
-  const shareOwnerName   = document.getElementById('share-owner-name');
-  const shareItemName    = document.getElementById('share-item-name');
-  const shareOptions     = document.getElementById('share-options');
-  const shareUsersWrap   = document.getElementById('share-users-wrap');
-  const shareUserPicker  = document.getElementById('share-user-picker');
-  const sharePassword    = document.getElementById('share-password');
-  const sharePasswordConfirm = document.getElementById('share-password-confirm');
-  const sharePasswordHint= document.getElementById('share-password-hint');
-  const shareCancelBtn   = document.getElementById('share-cancel');
-  const shareSaveBtn     = document.getElementById('share-save');
-  const shareRemoveBtn   = document.getElementById('share-remove');
-
-  /* ---------------- NEW: password modals refs ---------------- */
-  const passwordModal       = document.getElementById('password-modal');
-  const passwordModalTitle  = document.getElementById('password-modal-title');
-  const passwordModalMsg    = document.getElementById('password-modal-msg');
-  const passwordModalInput  = document.getElementById('password-modal-input');
-  const passwordModalError  = document.getElementById('password-modal-error');
-  const passwordCancelBtn   = document.getElementById('password-cancel');
-  const passwordConfirmBtn  = document.getElementById('password-confirm');
-
-  const setPwModal      = document.getElementById('setpw-modal');
-  const setPwTitle      = document.getElementById('setpw-title');
-  const setPwHint       = document.getElementById('setpw-hint');
-  const setPwInput      = document.getElementById('setpw-input');
-  const setPwConfirm    = document.getElementById('setpw-confirm');
-  const setPwError      = document.getElementById('setpw-error');
-  const setPwCancelBtn  = document.getElementById('setpw-cancel');
-  const setPwSaveBtn    = document.getElementById('setpw-save');
-  const setPwRemoveBtn  = document.getElementById('setpw-remove');
-
   /* ---------------- Branding ---------------- */
   function applyBranding() {
     if (topbarTitle) topbarTitle.textContent = ROOT_DISPLAY + ' Files';
@@ -2555,6 +2235,9 @@
 
   /* ============================================================================
      TOPBAR HEIGHT SYNC
+     Robust version for iOS Safari — repeats at multiple intervals, on resize,
+     orientationchange, load, and throttled scroll. Fixes the gap between the
+     topbar and the sidebar on iPhone.
      ============================================================================ */
   function syncTopbarHeight() {
     const topbar = document.querySelector('.topbar');
@@ -2636,26 +2319,6 @@
   let moveTargets      = [];
   let moveSelectedName = null;
   let moveSourceItem   = null;
-
-  /* ---------------- NEW: shared view state ---------------- */
-  let currentView       = 'files';       // 'files' | 'shared'
-  let sharedItems       = [];             // raw rows from shared_items
-  let sharedFilteredItems = [];           // after filter/sort
-  let sharedSearchTerm  = '';
-  let sharedSortBy      = 'name-asc';
-  let sharedDrill       = null;           // { share: row, subPath: '' } when browsing into a shared folder
-  let allUsers          = [];
-  let shareTarget       = null;
-  let shareVisibility   = 'company';
-  let shareAllowedUsers = new Set();
-  let shareExistingRow  = null;
-  let shareEditMode     = false;
-
-  /* ---------------- NEW: password state ---------------- */
-  let passwordProtectedPaths = new Set();
-  const unlockedPaths = new Set();
-  let pendingPasswordResolve = null;
-  let setPwTarget = null;
 
   /* ============================================================================
      HELPERS
@@ -3167,52 +2830,13 @@
     syncRolePickerUI();
   }
 
-  /* ============================================================================
-     SIDEBAR RENDER
-     ============================================================================
-     - FIXED: When currentView === 'shared', NO managed button is active.
-       Only the fixed "Shared" button is highlighted.
-     - FIXED: The "Files" default button is detected even when the isFiles
-       flag was not persisted to Supabase (checks id === 'files' or
-       empty-link + label "Files").
-     - ORDER: The managed "Files" button is FIRST; the fixed "Shared" button is
-       inserted in the SECOND slot (right after Files). The other managed
-       buttons follow. If there is no "Files" button, Shared stays first
-       (fallback) so it is never missing.
-     ============================================================================ */
+  /* ---------------- SIDEBAR RENDER ---------------- */
   function renderSidebar() {
     sideButtonsContainer.innerHTML = '';
 
-    // === Fixed Shared button (not manageable — inserted after the "Files" button) ===
-    const sharedBtn = document.createElement('button');
-    sharedBtn.type = 'button';
-    sharedBtn.className = 'side-btn';
-    sharedBtn.dataset.fixed = 'shared';
-    const sharedIconSpan = document.createElement('span');
-    sharedIconSpan.className = 'side-icon';
-    sharedIconSpan.textContent = '\uD83E\uDD1D';
-    const sharedLabelSpan = document.createElement('span');
-    sharedLabelSpan.className = 'side-label';
-    sharedLabelSpan.textContent = 'Shared';
-    sharedBtn.appendChild(sharedIconSpan);
-    sharedBtn.appendChild(sharedLabelSpan);
-    if (currentView === 'shared') {
-      sharedBtn.classList.add('active');
-      sharedBtn.setAttribute('aria-current', 'page');
-      sharedBtn.title = 'Current view';
-    } else {
-      sharedBtn.title = 'Open shared items';
-    }
-    sharedBtn.addEventListener('click', () => switchView('shared'));
-    // NOTE: the Shared button is NOT appended here — it is inserted after the
-    // managed "Files" button at the end of this function (Files 1st, Shared 2nd).
-
-    // === Managed sidebar buttons ===
     const visible = sidebarButtons.filter(btn => canAccessButton(btn, currentUserRoles));
 
     if (!visible.length) {
-      // Fallback: no managed buttons at all — keep the fixed Shared button visible.
-      sideButtonsContainer.appendChild(sharedBtn);
       const emptyMsg = document.createElement('div');
       emptyMsg.className = 'side-empty';
       emptyMsg.textContent = sidebarButtons.length
@@ -3222,52 +2846,46 @@
       return;
     }
 
+    // ===== Determine kung alin ang CURRENT PAGE button =====
+    // Ang kasalukuyang HTML filename (hal. "art.html") at ROOT ("art").
+    // Isang button ay itinuturing na "current page" kung:
+    //   - walang link (empty string) — ito ang default naming Files button, O
+    //   - ang link ay tumutugma sa current filename o ROOT, O
+    //   - may isFiles flag na true (mula sa local defaults)
     const path = window.location.pathname;
     const currentFilename = path.substring(path.lastIndexOf('/') + 1).toLowerCase();
     const currentBase = currentFilename.replace(/\.html?$/i, '').toLowerCase();
 
-    // Helper: identify the "Files" default button even when the isFiles
-    // flag was not persisted to Supabase (the column doesn't exist).
-    function isFilesButton(btn) {
+    function isCurrentPageButton(btn) {
       if (btn.isFiles) return true;
-      if (btn.id === 'files') return true;
       const link = String(btn.link || '').trim();
-      if (!link && String(btn.label || '').trim().toLowerCase() === 'files') return true;
+      // Walang link = current page (kasi hindi ito navigation button)
+      if (!link) return true;
+      // Link matches current filename or base name
+      const linkLower = link.toLowerCase();
+      const linkFilename = linkLower.substring(linkLower.lastIndexOf('/') + 1);
+      const linkBase = linkFilename.replace(/\.html?$/i, '');
+      if (linkFilename === currentFilename) return true;
+      if (linkBase && linkBase === currentBase) return true;
       return false;
     }
 
-    let filesBtnEl = null;   // managed "Files" button — the fixed Shared button is inserted after it
+    // Kung wala talagang may match, i-fallback sa UNANG button
+    const hasMatch = visible.some(isCurrentPageButton);
+    const fallbackIndex = hasMatch ? -1 : 0;
 
-    visible.forEach((btn) => {
+    visible.forEach((btn, visIdx) => {
       const el = document.createElement('button');
       el.type = 'button';
       el.className = 'side-btn';
       el.dataset.id = btn.id;
 
-      // ---- Active state ----
-      // Only managed buttons reflect "active" in Files view.
-      // In Shared view, ONLY the fixed Shared button is active.
-      let isActive = false;
-
-      if (currentView === 'files') {
-        if (isFilesButton(btn)) {
-          isActive = true;
-        } else {
-          const link = String(btn.link || '').trim();
-          if (link) {
-            const linkLower = link.toLowerCase();
-            const linkFilename = linkLower.substring(linkLower.lastIndexOf('/') + 1);
-            const linkBase = linkFilename.replace(/\.html?$/i, '');
-            if (linkFilename === currentFilename) isActive = true;
-            else if (linkBase && linkBase === currentBase) isActive = true;
-          }
-        }
-      }
-
+      // Mark as active kung ito ang current page (o fallback sa unang button)
+      const isActive = isCurrentPageButton(btn) || visIdx === fallbackIndex;
       if (isActive) {
         el.classList.add('active');
         el.setAttribute('aria-current', 'page');
-        el.title = 'Current view';
+        el.title = 'Current page';
       }
 
       const iconSpan = document.createElement('span');
@@ -3282,899 +2900,22 @@
       el.appendChild(labelSpan);
 
       el.addEventListener('click', () => {
-        if (isFilesButton(btn)) {
-          switchView('files');
+        if (btn.isFiles) {
+          setActiveSideButton(el);
+          heroTitle.textContent = 'Files';
           return;
         }
         if (btn.link) location.href = btn.link;
         else showToast('No link set for this button', 2200);
       });
 
-      if (isFilesButton(btn)) filesBtnEl = el;   // remember it so Shared is inserted right after
-
       sideButtonsContainer.appendChild(el);
     });
-
-    // === Fixed Shared button — SECOND slot, right after the managed "Files" button ===
-    // Sidebar order: Files (1st) → Shared (2nd) → the other managed buttons.
-    if (filesBtnEl) {
-      // insertBefore(node, null) === appendChild, so this also works when Files is last.
-      sideButtonsContainer.insertBefore(sharedBtn, filesBtnEl.nextSibling);
-    } else {
-      // Fallback: no "Files" button (e.g. removed in Manage Sidebar) — keep Shared first.
-      sideButtonsContainer.insertBefore(sharedBtn, sideButtonsContainer.firstChild);
-    }
   }
 
   function setActiveSideButton(el) {
     sideButtonsContainer.querySelectorAll('.side-btn').forEach(b => b.classList.remove('active'));
     if (el) el.classList.add('active');
-  }
-
-  /* ============================================================================
-     VIEW SWITCHING (Files <-> Shared)
-     ============================================================================ */
-  function switchView(view) {
-    if (view === currentView) return;
-    currentView = view;
-
-    if (view === 'files') {
-      filesView.hidden = false;
-      sharedView.hidden = true;
-      heroActions.hidden = false;
-      heroTitle.textContent = 'Files';
-      sharedDrill = null;
-      renderItems();
-      updateToolbarState();
-    } else {
-      filesView.hidden = true;
-      sharedView.hidden = false;
-      heroActions.hidden = true;
-      heroTitle.textContent = 'Shared';
-      sharedDrill = null;
-      renderSharedBreadcrumbs();
-      loadSharedItems();
-    }
-    renderSidebar();
-  }
-
-  /* ============================================================================
-     SHARED VIEW — HELPERS
-     ============================================================================ */
-  function currentUsername() {
-    if (!currentUser) return '';
-    return (currentUser.username || currentUser.user_name || currentUser.id || '').toString();
-  }
-
-  function currentUserId() {
-    return currentUser ? (currentUser.id || '') : '';
-  }
-
-  async function loadAllUsers() {
-    try {
-      const rows = await window.supabase
-        .from('users')
-        .select('id, username, role, status')
-        .order('username', { ascending: true });
-      allUsers = Array.isArray(rows) ? rows : [];
-    } catch (err) {
-      console.warn('[users] load failed:', err.message);
-      allUsers = [];
-    }
-  }
-
-  function canSeeShared(item) {
-    if (!item || !currentUser) return false;
-    if (currentUserId() && item.owner_id === currentUserId()) return true;
-    if (currentUsername() && item.owner_username === currentUsername()) return true;
-    if (currentUser.role === 'superadmin') return true;
-
-    const vis = item.visibility || 'company';
-    if (vis === 'company') return true;
-    if (vis === 'admin') {
-      return currentUserRoles.includes('admin') || currentUserRoles.includes('superadmin');
-    }
-    if (vis === 'specific') {
-      const allowed = Array.isArray(item.allowed_users) ? item.allowed_users : [];
-      const u = currentUsername();
-      const id = currentUserId();
-      if (u && allowed.includes(u)) return true;
-      if (id && allowed.includes(id)) return true;
-      return false;
-    }
-    return false;
-  }
-
-  function canModifyShared(item) {
-    if (!item || !currentUser) return false;
-    if (currentUserId() && item.owner_id === currentUserId()) return true;
-    if (currentUsername() && item.owner_username === currentUsername()) return true;
-    if (currentUser.role === 'superadmin') return true;
-    return false;
-  }
-
-  function sharedComparator() {
-    switch (sharedSortBy) {
-      case 'name-desc': return (a, b) => (b.name || '').localeCompare(a.name || '', undefined, { numeric: true, sensitivity: 'base' });
-      case 'newest':    return (a, b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0);
-      case 'oldest':    return (a, b) => (Date.parse(a.created_at) || 0) - (Date.parse(b.created_at) || 0);
-      case 'name-asc':
-      default:          return (a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' });
-    }
-  }
-
-  function applySharedFilterAndSort() {
-    let list = sharedItems.slice();
-    if (sharedSearchTerm) {
-      const q = sharedSearchTerm.toLowerCase();
-      list = list.filter(it => (it.name || '').toLowerCase().includes(q));
-    }
-    const cmp = sharedComparator();
-    const folders = list.filter(it => it.is_folder).slice().sort(cmp);
-    const files = list.filter(it => !it.is_folder).slice().sort(cmp);
-    sharedFilteredItems = folders.concat(files);
-  }
-
-  async function loadSharedItems() {
-    sharedLoading.hidden = false;
-    sharedGrid.hidden = true;
-    sharedEmpty.hidden = true;
-
-    try {
-      const rows = await window.supabase
-        .from('shared_items')
-        .select('*')
-        .eq('bucket', BUCKET)
-        .eq('folder', ROOT)
-        .order('created_at', { ascending: false });
-      sharedItems = Array.isArray(rows) ? rows.filter(canSeeShared) : [];
-      applySharedFilterAndSort();
-      renderSharedItems();
-    } catch (err) {
-      console.warn('[shared] load failed:', err.message);
-      sharedItems = [];
-      applySharedFilterAndSort();
-      renderSharedItems();
-    } finally {
-      sharedLoading.hidden = true;
-    }
-  }
-
-  function renderSharedBreadcrumbs() {
-    sharedBreadcrumbs.innerHTML = '';
-    const top = document.createElement('button');
-    top.type = 'button';
-    top.className = 'fm-crumb' + (sharedDrill ? '' : ' current');
-    top.textContent = 'Shared with me';
-    if (sharedDrill) {
-      top.addEventListener('click', () => {
-        sharedDrill = null;
-        renderSharedBreadcrumbs();
-        renderSharedItems();
-      });
-    }
-    sharedBreadcrumbs.appendChild(top);
-    if (sharedDrill) {
-      const sep = document.createElement('span');
-      sep.className = 'fm-crumb-sep';
-      sep.textContent = '\u203A';
-      sharedBreadcrumbs.appendChild(sep);
-      const nameEl = document.createElement('button');
-      nameEl.type = 'button';
-      nameEl.className = 'fm-crumb current';
-      nameEl.textContent = sharedDrill.share.name + (sharedDrill.subPath ? '/' + sharedDrill.subPath : '');
-      sharedBreadcrumbs.appendChild(nameEl);
-    }
-  }
-
-  function renderSharedItems() {
-    sharedGrid.innerHTML = '';
-
-    if (sharedDrill) {
-      renderSharedFolderContents();
-      return;
-    }
-
-    if (!sharedFilteredItems.length) {
-      sharedGrid.hidden = true;
-      sharedEmpty.hidden = false;
-      sharedEmpty.querySelector('.empty-icon').textContent = '\uD83E\uDD1D';
-      sharedEmptyText.textContent = sharedSearchTerm
-        ? 'No shared items match "' + sharedSearchTerm + '".'
-        : 'Nothing has been shared with you yet.';
-      return;
-    }
-
-    sharedGrid.hidden = false;
-    sharedEmpty.hidden = true;
-
-    sharedFilteredItems.forEach(item => {
-      sharedGrid.appendChild(buildSharedCard(item));
-    });
-  }
-
-  function buildSharedCard(item) {
-    const isDir = !!item.is_folder;
-    const el = document.createElement('div');
-    el.className = 'fm-item';
-    el.dataset.shareId = item.id;
-
-    const icon = document.createElement('div');
-    icon.className = 'fm-icon';
-    icon.textContent = isDir ? '\uD83D\uDCC1' : fileIcon(item.name);
-
-    const name = document.createElement('div');
-    name.className = 'fm-name';
-    name.textContent = item.name;
-    name.title = item.name;
-
-    const sharedBy = document.createElement('div');
-    sharedBy.className = 'shared-by';
-    sharedBy.textContent = 'by ' + (item.owner_username || item.owner_display || 'Unknown');
-    sharedBy.title = sharedBy.textContent;
-
-    const badges = document.createElement('div');
-    badges.className = 'fm-badges';
-
-    const vis = item.visibility || 'company';
-    const visBadge = document.createElement('span');
-    visBadge.className = 'fm-badge ' + vis;
-    visBadge.textContent = vis === 'admin' ? 'Admins' : (vis === 'specific' ? 'Specific' : 'Company');
-    badges.appendChild(visBadge);
-
-    if (item.password_hash) {
-      const lockBadge = document.createElement('span');
-      lockBadge.className = 'fm-badge lock';
-      lockBadge.textContent = '\uD83D\uDD12';
-      badges.appendChild(lockBadge);
-    }
-
-    el.appendChild(icon);
-    el.appendChild(name);
-    el.appendChild(sharedBy);
-    el.appendChild(badges);
-
-    el.addEventListener('click', () => {
-      if (isDir) {
-        sharedDrill = { share: item, subPath: '' };
-        renderSharedBreadcrumbs();
-        renderSharedItems();
-      } else {
-        openSharedPreview(item);
-      }
-    });
-
-    el.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      buildSharedContextMenu(item, e);
-    });
-
-    return el;
-  }
-
-  async function renderSharedFolderContents() {
-    sharedGrid.innerHTML = '';
-    sharedLoading.hidden = false;
-    sharedEmpty.hidden = true;
-    sharedGrid.hidden = true;
-
-    const prefix = sharedDrill.share.path.replace(/\/$/, '') + '/' + (sharedDrill.subPath || '');
-    let entries = [];
-    try {
-      entries = await listFolder(prefix);
-    } catch (err) {
-      console.warn('[shared] list failed:', err.message);
-      entries = [];
-    }
-    sharedLoading.hidden = true;
-
-    const visible = entries.filter(e => e.name !== PLACEHOLDER);
-    if (!visible.length) {
-      sharedEmpty.hidden = false;
-      sharedEmpty.querySelector('.empty-icon').textContent = '\uD83D\uDCC2';
-      sharedEmptyText.textContent = 'This shared folder is empty.';
-      return;
-    }
-
-    const folders = visible.filter(e => isFolder(e));
-    const files = visible.filter(e => !isFolder(e));
-    const ordered = folders.concat(files);
-
-    sharedGrid.hidden = false;
-    ordered.forEach(entry => {
-      const isDir = isFolder(entry);
-      const el = document.createElement('div');
-      el.className = 'fm-item';
-      el.dataset.entryName = entry.name;
-
-      const icon = document.createElement('div');
-      icon.className = 'fm-icon';
-      icon.textContent = isDir ? '\uD83D\uDCC1' : fileIcon(entry.name);
-
-      const nameEl = document.createElement('div');
-      nameEl.className = 'fm-name';
-      nameEl.textContent = entry.name;
-      nameEl.title = entry.name;
-
-      const meta = document.createElement('div');
-      meta.className = 'fm-meta';
-      if (isDir) meta.textContent = 'Folder';
-      else if (entry.metadata && entry.metadata.size != null) meta.textContent = formatBytes(entry.metadata.size);
-
-      el.appendChild(icon);
-      el.appendChild(nameEl);
-      el.appendChild(meta);
-
-      if (!isDir) {
-        el.addEventListener('click', () => {
-          const fullPath = prefix + entry.name;
-          const previewItem = {
-            name: entry.name,
-            metadata: entry.metadata || { size: 0 },
-            _shared: true,
-            _sharedRow: sharedDrill.share,
-            _fullPath: fullPath
-          };
-          openPreview(previewItem);
-        });
-      } else {
-        el.addEventListener('click', () => {
-          sharedDrill = {
-            share: sharedDrill.share,
-            subPath: (sharedDrill.subPath || '') + entry.name + '/'
-          };
-          renderSharedBreadcrumbs();
-          renderSharedItems();
-        });
-      }
-
-      sharedGrid.appendChild(el);
-    });
-  }
-
-  async function openSharedPreview(sharedRow) {
-    const ok = await ensureSharedUnlocked(sharedRow);
-    if (!ok) return;
-    const previewItem = {
-      name: sharedRow.name,
-      metadata: { size: 0 },
-      _shared: true,
-      _sharedRow: sharedRow,
-      _fullPath: sharedRow.path
-    };
-    openPreview(previewItem);
-  }
-
-  function buildSharedContextMenu(item, e) {
-    closeContextMenu();
-    const isDir = !!item.is_folder;
-    const menu = document.createElement('div');
-    menu.className = 'fm-context-menu';
-    menu.setAttribute('role', 'menu');
-
-    const header = document.createElement('div');
-    header.className = 'fm-context-header';
-    header.textContent = item.name;
-    header.title = item.name;
-    menu.appendChild(header);
-
-    const sepTop = document.createElement('div');
-    sepTop.className = 'fm-context-sep';
-    menu.appendChild(sepTop);
-
-    const openItem = document.createElement('button');
-    openItem.type = 'button';
-    openItem.className = 'fm-context-item';
-    openItem.innerHTML = '<span class="ctx-icon">' + (isDir ? '&#128193;' : '&#128065;') + '</span><span class="ctx-label">' + (isDir ? 'Open' : 'Preview') + '</span>';
-    openItem.addEventListener('click', () => {
-      closeContextMenu();
-      if (isDir) {
-        sharedDrill = { share: item, subPath: '' };
-        renderSharedBreadcrumbs();
-        renderSharedItems();
-      } else {
-        openSharedPreview(item);
-      }
-    });
-    menu.appendChild(openItem);
-
-    const dlItem = document.createElement('button');
-    dlItem.type = 'button';
-    dlItem.className = 'fm-context-item';
-    dlItem.innerHTML = '<span class="ctx-icon">&#11015;&#65039;</span><span class="ctx-label">' + (isDir ? 'Download (ZIP)' : 'Download') + '</span>';
-    dlItem.addEventListener('click', async () => {
-      closeContextMenu();
-      const ok = await ensureSharedUnlocked(item);
-      if (!ok) return;
-      if (isDir) await downloadFolder(item.path, item.name);
-      else await downloadFile(item.path, item.name, item);
-    });
-    menu.appendChild(dlItem);
-
-    if (canModifyShared(item)) {
-      const editShare = document.createElement('button');
-      editShare.type = 'button';
-      editShare.className = 'fm-context-item';
-      editShare.innerHTML = '<span class="ctx-icon">&#128279;</span><span class="ctx-label">Edit share</span>';
-      editShare.addEventListener('click', () => {
-        closeContextMenu();
-        openShareModal(item, true);
-      });
-      menu.appendChild(editShare);
-
-      const sep = document.createElement('div');
-      sep.className = 'fm-context-sep';
-      menu.appendChild(sep);
-
-      const unshare = document.createElement('button');
-      unshare.type = 'button';
-      unshare.className = 'fm-context-item danger';
-      unshare.innerHTML = '<span class="ctx-icon">&#128683;</span><span class="ctx-label">Unshare</span>';
-      unshare.addEventListener('click', async () => {
-        closeContextMenu();
-        await unshareItem(item);
-      });
-      menu.appendChild(unshare);
-    }
-
-    document.body.appendChild(menu);
-    contextMenuEl = menu;
-
-    const rect = menu.getBoundingClientRect();
-    let x = (e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || window.innerWidth / 2);
-    let y = (e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY) || window.innerHeight / 2);
-    if (x + rect.width > window.innerWidth - 8) x = window.innerWidth - rect.width - 8;
-    if (y + rect.height > window.innerHeight - 8) y = window.innerHeight - rect.height - 8;
-    if (x < 8) x = 8;
-    if (y < 8) y = 8;
-    menu.style.left = x + 'px';
-    menu.style.top = y + 'px';
-  }
-
-  /* ============================================================================
-     SHARE MODAL
-     ============================================================================ */
-  function openShareModal(item, editMode) {
-    if (!item) return;
-    if (!currentUser) { showToast('You must be logged in to share', 3000); return; }
-    if (!guardOnline()) return;
-
-    shareTarget = item;
-    shareEditMode = !!editMode;
-
-    shareOwnerIcon.textContent = (currentUsername() || '?').charAt(0).toUpperCase();
-    shareOwnerName.textContent = currentUsername() || currentUserId() || 'You';
-    shareItemName.textContent = (item.name || item.path || '');
-
-    shareVisibility = 'company';
-    shareAllowedUsers = new Set();
-    shareExistingRow = null;
-
-    (async () => {
-      if (!allUsers.length) await loadAllUsers();
-
-      let existing = null;
-      if (editMode && item.id) {
-        existing = item;
-      } else {
-        const path = item._shared ? item.path : fullPathFor(item.name);
-        try {
-          const rows = await window.supabase.from('shared_items')
-            .select('*')
-            .eq('bucket', BUCKET)
-            .eq('folder', ROOT)
-            .eq('path', path)
-            .limit(1);
-          if (Array.isArray(rows) && rows.length) existing = rows[0];
-        } catch (err) { /* ignore */ }
-      }
-      shareExistingRow = existing;
-
-      if (existing) {
-        shareVisibility = existing.visibility || 'company';
-        if (Array.isArray(existing.allowed_users)) {
-          existing.allowed_users.forEach(u => shareAllowedUsers.add(u));
-        }
-      }
-
-      sharePassword.value = '';
-      sharePasswordConfirm.value = '';
-      if (existing && existing.password_hash) {
-        sharePasswordHint.textContent = 'A password is already set. Leave blank to keep it, or type a new one to change it.';
-        sharePasswordHint.style.color = 'var(--royal)';
-        sharePassword.placeholder = 'Leave blank to keep current';
-      } else {
-        sharePasswordHint.textContent = 'Set a password to lock previews and downloads.';
-        sharePasswordHint.style.color = '';
-        sharePassword.placeholder = 'Leave empty for no password';
-      }
-
-      shareRemoveBtn.hidden = !existing;
-      shareSaveBtn.textContent = existing ? 'Save changes' : 'Share';
-
-      renderShareUserPicker();
-      syncShareOptionsUI();
-      shareModal.hidden = false;
-    })();
-  }
-
-  function closeShareModal() {
-    shareModal.hidden = true;
-    shareTarget = null;
-    shareExistingRow = null;
-    shareAllowedUsers = new Set();
-    shareVisibility = 'company';
-    sharePassword.value = '';
-    sharePasswordConfirm.value = '';
-  }
-
-  function syncShareOptionsUI() {
-    shareOptions.querySelectorAll('.share-option').forEach(el => {
-      el.classList.toggle('selected', el.dataset.vis === shareVisibility);
-    });
-    shareUsersWrap.hidden = shareVisibility !== 'specific';
-  }
-
-  function renderShareUserPicker() {
-    shareUserPicker.innerHTML = '';
-    const me = currentUsername();
-    const myId = currentUserId();
-    const others = allUsers.filter(u => {
-      if (u.id && u.id === myId) return false;
-      if (u.username && u.username === me) return false;
-      return true;
-    });
-    if (!others.length) {
-      const empty = document.createElement('div');
-      empty.className = 'fm-hint';
-      empty.style.padding = '8px';
-      empty.textContent = 'No other users available.';
-      shareUserPicker.appendChild(empty);
-      return;
-    }
-    others.forEach(u => {
-      const uname = u.username || u.id;
-      const el = document.createElement('button');
-      el.type = 'button';
-      el.className = 'user-choice';
-      if (shareAllowedUsers.has(uname)) el.classList.add('selected');
-      el.innerHTML = '<span class="role-check">\u2713</span><span>' + escapeHtml(uname) + '</span>';
-      el.addEventListener('click', () => {
-        if (shareAllowedUsers.has(uname)) shareAllowedUsers.delete(uname);
-        else shareAllowedUsers.add(uname);
-        renderShareUserPicker();
-      });
-      shareUserPicker.appendChild(el);
-    });
-  }
-
-  async function saveShare() {
-    if (!shareTarget) return;
-    if (!guardOnline()) return;
-
-    const pw = sharePassword.value || '';
-    const pw2 = sharePasswordConfirm.value || '';
-    if (pw || pw2) {
-      if (pw !== pw2) { showToast('Passwords do not match', 3000); return; }
-      if (pw.length < 4) { showToast('Password must be at least 4 characters', 3000); return; }
-    }
-    if (shareVisibility === 'specific' && shareAllowedUsers.size === 0) {
-      showToast('Pick at least one user, or choose another visibility', 3500);
-      return;
-    }
-
-    const path = shareTarget._shared ? shareTarget.path : fullPathFor(shareTarget.name);
-    const name = shareTarget.name || path.split('/').pop();
-    const isFolderFlag = shareTarget._shared
-      ? !!shareTarget.is_folder
-      : isFolder(shareTarget);
-
-    let passwordHash = null;
-    let passwordSalt = null;
-    const existing = shareExistingRow;
-
-    if (pw) {
-      passwordSalt = generateSalt();
-      passwordHash = await hashPassword(pw, passwordSalt);
-    } else if (existing && existing.password_hash) {
-      passwordHash = existing.password_hash;
-      passwordSalt = existing.password_salt;
-    }
-
-    const row = {
-      id: existing ? existing.id : ('shr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8)),
-      bucket: BUCKET,
-      folder: ROOT,
-      path: path,
-      name: name,
-      is_folder: isFolderFlag,
-      owner_id: currentUserId() || '',
-      owner_username: currentUsername() || '',
-      owner_display: currentUsername() || '',
-      visibility: shareVisibility,
-      allowed_users: shareVisibility === 'specific' ? Array.from(shareAllowedUsers) : [],
-      password_hash: passwordHash,
-      password_salt: passwordSalt,
-      updated_at: new Date().toISOString()
-    };
-
-    shareSaveBtn.disabled = true;
-    const originalText = shareSaveBtn.textContent;
-    shareSaveBtn.textContent = 'Saving…';
-
-    try {
-      if (existing) {
-        await window.supabase.from('shared_items').update(row).eq('id', existing.id);
-      } else {
-        row.created_at = new Date().toISOString();
-        await window.supabase.from('shared_items').insert(row);
-      }
-      showToast(existing ? 'Share updated' : 'Shared');
-      closeShareModal();
-      if (currentView === 'shared') loadSharedItems();
-    } catch (err) {
-      showToast('Save failed: ' + err.message, 4500);
-    } finally {
-      shareSaveBtn.disabled = false;
-      shareSaveBtn.textContent = originalText;
-    }
-  }
-
-  async function removeCurrentShare() {
-    if (!shareExistingRow) return;
-    if (!confirm('Unshare "' + (shareTarget && shareTarget.name) + '"?\nThe file/folder stays in place but is no longer shared.')) return;
-    if (!guardOnline()) return;
-    try {
-      await window.supabase.from('shared_items').delete().eq('id', shareExistingRow.id);
-      showToast('Unshared');
-      closeShareModal();
-      if (currentView === 'shared') loadSharedItems();
-    } catch (err) {
-      showToast('Unshare failed: ' + err.message, 4000);
-    }
-  }
-
-  async function unshareItem(item) {
-    if (!item || !item.id) return;
-    if (!confirm('Unshare "' + item.name + '"?\nThe file/folder stays in place but is no longer shared.')) return;
-    if (!guardOnline()) return;
-    try {
-      await window.supabase.from('shared_items').delete().eq('id', item.id);
-      showToast('Unshared');
-      loadSharedItems();
-    } catch (err) {
-      showToast('Unshare failed: ' + err.message, 4000);
-    }
-  }
-
-  /* ============================================================================
-     PASSWORD HELPERS
-     ============================================================================ */
-  async function hashPassword(password, salt) {
-    const enc = new TextEncoder();
-    const data = enc.encode(salt + '|' + password);
-    const buf = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  function generateSalt() {
-    const arr = new Uint8Array(16);
-    crypto.getRandomValues(arr);
-    return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  function promptPassword(title, message, expectedHash, salt) {
-    return new Promise((resolve) => {
-      pendingPasswordResolve = { resolve, expectedHash, salt };
-      passwordModalTitle.textContent = title || 'Password Required';
-      passwordModalMsg.textContent = message || 'This item is password-protected. Enter the password to continue.';
-      passwordModalInput.value = '';
-      passwordModalError.style.display = 'none';
-      passwordModal.hidden = false;
-      setTimeout(() => passwordModalInput.focus(), 50);
-    });
-  }
-
-  function closePasswordModal(ok) {
-    passwordModal.hidden = true;
-    passwordModalInput.value = '';
-    passwordModalError.style.display = 'none';
-    const p = pendingPasswordResolve;
-    pendingPasswordResolve = null;
-    if (p) p.resolve(!!ok);
-  }
-
-  async function confirmPasswordModal() {
-    if (!pendingPasswordResolve) return;
-    const pw = passwordModalInput.value;
-    if (!pw) {
-      passwordModalError.textContent = 'Please enter a password.';
-      passwordModalError.style.display = 'block';
-      return;
-    }
-    const { expectedHash, salt } = pendingPasswordResolve;
-    let computed;
-    try {
-      computed = await hashPassword(pw, salt);
-    } catch (err) {
-      passwordModalError.textContent = 'Could not verify password. Try again.';
-      passwordModalError.style.display = 'block';
-      return;
-    }
-    if (computed === expectedHash) {
-      closePasswordModal(true);
-    } else {
-      passwordModalError.textContent = 'Incorrect password. Try again.';
-      passwordModalError.style.display = 'block';
-      passwordModalInput.select();
-    }
-  }
-
-  async function getFilePasswordRecord(fullPath) {
-    try {
-      const rows = await window.supabase.from('file_passwords')
-        .select('*')
-        .eq('bucket', BUCKET)
-        .eq('folder', ROOT)
-        .eq('path', fullPath)
-        .limit(1);
-      return Array.isArray(rows) && rows.length ? rows[0] : null;
-    } catch (err) {
-      return null;
-    }
-  }
-
-  async function ensureFileUnlocked(item) {
-    if (currentUser && currentUser.role === 'superadmin') return true;
-    const fullPath = fullPathFor(item.name);
-    if (!passwordProtectedPaths.has(fullPath)) return true;
-    if (unlockedPaths.has(fullPath)) return true;
-    const rec = await getFilePasswordRecord(fullPath);
-    if (!rec) return true;
-    const ok = await promptPassword(
-      '\uD83D\uDD12 Password Required',
-      'This file is password-protected. Enter the password to continue.',
-      rec.password_hash,
-      rec.password_salt
-    );
-    if (ok) unlockedPaths.add(fullPath);
-    return ok;
-  }
-
-  async function ensureSharedUnlocked(item) {
-    const row = (item && item._sharedRow) || item;
-    if (!row || !row.password_hash) return true;
-    if (currentUser && currentUser.role === 'superadmin') return true;
-    const key = 'shared:' + row.id;
-    if (unlockedPaths.has(key)) return true;
-    const ok = await promptPassword(
-      '\uD83D\uDD12 Password Required',
-      'This shared item is password-protected.',
-      row.password_hash,
-      row.password_salt
-    );
-    if (ok) unlockedPaths.add(key);
-    return ok;
-  }
-
-  async function loadPasswordProtectedPaths() {
-    try {
-      const rows = await window.supabase.from('file_passwords')
-        .select('path')
-        .eq('bucket', BUCKET)
-        .eq('folder', ROOT);
-      passwordProtectedPaths = new Set((rows || []).map(r => r.path));
-    } catch (err) {
-      passwordProtectedPaths = new Set();
-    }
-  }
-
-  /* ============================================================================
-     SET PASSWORD MODAL
-     ============================================================================ */
-  async function openSetPasswordModal(item) {
-    if (!item || isFolder(item)) return;
-    if (!guardOnline()) return;
-    setPwTarget = item;
-    const fullPath = fullPathFor(item.name);
-    const rec = await getFilePasswordRecord(fullPath);
-    setPwInput.value = '';
-    setPwConfirm.value = '';
-    setPwError.style.display = 'none';
-    setPwRemoveBtn.hidden = !rec;
-    setPwTitle.textContent = rec ? '\uD83D\uDD12 Change Password' : '\uD83D\uDD12 Set Password';
-    setPwHint.textContent = rec
-      ? 'A password is already set. Type a new one to change it, or remove it.'
-      : 'Protect "' + item.name + '" with a password.';
-    setPwModal.hidden = false;
-    setTimeout(() => setPwInput.focus(), 50);
-  }
-
-  function closeSetPwModal() {
-    setPwModal.hidden = true;
-    setPwInput.value = '';
-    setPwConfirm.value = '';
-    setPwError.style.display = 'none';
-    setPwTarget = null;
-  }
-
-  async function saveSetPassword() {
-    if (!setPwTarget) return;
-    if (!guardOnline()) return;
-    const pw = setPwInput.value || '';
-    const pw2 = setPwConfirm.value || '';
-    if (!pw) {
-      setPwError.textContent = 'Please enter a password.';
-      setPwError.style.display = 'block';
-      return;
-    }
-    if (pw !== pw2) {
-      setPwError.textContent = 'Passwords do not match.';
-      setPwError.style.display = 'block';
-      return;
-    }
-    if (pw.length < 4) {
-      setPwError.textContent = 'Password must be at least 4 characters.';
-      setPwError.style.display = 'block';
-      return;
-    }
-
-    const fullPath = fullPathFor(setPwTarget.name);
-    const salt = generateSalt();
-    const hash = await hashPassword(pw, salt);
-
-    setPwSaveBtn.disabled = true;
-    const original = setPwSaveBtn.textContent;
-    setPwSaveBtn.textContent = 'Saving…';
-
-    try {
-      try {
-        await window.supabase.from('file_passwords').delete()
-          .eq('bucket', BUCKET).eq('folder', ROOT).eq('path', fullPath);
-      } catch (e) {}
-      await window.supabase.from('file_passwords').insert({
-        id: 'fp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
-        bucket: BUCKET,
-        folder: ROOT,
-        path: fullPath,
-        owner_id: currentUserId() || '',
-        password_hash: hash,
-        password_salt: salt
-      });
-      passwordProtectedPaths.add(fullPath);
-      unlockedPaths.add(fullPath);
-      showToast('Password set');
-      closeSetPwModal();
-      renderItems();
-    } catch (err) {
-      setPwError.textContent = 'Save failed: ' + err.message;
-      setPwError.style.display = 'block';
-    } finally {
-      setPwSaveBtn.disabled = false;
-      setPwSaveBtn.textContent = original;
-    }
-  }
-
-  async function removeSetPassword() {
-    if (!setPwTarget) return;
-    const fullPath = fullPathFor(setPwTarget.name);
-    if (!confirm('Remove the password from "' + setPwTarget.name + '"?')) return;
-    setPwRemoveBtn.disabled = true;
-    try {
-      await window.supabase.from('file_passwords').delete()
-        .eq('bucket', BUCKET).eq('folder', ROOT).eq('path', fullPath);
-      passwordProtectedPaths.delete(fullPath);
-      unlockedPaths.delete(fullPath);
-      showToast('Password removed');
-      closeSetPwModal();
-      renderItems();
-    } catch (err) {
-      setPwError.textContent = 'Remove failed: ' + err.message;
-      setPwError.style.display = 'block';
-    } finally {
-      setPwRemoveBtn.disabled = false;
-    }
   }
 
   /* ---------------- MANAGE MODAL ---------------- */
@@ -4675,36 +3416,9 @@
   }
 
   /* ---------------- DOWNLOAD ---------------- */
-  async function downloadFile(fullPath, fileName, sourceItem) {
+  async function downloadFile(fullPath, fileName) {
     const name = fileName || fullPath.split('/').pop();
     if (!guardOnline()) return;
-
-    if (sourceItem) {
-      if (sourceItem._shared) {
-        const ok = await ensureSharedUnlocked(sourceItem._sharedRow || sourceItem);
-        if (!ok) return;
-      } else {
-        const ok = await ensureFileUnlocked(sourceItem);
-        if (!ok) return;
-      }
-    } else if (sourceItem === undefined) {
-      if (passwordProtectedPaths.has(fullPath) && !(currentUser && currentUser.role === 'superadmin')) {
-        if (!unlockedPaths.has(fullPath)) {
-          const rec = await getFilePasswordRecord(fullPath);
-          if (rec) {
-            const ok = await promptPassword(
-              '\uD83D\uDD12 Password Required',
-              'This file is password-protected.',
-              rec.password_hash,
-              rec.password_salt
-            );
-            if (!ok) return;
-            unlockedPaths.add(fullPath);
-          }
-        }
-      }
-    }
-
     progressStart('Downloading…');
     progressFill.style.width = '35%';
     try {
@@ -4903,7 +3617,7 @@
   }
 
   /* ============================================================================
-     MOVE ITEM
+     MOVE ITEM (drag & drop / move-to modal)
      ============================================================================ */
   async function moveItem(sourceItem, targetFolderName) {
     if (!guardOnline() || !sourceItem || !targetFolderName) return;
@@ -5250,22 +3964,6 @@
       menu.appendChild(sepPreview);
     }
 
-    const shareBtn = document.createElement('button');
-    shareBtn.type = 'button';
-    shareBtn.className = 'fm-context-item';
-    shareBtn.innerHTML = '<span class="ctx-icon">&#128279;</span><span class="ctx-label">Share…</span>';
-    shareBtn.addEventListener('click', () => { closeContextMenu(); openShareModal(item, false); });
-    menu.appendChild(shareBtn);
-
-    if (!isDir) {
-      const setPwBtn = document.createElement('button');
-      setPwBtn.type = 'button';
-      setPwBtn.className = 'fm-context-item';
-      setPwBtn.innerHTML = '<span class="ctx-icon">&#128274;</span><span class="ctx-label">Set Password…</span>';
-      setPwBtn.addEventListener('click', () => { closeContextMenu(); openSetPasswordModal(item); });
-      menu.appendChild(setPwBtn);
-    }
-
     const moveItemBtn = document.createElement('button');
     moveItemBtn.type = 'button';
     moveItemBtn.className = 'fm-context-item';
@@ -5283,7 +3981,7 @@
     downloadItem.addEventListener('click', async () => {
       closeContextMenu();
       if (isDir) await downloadFolder(fullPathFor(item.name), item.name);
-      else await downloadFile(fullPathFor(item.name), item.name, item);
+      else await downloadFile(fullPathFor(item.name), item.name);
     });
     menu.appendChild(downloadItem);
 
@@ -5670,15 +4368,6 @@
       el.appendChild(name);
       el.appendChild(meta);
 
-      if (!isDir && passwordProtectedPaths.has(folderPrefix() + it.name)) {
-        const lock = document.createElement('div');
-        lock.className = 'fm-meta';
-        lock.style.color = 'var(--red)';
-        lock.style.fontWeight = '700';
-        lock.textContent = '\uD83D\uDD12 Protected';
-        el.appendChild(lock);
-      }
-
       el.addEventListener('click', (e) => handleItemClick(e, idx, it));
 
       el.addEventListener('dblclick', (e) => {
@@ -5838,11 +4527,6 @@
     const sel = selected.size;
     deleteBtn.disabled = sel === 0;
     deleteBtn.innerHTML = sel > 1 ? '&#128465;&#65039; Delete (' + sel + ')' : '&#128465;&#65039; Delete';
-
-    if (shareHeroBtn) {
-      shareHeroBtn.disabled = sel !== 1;
-    }
-
     if (total === 0) {
       selectAllBtn.disabled = true;
       selectAllBtn.innerHTML = '&#9745; Select All';
@@ -5930,10 +4614,7 @@
     dl.className = 'download-link';
     dl.textContent = '⬇️ Download file';
     dl.addEventListener('click', () => {
-      if (item) {
-        const fullPath = item._shared ? item._fullPath : fullPathFor(item.name);
-        downloadFile(fullPath, item.name, item);
-      }
+      if (item) downloadFile(fullPathFor(item.name), item.name);
     });
     wrap.appendChild(dl);
 
@@ -5964,23 +4645,13 @@
   }
 
   async function openPreview(item) {
-    if (!item) return;
-    if (!item._shared && isFolder(item)) return;
+    if (!item || isFolder(item)) return;
     if (!guardOnline()) return;
-
-    if (item._shared) {
-      const ok = await ensureSharedUnlocked(item._sharedRow || item);
-      if (!ok) return;
-    } else {
-      const ok = await ensureFileUnlocked(item);
-      if (!ok) return;
-    }
 
     closePreview(true);
 
     previewItem = item;
     const fileName = item.name;
-    const fullPath = item._shared ? item._fullPath : fullPathFor(fileName);
     const ext = getFileExtension(fileName);
 
     previewFilename.textContent = fileName;
@@ -5989,7 +4660,7 @@
     previewOverlay.hidden = false;
     document.body.style.overflow = 'hidden';
 
-    previewDownloadBtn.onclick = () => downloadFile(fullPath, fileName, item);
+    previewDownloadBtn.onclick = () => downloadFile(fullPathFor(fileName), fileName);
 
     const size = getItemSize(item);
     if (size && size > PREVIEW_MAX_BYTES) {
@@ -6002,7 +4673,7 @@
     let blob;
     try {
       previewAbort = new AbortController();
-      blob = await fetchObjectBlob(fullPath, previewAbort.signal, size);
+      blob = await fetchObjectBlob(fullPathFor(fileName), previewAbort.signal, size);
     } catch (err) {
       previewAbort = null;
       if (err && err.name === 'AbortError') return;
@@ -6285,10 +4956,6 @@
   }
 
   async function refresh() {
-    if (currentView === 'shared') {
-      await loadSharedItems();
-      return;
-    }
     if (!rootExists) { renderBreadcrumbs(); renderItems(); return; }
 
     startHeroSpin();
@@ -7344,6 +6011,7 @@
       const hidden = layout.classList.toggle('side-hidden');
       sideToggle.innerHTML = hidden ? '&#10095;' : '&#10094;';
       sideToggle.title = hidden ? 'Show sidebar' : 'Hide sidebar';
+      // Re-sync topbar height in case it changes on this viewport
       setTimeout(syncTopbarHeight, 320);
     });
   }
@@ -7405,7 +6073,7 @@
     await uploadEntries(collected);
   });
 
-  /* ---------------- SEARCH / SORT (Files view) ---------------- */
+  /* ---------------- SEARCH / SORT ---------------- */
   searchInput.addEventListener('input', () => {
     searchTerm = searchInput.value.trim();
     searchClear.hidden = !searchTerm;
@@ -7439,46 +6107,6 @@
     renderItems();
   });
 
-  /* ---------------- SEARCH / SORT (Shared view) ---------------- */
-  if (sharedSearch) {
-    sharedSearch.addEventListener('input', () => {
-      sharedSearchTerm = sharedSearch.value.trim();
-      sharedSearchClear.hidden = !sharedSearchTerm;
-      applySharedFilterAndSort();
-      if (sharedDrill) renderSharedFolderContents();
-      else renderSharedItems();
-    });
-    sharedSearch.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        sharedSearchTerm = '';
-        sharedSearch.value = '';
-        sharedSearchClear.hidden = true;
-        applySharedFilterAndSort();
-        if (sharedDrill) renderSharedFolderContents();
-        else renderSharedItems();
-        sharedSearch.blur();
-      }
-    });
-    sharedSearchClear.addEventListener('click', () => {
-      sharedSearchTerm = '';
-      sharedSearch.value = '';
-      sharedSearchClear.hidden = true;
-      applySharedFilterAndSort();
-      if (sharedDrill) renderSharedFolderContents();
-      else renderSharedItems();
-      sharedSearch.focus();
-    });
-  }
-  if (sharedSort) {
-    sharedSort.addEventListener('change', () => {
-      sharedSortBy = sharedSort.value;
-      applySharedFilterAndSort();
-      if (sharedDrill) renderSharedFolderContents();
-      else renderSharedItems();
-    });
-  }
-
   /* ---------------- EVENTS ---------------- */
   uploadBtn.addEventListener('click', pickFiles);
   uploadFolderBtn.addEventListener('click', pickFolder);
@@ -7499,24 +6127,10 @@
   newFolderBtn.addEventListener('click', openNewFolderModal);
   deleteBtn.addEventListener('click', doDelete);
   selectAllBtn.addEventListener('click', toggleSelectAll);
-
-  if (shareHeroBtn) {
-    shareHeroBtn.addEventListener('click', () => {
-      if (selected.size !== 1) return;
-      const name = Array.from(selected)[0];
-      const it = items.find(x => x.name === name);
-      if (it) openShareModal(it, false);
-    });
-  }
-
   heroRefresh.addEventListener('click', async () => {
     const ok = await Connection.check(true);
     Connection.restartTimer();
     if (!ok) { showToast('Server unreachable — check your tunnel', 3500); return; }
-    if (currentView === 'shared') {
-      await loadSharedItems();
-      return;
-    }
     await ensureRootFolderExists();
     refresh();
     updateStorageInfo().catch(err => console.error(err));
@@ -7541,6 +6155,7 @@
   });
   renameModal.addEventListener('click', (e) => { if (e.target === renameModal) closeRenameModal(); });
 
+  // Move-To modal events
   moveCancel.addEventListener('click', closeMoveModal);
   moveConfirm.addEventListener('click', confirmMoveTo);
   moveModal.addEventListener('click', (e) => { if (e.target === moveModal) closeMoveModal(); });
@@ -7590,37 +6205,6 @@
     conflictState.render();
   });
 
-  /* ---------------- NEW: share modal events ---------------- */
-  shareOptions.querySelectorAll('.share-option').forEach(el => {
-    el.addEventListener('click', () => {
-      shareVisibility = el.dataset.vis;
-      syncShareOptionsUI();
-    });
-  });
-  shareCancelBtn.addEventListener('click', closeShareModal);
-  shareSaveBtn.addEventListener('click', saveShare);
-  shareRemoveBtn.addEventListener('click', removeCurrentShare);
-  shareModal.addEventListener('click', (e) => { if (e.target === shareModal) closeShareModal(); });
-  sharePassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveShare(); } });
-  sharePasswordConfirm.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveShare(); } });
-
-  /* ---------------- NEW: password modal events ---------------- */
-  passwordCancelBtn.addEventListener('click', () => closePasswordModal(false));
-  passwordConfirmBtn.addEventListener('click', confirmPasswordModal);
-  passwordModalInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); confirmPasswordModal(); }
-    if (e.key === 'Escape') closePasswordModal(false);
-  });
-  passwordModal.addEventListener('click', (e) => { if (e.target === passwordModal) closePasswordModal(false); });
-
-  /* ---------------- NEW: set password modal events ---------------- */
-  setPwCancelBtn.addEventListener('click', closeSetPwModal);
-  setPwSaveBtn.addEventListener('click', saveSetPassword);
-  setPwRemoveBtn.addEventListener('click', removeSetPassword);
-  setPwModal.addEventListener('click', (e) => { if (e.target === setPwModal) closeSetPwModal(); });
-  setPwInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); setPwConfirm.focus(); } });
-  setPwConfirm.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveSetPassword(); } });
-
   /* ---------------- PENDING UPLOADS UI WIRING ---------------- */
   (function wirePendingUI() {
     const fab        = document.getElementById('fm-pending-fab');
@@ -7658,21 +6242,14 @@
     const pendingModal = document.getElementById('fm-pending-modal');
     if (!modal.hidden || !fullModal.hidden || !manageModal.hidden || !renameModal.hidden
         || !conflictModal.hidden || !previewOverlay.hidden || !moveModal.hidden
-        || !shareModal.hidden || !passwordModal.hidden || !setPwModal.hidden
         || (pendingModal && !pendingModal.hidden)) return;
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
       e.preventDefault();
-      if (currentView === 'shared') {
-        sharedSearch.focus();
-        sharedSearch.select();
-      } else {
-        searchInput.focus();
-        searchInput.select();
-      }
+      searchInput.focus();
+      searchInput.select();
       return;
     }
-    if (currentView !== 'files') return;
     if (e.key === 'Delete' && selected.size) { e.preventDefault(); doDelete(); }
     else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); toggleSelectAll(); }
     else if (e.key === 'Escape') { selected.clear(); renderItems(); }
@@ -7692,10 +6269,6 @@
      RECONNECT HANDLER
      ============================================================================ */
   Connection.setReconnectHandler(async () => {
-    if (currentView === 'shared') {
-      await loadSharedItems();
-      return;
-    }
     const exists = await ensureRootFolderExists();
     if (exists) {
       await refresh();
@@ -7729,9 +6302,6 @@
 
     await loadSidebar();
     renderSidebar();
-
-    loadAllUsers().catch(err => console.warn('[init] users load:', err.message));
-    loadPasswordProtectedPaths().catch(err => console.warn('[init] passwords load:', err.message));
 
     const exists = await ensureRootFolderExists();
     if (!exists) {
