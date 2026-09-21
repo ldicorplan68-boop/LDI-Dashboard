@@ -2307,6 +2307,7 @@
    - "Move to…" context menu fallback for touch devices
    - Robust topbar height sync for iOS Safari (URL bar / safe-area)
    - "Files" button highlighted with white background + blue text
+   - Sidebar order: "Files" first, then the fixed "Shared" button (2nd slot)
    - NEW: "Shared" sidebar button + Shared view + Share modal + passwords
    ============================================================================ */
 (function(){
@@ -3174,11 +3175,15 @@
      - FIXED: The "Files" default button is detected even when the isFiles
        flag was not persisted to Supabase (checks id === 'files' or
        empty-link + label "Files").
+     - ORDER: The managed "Files" button is FIRST; the fixed "Shared" button is
+       inserted in the SECOND slot (right after Files). The other managed
+       buttons follow. If there is no "Files" button, Shared stays first
+       (fallback) so it is never missing.
      ============================================================================ */
   function renderSidebar() {
     sideButtonsContainer.innerHTML = '';
 
-    // === Fixed Shared button (always first, not manageable) ===
+    // === Fixed Shared button (not manageable — inserted after the "Files" button) ===
     const sharedBtn = document.createElement('button');
     sharedBtn.type = 'button';
     sharedBtn.className = 'side-btn';
@@ -3199,12 +3204,15 @@
       sharedBtn.title = 'Open shared items';
     }
     sharedBtn.addEventListener('click', () => switchView('shared'));
-    sideButtonsContainer.appendChild(sharedBtn);
+    // NOTE: the Shared button is NOT appended here — it is inserted after the
+    // managed "Files" button at the end of this function (Files 1st, Shared 2nd).
 
     // === Managed sidebar buttons ===
     const visible = sidebarButtons.filter(btn => canAccessButton(btn, currentUserRoles));
 
     if (!visible.length) {
+      // Fallback: no managed buttons at all — keep the fixed Shared button visible.
+      sideButtonsContainer.appendChild(sharedBtn);
       const emptyMsg = document.createElement('div');
       emptyMsg.className = 'side-empty';
       emptyMsg.textContent = sidebarButtons.length
@@ -3227,6 +3235,8 @@
       if (!link && String(btn.label || '').trim().toLowerCase() === 'files') return true;
       return false;
     }
+
+    let filesBtnEl = null;   // managed "Files" button — the fixed Shared button is inserted after it
 
     visible.forEach((btn) => {
       const el = document.createElement('button');
@@ -3280,8 +3290,20 @@
         else showToast('No link set for this button', 2200);
       });
 
+      if (isFilesButton(btn)) filesBtnEl = el;   // remember it so Shared is inserted right after
+
       sideButtonsContainer.appendChild(el);
     });
+
+    // === Fixed Shared button — SECOND slot, right after the managed "Files" button ===
+    // Sidebar order: Files (1st) → Shared (2nd) → the other managed buttons.
+    if (filesBtnEl) {
+      // insertBefore(node, null) === appendChild, so this also works when Files is last.
+      sideButtonsContainer.insertBefore(sharedBtn, filesBtnEl.nextSibling);
+    } else {
+      // Fallback: no "Files" button (e.g. removed in Manage Sidebar) — keep Shared first.
+      sideButtonsContainer.insertBefore(sharedBtn, sideButtonsContainer.firstChild);
+    }
   }
 
   function setActiveSideButton(el) {
