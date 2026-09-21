@@ -5,7 +5,7 @@
 // ============================================================================
 
 const HOSTS = [
- // 'http://192.168.0.5:8000',                                         // 1. local
+  'http://192.168.0.5:8000',                                         // 1. local
   'https://trainers-police-rome-amplifier.trycloudflare.com',      // 2. cloudflare (fallback)
   'https://scam-retouch-hull.ngrok-free.dev'                          // 3. ngrok 
 ];

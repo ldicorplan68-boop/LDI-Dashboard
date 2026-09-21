@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
   <title>ART Files — Lakpue Drug Inc</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  <!-- PERF: JSZip / PDF.js / SheetJS / Mammoth are NO LONGER loaded here.
+       They are lazy-loaded on demand via loadLib() inside the script below, so the
+       page paints and starts fetching the file list immediately (saves ~1.5 MB at startup). -->
   <style>
     :root {
       --royal: #1b1bb3; --royal-2: #2020c8; --royal-deep: #0d0d7a;
@@ -4492,8 +4493,88 @@
     return (it.metadata && typeof it.metadata.size === 'number') ? it.metadata.size : 0;
   }
 
+  /* ---------------- LAZY CDN LIBRARY LOADER ---------------- */
+  /* PERF: heavy viewer libs (ZIP / PDF / XLSX / DOCX) are fetched only when actually
+     needed, so the page and the first file listing load much faster. One load per
+     session — the promise is cached, at ang global ay hinahanap muna para hindi
+     ma-download nang doble. */
+  const LIB_URLS = {
+    jszip:   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+    pdfjs:   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+    xlsx:    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+    mammoth: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js'
+  };
+  const LIB_GLOBALS = { jszip: 'JSZip', pdfjs: 'pdfjsLib', xlsx: 'XLSX', mammoth: 'mammoth' };
+  const libPromises = Object.create(null);
+
+  function loadLib(name) {
+    const globalName = LIB_GLOBALS[name];
+    if (!globalName || !LIB_URLS[name]) {
+      return Promise.reject(new Error('Unknown library: ' + name));
+    }
+    if (typeof window[globalName] !== 'undefined') return Promise.resolve(true);
+    if (libPromises[name]) return libPromises[name];
+
+    libPromises[name] = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = LIB_URLS[name];
+      s.async = true;
+      s.onload = () => resolve(true);
+      s.onerror = () => {
+        delete libPromises[name];   // para puwedeng subukan ulit sa susunod
+        reject(new Error(name + ' library failed to load'));
+      };
+      document.head.appendChild(s);
+    });
+    return libPromises[name];
+  }
+
+  /* ---------------- LISTING CACHE (stale-while-revalidate) ---------------- */
+  /* PERF: in-memory cache ng folder listings para instant ang pagbalik sa folder at
+     ang Files <-> Shared switch. Opt-in lang (listFolder(prefix, { cache:true })) at
+     pinapalitan ng bago sa background. Ang mga conflict check at recursive walks
+     (collectAllUnder / computeFolderUsage) ay LAGING sariwa — walang cache.
+     Binubura ang cache tuwing may write (upload / delete / create folder). */
+  const LISTING_TTL_MS = 45000;
+  const listingCache = new Map();   // prefix -> { at, data }
+
+  function listingCacheGet(prefix) {
+    const entry = listingCache.get(prefix);
+    if (!entry) return null;
+    if (Date.now() - entry.at > LISTING_TTL_MS) {
+      listingCache.delete(prefix);
+      return null;
+    }
+    return entry.data.map(row => Object.assign({}, row));   // shallow copy: hindi mahahawakan ng caller
+  }
+
+  function listingCacheSet(prefix, data) {
+    if (!Array.isArray(data)) return;
+    listingCache.set(prefix, { at: Date.now(), data: data.map(row => Object.assign({}, row)) });
+  }
+
+  function clearListingCache() { listingCache.clear(); }
+
+  /* Mabilisang paghahambing ng dalawang listing (name + size + folder/file) para
+     hindi na mag-re-render kapag walang nagbago pagkatapos ng background refresh. */
+  function sameListing(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i].name !== b[i].name) return false;
+      if (getItemSize(a[i]) !== getItemSize(b[i])) return false;
+      if (!!isFolder(a[i]) !== !!isFolder(b[i])) return false;
+    }
+    return true;
+  }
+
   /* ---------------- STORAGE API ---------------- */
-  async function listFolder(prefix) {
+  async function listFolder(prefix, opts) {
+    opts = opts || {};
+    // PERF: opt-in cache — para sa pag-navigate lang, hindi sa conflict checks.
+    if (opts.cache) {
+      const hit = listingCacheGet(prefix);
+      if (hit) return hit;
+    }
     try {
       const res = await fetchT(`${SUPABASE_URL}/storage/v1/object/list/${encodeURIComponent(BUCKET)}`, {
         method: 'POST',
@@ -4502,7 +4583,9 @@
       });
       if (!res.ok) throw new Error('List failed: ' + await res.text());
       Connection.setOnline(true);
-      return res.json();
+      const data = await res.json();
+      if (opts.cache) listingCacheSet(prefix, data);
+      return data;
     } catch (err) {
       if (isNetworkError(err)) Connection.reportNetworkFailure();
       throw err;
@@ -4523,6 +4606,7 @@
       body: JSON.stringify({ prefixes: paths })
     });
     if (!res.ok) throw new Error('Delete failed: ' + await res.text());
+    clearListingCache();   // PERF: nagbago ang storage — huwag gamitin ang lumang listahan
     return res.json().catch(() => ({}));
   }
 
@@ -4539,6 +4623,7 @@
       body: blob
     });
     if (!res.ok) throw new Error('Create folder failed: ' + await res.text());
+    clearListingCache();   // PERF: nagbago ang storage
     return res.json().catch(() => ({}));
   }
 
@@ -4725,11 +4810,15 @@
   }
 
   async function downloadFolder(folderPath, folderName) {
-    if (typeof JSZip === 'undefined') {
-      showToast('ZIP library failed to load. Please refresh and try again.', 4000);
+    if (!guardOnline()) return;
+
+    // PERF: ZIP library is loaded on demand (hindi na sa page load).
+    try {
+      await loadLib('jszip');
+    } catch (err) {
+      showToast('ZIP library failed to load. Please check your connection and try again.', 4000);
       return;
     }
-    if (!guardOnline()) return;
 
     let files;
     try {
@@ -5641,6 +5730,10 @@
     grid.hidden = false;
     empty.hidden = true;
 
+    // PERF: i-build muna sa DocumentFragment — isang reflow lang sa dulo
+    // (dati: direktang grid.appendChild kada item, N reflows).
+    const frag = document.createDocumentFragment();
+
     items.forEach((it, idx) => {
       const isDir = isFolder(it);
       const el = document.createElement('div');
@@ -5777,9 +5870,10 @@
         });
       }
 
-      grid.appendChild(el);
+      frag.appendChild(el);
     });
 
+    grid.appendChild(frag);
     updateToolbarState();
   }
 
@@ -6102,6 +6196,10 @@
   }
 
   async function renderPdfPreview(blob) {
+    if (typeof pdfjsLib === 'undefined') {
+      showPreviewLoading('Loading PDF viewer…');
+      await loadLib('pdfjs');                       // PERF: on-demand load
+    }
     if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -6163,6 +6261,10 @@
   }
 
   async function renderDocxPreview(blob) {
+    if (typeof mammoth === 'undefined') {
+      showPreviewLoading('Loading document viewer…');
+      await loadLib('mammoth');                     // PERF: on-demand load
+    }
     if (typeof mammoth === 'undefined') throw new Error('Mammoth library not loaded');
     const arrayBuffer = await blob.arrayBuffer();
     const result = await mammoth.convertToHtml({ arrayBuffer });
@@ -6174,6 +6276,10 @@
   }
 
   async function renderXlsxPreview(blob) {
+    if (typeof XLSX === 'undefined') {
+      showPreviewLoading('Loading spreadsheet viewer…');
+      await loadLib('xlsx');                        // PERF: on-demand load
+    }
     if (typeof XLSX === 'undefined') throw new Error('SheetJS library not loaded');
     const arrayBuffer = await blob.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
@@ -6284,26 +6390,52 @@
     }, 320);
   }
 
-  async function refresh() {
+  async function refresh(opts) {
+    opts = opts || {};
     if (currentView === 'shared') {
       await loadSharedItems();
       return;
     }
     if (!rootExists) { renderBreadcrumbs(); renderItems(); return; }
 
-    startHeroSpin();
-    loading.hidden = false;
-    grid.hidden = true;
-    empty.hidden = true;
-    renderBreadcrumbs();
+    // PERF: kapag may cached na listahan, i-render agad (walang spinner) at i-refresh
+    // sa background. Instant ang pagbalik sa folder at pag-switch ng view.
+    const cached = opts.prefetch ? null : listingCacheGet(folderPrefix());
 
-    try {
-      const data = await listFolder(folderPrefix());
-      Connection.setOnline(true);
-      allItems = Array.isArray(data) ? data : [];
+    startHeroSpin();
+    if (cached) {
+      allItems = cached;
+      loading.hidden = true;
+      grid.hidden = false;
+      empty.hidden = true;
       selected.clear();
       applyFilterAndSort();
       renderItems();
+    } else {
+      loading.hidden = false;
+      grid.hidden = true;
+      empty.hidden = true;
+    }
+    renderBreadcrumbs();
+
+    try {
+      const data = opts.prefetch ? await opts.prefetch : await listFolder(folderPrefix(), { cache: true });
+      Connection.setOnline(true);
+      const next = Array.isArray(data) ? data : [];
+      const changed = !cached || !sameListing(cached, next);
+      allItems = next;
+      if (currentPath === '') {
+        // Kapareho ng verifyRootFolderExists(): ang .emptyFolderPlaceholder ay binibilang
+        // na entry, kaya empty listing = hindi umiiral ang root folder.
+        rootExists = allItems.length > 0;
+        if (!rootExists) lockUploadsForMissingRoot();
+      }
+      listingCacheSet(folderPrefix(), allItems);
+      if (changed) {
+        selected.clear();
+        applyFilterAndSort();
+        renderItems();
+      }
     } catch (err) {
       const looksLikeNetwork = isNetworkError(err);
       if (looksLikeNetwork) Connection.reportNetworkFailure();
@@ -6546,6 +6678,7 @@
         err.retryable = RETRYABLE_STATUS.has(res.status);
         throw err;
       }
+      clearListingCache();   // PERF: may bagong file — invalidate ang listahan
       return res.json().catch(() => ({}));
     } catch (err) {
       if (err && err.name === 'AbortError') {
@@ -6743,6 +6876,7 @@
       session.updatedAt = Date.now();
       persistSessions();
     }
+    clearListingCache();   // PERF: tapos na ang resumable upload — invalidate ang listahan
   }
 
   function makePausedError(session, cause) {
@@ -7406,13 +7540,18 @@
   });
 
   /* ---------------- SEARCH / SORT (Files view) ---------------- */
+  let searchDebounceTimer = null;
   searchInput.addEventListener('input', () => {
     searchTerm = searchInput.value.trim();
     searchClear.hidden = !searchTerm;
     selected.clear();
     lastClickedIndex = -1;
-    applyFilterAndSort();
-    renderItems();
+    // PERF: debounce — isang render kada paghinto ng pag-type, hindi kada keystroke.
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      applyFilterAndSort();
+      renderItems();
+    }, 120);
   });
   searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -7441,12 +7580,17 @@
 
   /* ---------------- SEARCH / SORT (Shared view) ---------------- */
   if (sharedSearch) {
+    let sharedSearchDebounceTimer = null;
     sharedSearch.addEventListener('input', () => {
       sharedSearchTerm = sharedSearch.value.trim();
       sharedSearchClear.hidden = !sharedSearchTerm;
-      applySharedFilterAndSort();
-      if (sharedDrill) renderSharedFolderContents();
-      else renderSharedItems();
+      // PERF: debounce din dito — isang render kada paghinto ng pag-type.
+      clearTimeout(sharedSearchDebounceTimer);
+      sharedSearchDebounceTimer = setTimeout(() => {
+        applySharedFilterAndSort();
+        if (sharedDrill) renderSharedFolderContents();
+        else renderSharedItems();
+      }, 120);
     });
     sharedSearch.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
@@ -7692,6 +7836,7 @@
      RECONNECT HANDLER
      ============================================================================ */
   Connection.setReconnectHandler(async () => {
+    clearListingCache();   // PERF: baka may nagbago habang offline
     if (currentView === 'shared') {
       await loadSharedItems();
       return;
@@ -7722,27 +7867,37 @@
       }
     });
 
-    await loadCurrentUser();
+    // ========================================================================
+    // PERF (Phase 1): mas mabilis na startup
+    //  1) Sinimulan agad ang listahan ng ROOT — sabay sa pag-load ng user+sidebar
+    //  2) Sabay (parallel) ang user at sidebar — dati sunod-sunod
+    //  3) Wala nang double listing: ang refresh() ang nagtatakda ng rootExists
+    // ========================================================================
+    const prefetchedListing = listFolder(ROOT + '/');
+    prefetchedListing.catch(() => {});   // iwas unhandled rejection
+
+    await Promise.all([ loadCurrentUser(), loadSidebar() ]);
     currentUserRoles = getUserRoles(currentUser);
     isSuperAdmin = isSuperAdminRole(currentUser);
     if (manageSidebarBtn) manageSidebarBtn.hidden = !isSuperAdmin;
-
-    await loadSidebar();
     renderSidebar();
 
-    loadAllUsers().catch(err => console.warn('[init] users load:', err.message));
-    loadPasswordProtectedPaths().catch(err => console.warn('[init] passwords load:', err.message));
-
-    const exists = await ensureRootFolderExists();
-    if (!exists) {
-      refresh();
-      syncTopbarHeight();
-      return;
-    }
-
-    updateStorageInfo().catch(err => console.error(err));
-    refresh();
+    await refresh({ prefetch: prefetchedListing });
     syncTopbarHeight();
+
+    // Hindi kritikal — pagkatapos ng first paint, para hindi makipag-compete sa listahan.
+    // Ang users list ay on-demand na hinihingi ng Share modal (loadAllUsers sa share flow),
+    // kaya hindi na ito kasama sa startup.
+    setTimeout(() => {
+      loadPasswordProtectedPaths()
+        .then(() => {
+          if (currentView === 'files' && currentPath === '') renderItems();   // 🔒 badge
+        })
+        .catch(err => console.warn('[init] passwords load:', err.message));
+    }, 1500);
+    setTimeout(() => {
+      updateStorageInfo().catch(err => console.error(err));
+    }, 1200);
   })();
 
   window.addEventListener('beforeunload', () => {
