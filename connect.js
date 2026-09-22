@@ -11,6 +11,19 @@ const HOSTS = [
 ];
 
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
+
+
+// Supabase sometimes emits absolute URLs pointing at its own internal
+// address (localhost:8000, 127.0.0.1:8000) in Location headers — e.g. for
+// resumable (TUS) uploads. Clients on other devices can't reach those,
+// so treat them as ALIASES of the current best host and rewrite them.
+const HOST_ALIASES = [
+  'http://localhost:8000',
+  'http://127.0.0.1:8000',
+  'https://localhost:8000',
+  'https://127.0.0.1:8000'
+];
+
 // --- ngrok interstitial bypass + host failover --------------------------------
 // 1) Lahat ng request sa tunnel host ay binibigyan ng skip header. Kapag wala
 //    ito, ang isinasagot ng ngrok ay ang warning page (ERR_NGROK_6024,
@@ -35,7 +48,14 @@ function pickHost(){
   for (const k in _badUntil) delete _badUntil[k];   // lahat bagsak: reset at subukan ulit
   return _ranked[0];
 }
-function hostOf(url){ return HOSTS.find(h => url.indexOf(h) === 0) || null }
+function hostOf(url){
+  const h = HOSTS.find(h => url.indexOf(h) === 0);
+  if (h) return h;
+  for (const a of HOST_ALIASES) {
+    if (url.indexOf(a) === 0) return a;
+  }
+  return null;
+}
 function swapHost(url, from, to){ return from === to ? url : to + url.slice(from.length) }
 
 function selectHost(host){
@@ -57,7 +77,12 @@ const rawFetch = window.fetch.bind(window);   // direktang fetch: gamit ng ping/
 window.fetch = async function patchedFetch(input, init){
   const origUrl = typeof input === 'string' ? input : (input && input.url) || '';
   const from    = hostOf(origUrl);
-  if (!from) return rawFetch(origUrl, init);     // hindi tunnel URL: hayaan lang
+  if (!from) return rawFetch(origUrl, init);   // totally unrelated URL: hayaan lang
+
+  // If the URL started with an alias (localhost / 127.0.0.1), we ignore the
+  // alias prefix entirely and rebuild the URL from the picked real host.
+  const isAlias = HOST_ALIASES.includes(from);
+  const tail    = isAlias ? origUrl.slice(from.length) : null;
 
   const merged  = Object.assign({}, init);
   const headers = new Headers(merged.headers || (input && input.headers) || {});
@@ -68,17 +93,18 @@ window.fetch = async function patchedFetch(input, init){
   const maxTries = Math.max(1, _ranked.length);
   for (let i = 0; i < maxTries; i++){
     const host = pickHost();
+    const targetUrl = isAlias ? (host + tail) : swapHost(origUrl, from, host);
     try {
-      const res = await rawFetch(swapHost(origUrl, from, host), merged);
+      const res = await rawFetch(targetUrl, merged);
       markHostOk(host);
       selectHost(host);
       return res;
     } catch (e){
-      if (e && e.name === 'AbortError') throw e;   // sinadyang kenselado: huwag i-retry
+      if (e && e.name === 'AbortError') throw e;
       markHostBad(host);
       lastErr = e;
       console.warn(`[connect] ⚠️ ${host} failed (${e && e.name}) — susunod na host`);
-      reraceInBackground();                        // humanap ulit ng server sa background
+      reraceInBackground();
     }
   }
   throw lastErr || new Error('All hosts unreachable');
