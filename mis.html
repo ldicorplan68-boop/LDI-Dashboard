@@ -6929,6 +6929,12 @@
     if (!/^https?:/i.test(location)) {
       location = new URL(location, SUPABASE_URL).toString();
     }
+
+    // Lock this TUS session to the current host to prevent failover mid-upload
+    if (window.lockTusHost && window.HOSTNAME) {
+      window.lockTusHost(location, window.HOSTNAME);
+    }
+
     return location;
   }
 
@@ -6980,6 +6986,10 @@
         headers: Object.assign(authHeaders(), { 'Tus-Resumable': '1.0.0' })
       });
     } catch (e) {}
+    // Unlock TUS host after deletion
+    if (window.unlockTusHost) {
+      window.unlockTusHost(uploadUrl);
+    }
   }
 
   async function runTusUpload(session, signal) {
@@ -7003,6 +7013,9 @@
 
       if (!alive) {
         try { await tusDelete(session.uploadUrl); } catch (e) {}
+        if (window.unlockTusHost && session.uploadUrl) {
+          window.unlockTusHost(session.uploadUrl);
+        }
         session.uploadUrl = null;
         session.offset = 0;
         persistSessions();
@@ -7097,6 +7110,10 @@
 
       try {
         await runTusUpload(session, outerSignal);
+        // Unlock TUS host after successful upload completion
+        if (window.unlockTusHost && session.uploadUrl) {
+          window.unlockTusHost(session.uploadUrl);
+        }
         resumableSessions.delete(fingerprint);
         persistSessions();
         renderPendingUploads();

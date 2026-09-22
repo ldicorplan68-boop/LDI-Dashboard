@@ -31,6 +31,33 @@ const HOST_ALIASES = [
 // 2) Kapag network failure (Failed to fetch / timeout) ang kasalukuyang host,
 //    awtomatikong lilipat sa susunod na host sa ranking (2nd winner, 3rd, ...),
 //    ipapadala ulit ang parehong request, at mag-rerace sa background.
+const _tusLocks = new Map();  // uploadUrl -> { host, count }
+
+function lockTusHost(uploadUrl, host) {
+  const existing = _tusLocks.get(uploadUrl);
+  if (existing) {
+    existing.count++;
+  } else {
+    _tusLocks.set(uploadUrl, { host, count: 1 });
+  }
+  console.log(`[connect] 🔒 TUS lock: ${uploadUrl} -> ${host}`);
+}
+
+function unlockTusHost(uploadUrl) {
+  const lock = _tusLocks.get(uploadUrl);
+  if (!lock) return;
+  lock.count--;
+  if (lock.count <= 0) {
+    _tusLocks.delete(uploadUrl);
+    console.log(`[connect] 🔓 TUS unlock: ${uploadUrl}`);
+  }
+}
+
+function getLockedTusHost(uploadUrl) {
+  const lock = _tusLocks.get(uploadUrl);
+  return lock ? lock.host : null;
+}
+
 const FAIL_COOLDOWN = 20000;               // ms na hindi susubukan ang bagsak na host
 let   _ranked       = HOSTS.slice();       // ranking: best host muna
 const _badUntil     = Object.create(null); // host -> oras ng pagbabalik
@@ -92,7 +119,9 @@ window.fetch = async function patchedFetch(input, init){
   let lastErr = null;
   const maxTries = Math.max(1, _ranked.length);
   for (let i = 0; i < maxTries; i++){
-    const host = pickHost();
+    // Check if this URL has a TUS lock — use locked host if so
+    const lockedHost = getLockedTusHost(origUrl);
+    const host = lockedHost || pickHost();
     const targetUrl = isAlias ? (host + tail) : swapHost(origUrl, from, host);
     try {
       const res = await rawFetch(targetUrl, merged);
@@ -167,8 +196,21 @@ window.HOSTNAME  = HOSTS[0];   // default until race finishes
 window.ANON_KEY  = ANON_KEY;
 window.raceHosts = raceHosts;
 
+// TUS upload host locking — prevents host failover during active uploads
+window.lockTusHost = lockTusHost;
+window.unlockTusHost = unlockTusHost;
+window.getLockedTusHost = getLockedTusHost;
+
 window.readyHost = raceHosts().then(host => {
   window.HOSTNAME = host;
   window.dispatchEvent(new CustomEvent('host-ready', { detail: { host } }));
   return host;
+});
+
+// Auto-unlock stale TUS locks on page unload
+window.addEventListener('beforeunload', () => {
+  for (const [url, lock] of _tusLocks) {
+    console.log(`[connect] 🧹 cleanup TUS lock on unload: ${url}`);
+  }
+  _tusLocks.clear();
 });
