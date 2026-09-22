@@ -1824,7 +1824,9 @@
               <div class="fm-search-sort">
                 <div class="fm-search-wrap">
                   <span class="fm-search-icon">&#128269;</span>
-                  <input type="text" id="fm-search" placeholder="Search files…" autocomplete="off" aria-label="Search files">
+                  <input type="text" id="fm-search" placeholder="Search files…" autocomplete="off"
+                         autocorrect="off" autocapitalize="off" spellcheck="false"
+                         name="fm-search-x9q2" value="" aria-label="Search files">
                   <button type="button" class="fm-search-clear" id="fm-search-clear" hidden aria-label="Clear search">&times;</button>
                 </div>
                 <select id="fm-sort" class="fm-sort-select" aria-label="Sort files">
@@ -1854,7 +1856,9 @@
               <div class="fm-search-sort">
                 <div class="fm-search-wrap">
                   <span class="fm-search-icon">&#128269;</span>
-                  <input type="text" id="shared-search" placeholder="Search shared…" autocomplete="off" aria-label="Search shared items">
+                  <input type="text" id="shared-search" placeholder="Search shared…" autocomplete="off"
+                         autocorrect="off" autocapitalize="off" spellcheck="false"
+                         name="shared-search-y7k3" value="" aria-label="Search shared items">
                   <button type="button" class="fm-search-clear" id="shared-search-clear" hidden aria-label="Clear search">&times;</button>
                 </div>
                 <select id="shared-sort" class="fm-sort-select" aria-label="Sort shared items">
@@ -2266,15 +2270,21 @@
    - Drag & drop to move files/folders between folders
    - "Move to…" context menu fallback for touch devices
    - Robust topbar height sync for iOS Safari (URL bar / safe-area)
-   - Files button highlighted with white background + blue text
    - "Shared" sidebar button placed right after "Files"
    - Shared view + Share modal + passwords
    - Parallel folder downloads (DOWNLOAD_CONCURRENCY)
-   - Fixed: OS-file drag & drop (synchronous capture before awaits)
-   - Fixed: file vs folder detection (uses metadata AND id, with extension
-            and content-based safety checks so uploaded files never get
-            mistaken for folders and "disappear" when clicked)
-   - Fixed: transient network errors no longer wipe the current list
+   - OS-file drag & drop (synchronous capture before awaits)
+
+   FIXES in this version:
+   - File vs folder detection now uses metadata AND id (so uploaded
+     files never get mistaken for folders and "disappear" when clicked).
+   - handleItemDblClick now verifies the target really is a folder
+     before navigating into it, with a filename-extension safety net.
+   - refresh() no longer wipes the current listing on transient
+     network errors — it keeps the last known contents.
+   - Search box is cleared on page load and on bfcache restore
+     (pageshow event) and on init(), so it never pre-fills with
+     stale text from a previous session.
    ============================================================================ */
 (function(){
   'use strict';
@@ -2512,6 +2522,48 @@
   if (navLogo) {
     navLogo.addEventListener('error', () => { navLogo.style.display = 'none'; });
   }
+
+  /* ============================================================================
+     SEARCH BOX CLEAR (LOAD + BFCACHE RESTORE)
+     The browser sometimes restores stale form values when the page is loaded
+     from bfcache (back/forward). This handler makes sure both search inputs
+     are blank — and the JS state matches.
+     ============================================================================ */
+  function clearSearchInputsHard() {
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.defaultValue = '';
+    }
+    if (searchClear) searchClear.hidden = true;
+    if (sharedSearch) {
+      sharedSearch.value = '';
+      sharedSearch.defaultValue = '';
+    }
+    if (sharedSearchClear) sharedSearchClear.hidden = true;
+  }
+
+  window.addEventListener('pageshow', function() {
+    clearSearchInputsHard();
+    // Reset the JS variables too, so no ghost filter is applied
+    try {
+      searchTerm = '';
+      sharedSearchTerm = '';
+    } catch (e) {}
+    // Re-render whatever is currently displayed
+    try {
+      if (currentView === 'shared') {
+        if (typeof applySharedFilterAndSort === 'function') applySharedFilterAndSort();
+        if (sharedDrill && typeof renderSharedFolderContents === 'function') {
+          renderSharedFolderContents();
+        } else if (typeof renderSharedItems === 'function') {
+          renderSharedItems();
+        }
+      } else {
+        if (typeof applyFilterAndSort === 'function') applyFilterAndSort();
+        if (typeof renderItems === 'function') renderItems();
+      }
+    } catch (e) {}
+  });
 
   function syncTopbarHeight() {
     const topbar = document.querySelector('.topbar');
@@ -3105,14 +3157,6 @@
     syncRolePickerUI();
   }
 
-  /* ============================================================================
-     SIDEBAR RENDER
-     ============================================================================
-     - Managed buttons (including "Files") are rendered first.
-     - The fixed "Shared" button is inserted RIGHT AFTER the "Files" button.
-     - If no "Files" button is found, Shared is placed at the top (fallback).
-     - When currentView === 'shared', ONLY the Shared button is active.
-     ============================================================================ */
   function renderSidebar() {
     sideButtonsContainer.innerHTML = '';
 
@@ -4389,18 +4433,16 @@
      FOLDER vs FILE DETECTION (FIXED)
      ============================================================================
      Supabase Storage list response rules:
-       - Folder entries:  { name, id: null,       metadata: null }
-       - File entries:    { name, id: "<uuid>",   metadata: { size, ... } }
+       - Folder entries:  { name, id: null,     metadata: null }
+       - File entries:    { name, id: "<uuid>", metadata: { size, ... } }
 
-     The OLD code used:  `return !it || !it.metadata;`
-     This treated ANY entry without metadata as a folder — which caused
+     The OLD code used: `return !it || !it.metadata;`
+     That treated ANY entry without metadata as a folder — which caused
      uploaded files to "disappear" when clicked (the app opened them as
      if they were folders and navigated into an empty listing).
 
-     The NEW code is defensive:
-       1. Explicit `isFolder` flag on the item (used internally) wins.
-       2. If the entry HAS metadata OR HAS an id → it's a FILE.
-       3. Only when BOTH are null/undefined do we treat it as a folder.
+     NEW: an entry is a folder only when BOTH id and metadata are null/
+     undefined. If it has either one, it's a file.
      ============================================================================ */
   function hasRealId(it) {
     return it && it.id !== null && it.id !== undefined && it.id !== '';
@@ -4412,15 +4454,12 @@
     if (!it) return false;
     if (it.isFolder === true) return true;
     if (it.isFolder === false) return false;
-    // If it has metadata OR an id → definitely a file
     if (hasRealMetadata(it) || hasRealId(it)) return false;
-    // No metadata and no id → it's a folder
     return true;
   }
 
   function looksLikeFilePath(name) {
     if (!name) return false;
-    // Matches names ending in ".ext" (1-8 alphanumeric chars)
     return /\.[A-Za-z0-9]{1,8}$/.test(String(name));
   }
 
@@ -5451,11 +5490,6 @@
     }
   }
 
-  /* ============================================================================
-     synchronous drag-item extraction
-     Must be called SYNCHRONOUSLY inside the drop event (before any await) —
-     otherwise dataTransfer.items becomes empty.
-     ============================================================================ */
   function extractDragItemsSync(dataTransfer) {
     if (!dataTransfer) return null;
     try {
@@ -5795,7 +5829,7 @@
     if (!it) return;
 
     if (isFolder(it)) {
-      // Safety net: verify the folder is real before navigating into it.
+      // Safety check: verify the folder is real before navigating into it.
       let entries = [];
       try {
         entries = await listFolder(fullPathFor(it.name) + '/');
@@ -6275,8 +6309,8 @@
      manually refreshed the page.
 
      Now: we only treat the root as "missing" if it really is missing AND we
-     don't already have cached items. A transient network blip on the root
-     keeps the current listing intact, and we just show a toast.
+     don't already have cached items. A transient network blip keeps the
+     current listing intact, and we just show a toast.
      ============================================================================ */
   async function refresh() {
     if (currentView === 'shared') {
@@ -6318,7 +6352,6 @@
           : 'Failed to refresh: ' + err.message,
         4000
       );
-      // Re-render the last known items (from before the failure)
       applyFilterAndSort();
       renderItems();
     } finally {
@@ -7334,14 +7367,6 @@
     });
   }
 
-  /* ============================================================================
-     DROPZONE EVENTS
-     - Extract the OS-file data SYNCHRONOUSLY before any `await` so the
-       `dataTransfer` object is still valid.
-     - If the drag contains OS files (`Files` in dataTransfer.types), we
-       IGNORE the stale `draggedItem` state (which only applies to internal
-       drag-to-move).
-     ============================================================================ */
   let dragDepth = 0;
 
   function dragHasFiles(e) {
@@ -7390,8 +7415,6 @@
     const isFileDrag = dragHasFiles(e);
     const extracted = extractDragItemsSync(dt);
 
-    // If this was an internal drag-to-move (no OS files), let the folder
-    // handlers deal with it — do nothing here.
     if (draggedItem && !isFileDrag) {
       e.preventDefault();
       return;
@@ -7402,7 +7425,6 @@
     dropzone.classList.remove('drag-over');
     dropzone.classList.remove('full');
 
-    // Reset any stale internal drag state so future operations aren't blocked.
     draggedItem = null;
     draggedItemEl = null;
     clearDragOverHighlights();
@@ -7722,6 +7744,14 @@
   });
 
   (async function init() {
+    // Clear search inputs BEFORE anything else so no ghost filter is applied
+    searchTerm = '';
+    if (searchInput) { searchInput.value = ''; searchInput.defaultValue = ''; }
+    if (searchClear) searchClear.hidden = true;
+    sharedSearchTerm = '';
+    if (sharedSearch) { sharedSearch.value = ''; sharedSearch.defaultValue = ''; }
+    if (sharedSearchClear) sharedSearchClear.hidden = true;
+
     buildIconPicker();
     setSelectedIcon(DEFAULT_ICON);
     buildRolePicker();
