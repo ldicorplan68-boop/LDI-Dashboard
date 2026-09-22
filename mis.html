@@ -2286,13 +2286,21 @@
      - Shared view + Share modal + passwords
      - Parallel folder downloads
 
-   Performance notes (this revision):
-     - collectAllUnder() walks subfolders in PARALLEL (was serial).
-     - computeFolderUsage() walks subfolders in PARALLEL and caches the result
-       for USAGE_CACHE_TTL_MS; the cache is invalidated by every write
-       (uploadOne / deleteMany / createFolderApi) so the number is never stale.
-     - checkUploadFits() forces a fresh read so the "Folder is Full" prompt
-       reflects the current state exactly.
+   Performance & UX (this revision):
+     - collectAllUnder() runs subfolders in PARALLEL and accepts an optional
+       onProgress(scanned, total) callback so callers can show a live counter.
+     - computeFolderUsage() runs PARALLEL with a short-lived cache that every
+       write invalidates (uploadOne / deleteMany / createFolderApi).
+     - uploadEntries() shows a progress bar IMMEDIATELY (no more silent
+       phase), then walks three visible phases:
+         Phase 1 — duplicate scan (live folder counter)
+         Phase 2 — storage check
+         Phase 3 — actual upload
+     - Phase 1 and Phase 2 run concurrently via Promise.all.
+     - The upload AbortController is set up BEFORE the phases start, so the
+       Cancel button works during the scan/check steps too.
+     - traverseEntry() stays quiet for system folders (.git, node_modules,
+       @scope) so the console isn't spammed by them.
    ============================================================================ */
 (function(){
   'use strict';
@@ -4567,9 +4575,6 @@
     } catch (err) { return false; }
   }
 
-  /* ============================================================================
-     deleteMany — invalidates the folder-usage cache (safe, cheap)
-     ============================================================================ */
   async function deleteMany(paths) {
     const res = await fetchT(`${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}`, {
       method: 'DELETE',
@@ -4581,9 +4586,6 @@
     return res.json().catch(() => ({}));
   }
 
-  /* ============================================================================
-     createFolderApi — invalidates the folder-usage cache (safe, cheap)
-     ============================================================================ */
   async function createFolderApi(folderPath) {
     const placeholderPath = folderPath + PLACEHOLDER;
     const blob = new Blob([''], { type: 'application/octet-stream' });
@@ -4602,11 +4604,12 @@
   }
 
   /* ============================================================================
-     collectAllUnder — PARALLEL recursive listing.
-     Returns exactly the same array of paths as before, just faster because
-     every subfolder is walked simultaneously instead of one after the other.
+     collectAllUnder — PARALLEL recursive listing, optional onProgress.
+     onProgress(scanned, total) is called after every folder is listed so the
+     caller can render a live counter without blocking the walk itself.
      ============================================================================ */
-  async function collectAllUnder(prefix) {
+  async function collectAllUnder(prefix, onProgress, _state) {
+    const state = _state || { scanned: 0, total: 0 };
     const out = [];
     const entries = await listFolder(prefix);
     const folders = [];
@@ -4614,8 +4617,13 @@
       if (isFolder(entry)) folders.push(entry);
       else out.push(prefix + entry.name);
     }
+    state.scanned++;
+    state.total += folders.length;
+    if (typeof onProgress === 'function') {
+      try { onProgress(state.scanned, state.total); } catch (e) {}
+    }
     const subLists = await Promise.all(
-      folders.map(f => collectAllUnder(prefix + f.name + '/').catch(() => []))
+      folders.map(f => collectAllUnder(prefix + f.name + '/', onProgress, state).catch(() => []))
     );
     for (const sub of subLists) out.push(...sub);
     return out;
@@ -5488,9 +5496,6 @@
 
   /* ============================================================================
      FOLDER-USAGE CACHE
-     A short-lived cache so repeated reads (storage indicator, pre-check) don't
-     re-walk the entire tree every time. Every write function calls
-     invalidateUsageCache() so the number is never stale.
      ============================================================================ */
   let _usageCache = { bytes: null, ts: 0 };
 
@@ -5499,10 +5504,6 @@
     _usageCache.ts = 0;
   }
 
-  /* ============================================================================
-     computeFolderUsage — PARALLEL recursive walk + 15 s cache.
-     `force = true` bypasses the cache and always does a fresh walk.
-     ============================================================================ */
   async function computeFolderUsage(force) {
     if (!force
         && _usageCache.bytes != null
@@ -5559,10 +5560,6 @@
     storageBox.title = 'Storage: ' + pct.toFixed(1) + '% used (' + formatBytes(storageUsed) + ' of ' + formatBytes(storageLimit) + ')';
   }
 
-  /* ============================================================================
-     checkUploadFits — forces a fresh usage read so the "Folder is Full"
-     prompt reflects the current state exactly (no stale cache).
-     ============================================================================ */
   async function checkUploadFits(entries) {
     if (storageLimit == null) return { ok: true };
     try { storageUsed = await computeFolderUsage(true); renderStorageIndicator(); } catch (err) {}
@@ -5622,6 +5619,19 @@
       readBatch();
     });
   }
+
+  /* ============================================================================
+     traverseEntry — tahimik sa system folders (.git, node_modules, @scope)
+     ============================================================================ */
+  function isSystemFolderName(name) {
+    if (!name) return false;
+    if (name.startsWith('.')) return true;                    // .git, .agents, .vscode, etc.
+    if (name === 'node_modules') return true;
+    if (name === '$RECYCLE.BIN' || name === 'System Volume Information') return true;
+    if (name.startsWith('@')) return true;                    // @fastify, @types, etc.
+    return false;
+  }
+
   async function traverseEntry(entry, basePath, out) {
     if (!entry) return;
     if (entry.isFile) {
@@ -5636,13 +5646,18 @@
         const reader = entry.createReader();
         const children = await readAllDirEntries(reader);
         if (!children.length) {
-          console.warn('[drop] folder entry returned no children:', basePath + entry.name);
+          // Tahimik sa system folders — hindi na mag-spam ng console
+          if (!isSystemFolderName(entry.name)) {
+            console.warn('[drop] folder entry returned no children:', basePath + entry.name);
+          }
         }
         const nextBase = basePath + entry.name + '/';
         for (const child of children) await traverseEntry(child, nextBase, out);
       } catch (err) {
         lastFolderDropError = (err && err.name) || 'Error';
-        console.warn('[drop] could not list folder entry:', basePath + entry.name, err && (err.name + ': ' + err.message));
+        if (!isSystemFolderName(entry.name)) {
+          console.warn('[drop] could not list folder entry:', basePath + entry.name, err && (err.name + ': ' + err.message));
+        }
       }
     } else {
       console.warn('[drop] unsupported entry dropped (isFile=' + entry.isFile + ', isDirectory=' + entry.isDirectory + '):',
@@ -6611,15 +6626,21 @@
     return candidate;
   }
 
-  async function findExistingRelativePaths(entries) {
+  /* ============================================================================
+     findExistingRelativePaths — optional onProgress(scanned, total)
+     ============================================================================ */
+  async function findExistingRelativePaths(entries, onProgress) {
     const prefix = folderPrefix();
     const set = new Set();
     const needsDeep = entries.some(e => normalizeRel(e.relativePath).includes('/'));
     try {
       if (needsDeep) {
-        const all = await collectAllUnder(prefix);
+        const all = await collectAllUnder(prefix, onProgress);
         for (const p of all) set.add(p.slice(prefix.length));
       } else {
+        if (typeof onProgress === 'function') {
+          try { onProgress(1, 1); } catch (e) {}
+        }
         const top = await listFolder(prefix);
         for (const item of top) {
           if (item.name === PLACEHOLDER) continue;
@@ -7141,11 +7162,46 @@
     throw lastErr || new Error('Upload failed after retries');
   }
 
+  /* ============================================================================
+     uploadEntries — visible three-phase upload with live progress
+     ----------------------------------------------------------------------------
+     Phase 1 (duplicate scan) and Phase 2 (storage check) run concurrently.
+     The progress bar is visible from the first second — no more silent phase.
+     Cancel works during every phase because the AbortController is set up
+     before any network calls start.
+     ============================================================================ */
   async function uploadEntries(entries) {
     if (!guardOnline()) return;
 
-    const stillExists = await verifyRootFolderExists();
+    // ---- Immediate visible feedback -------------------------------------
+    progressStart('Preparing upload…', true);
+    progressTitle.textContent = 'Preparing upload…';
+    progressName.textContent = 'Connecting to server…';
+    progressCount.textContent = '';
+    progressFill.style.width = '2%';
+
+    uploadCancelRequested = false;
+    activeUploadController = new AbortController();
+    const signal = activeUploadController.signal;
+
+    const finishEarly = (msg, ms) => {
+      progressEnd();
+      activeUploadController = null;
+      if (msg) showToast(msg, ms);
+    };
+
+    let stillExists = false;
+    try {
+      stillExists = await verifyRootFolderExists();
+    } catch (err) {
+      finishEarly('Server unreachable — upload cancelled', 5000);
+      return;
+    }
+    if (signal.aborted) { finishEarly('Upload cancelled', 2500); return; }
+
     if (!stillExists) {
+      progressEnd();
+      activeUploadController = null;
       rootExists = false;
       lockUploadsForMissingRoot();
       return;
@@ -7153,46 +7209,89 @@
     rootExists = true;
 
     const valid = (entries || []).filter(e => e && e.file);
-    if (!valid.length) { showToast('No files found'); return; }
+    if (!valid.length) { finishEarly('No files found'); return; }
 
     const filtered = valid.filter(e => {
       const rel = normalizeRel(e.relativePath);
       return rel !== PLACEHOLDER && !rel.endsWith('/' + PLACEHOLDER);
     });
-    if (!filtered.length) { showToast('No files found'); return; }
+    if (!filtered.length) { finishEarly('No files found'); return; }
 
-    let toUpload = filtered;
+    // ---- Phase 1 + Phase 2 run in parallel ------------------------------
+    progressTitle.textContent = 'Scanning and checking storage…';
+    progressName.textContent = 'Scanning ' + filtered.length + ' file' + (filtered.length === 1 ? '' : 's') + '…';
+    progressCount.textContent = 'Phase 1 & 2 of 3';
+    progressFill.style.width = '5%';
+
+    let existingSet = new Set();
+    let fitCheck = { ok: true };
+
+    const scanTask = findExistingRelativePaths(filtered, (scanned, total) => {
+      progressName.textContent = 'Scanning folder ' + scanned + ' of ' + Math.max(total, scanned) + '…';
+      const denom = Math.max(1, total);
+      const pct = 5 + Math.round((Math.min(scanned, denom) / denom) * 10);
+      progressFill.style.width = Math.min(15, pct) + '%';
+    }).catch(err => {
+      console.warn('[upload] duplicate scan failed:', err.message);
+      return new Set();
+    });
+
+    const fitTask = checkUploadFits(filtered).catch(err => {
+      console.warn('[upload] fit check failed:', err.message);
+      return { ok: true };
+    });
+
     try {
-      const existing = await findExistingRelativePaths(filtered);
-      if (existing.size) {
-        const conflicts = filtered.filter(e => existing.has(normalizeRel(e.relativePath)));
-        if (conflicts.length) {
-          const decisions = await askAboutConflicts(conflicts, filtered, existing);
-          if (decisions === null) { showToast('Upload cancelled', 2500); return; }
-          toUpload = applyConflictDecisions(filtered, decisions);
-          if (!toUpload.length) {
-            console.warn('[upload] every duplicate was skipped', { files: filtered.length, conflicts: conflicts.length });
-            showToast('Nothing to upload — every duplicate was skipped', 3200);
-            return;
-          }
-        }
-      }
+      const results = await Promise.all([scanTask, fitTask]);
+      existingSet = results[0];
+      fitCheck = results[1];
     } catch (err) {
-      console.warn('[upload] duplicate check failed:', err.message);
+      // Promise.all won't normally reject — both catch internally — but guard anyway
+      finishEarly('Upload preparation failed: ' + (err && err.message), 4500);
+      return;
     }
 
-    const check = await checkUploadFits(toUpload);
-    if (!check.ok) { showFolderFullModal(check); return; }
+    if (signal.aborted) { finishEarly('Upload cancelled', 2500); return; }
 
+    if (!fitCheck.ok) {
+      finishEarly(null);
+      showFolderFullModal(fitCheck);
+      return;
+    }
+
+    let toUpload = filtered;
+    if (existingSet.size) {
+      const conflicts = filtered.filter(e => existingSet.has(normalizeRel(e.relativePath)));
+      if (conflicts.length) {
+        // Hide the progress bar so the conflict modal is unobstructed
+        progressEnd();
+
+        const decisions = await askAboutConflicts(conflicts, filtered, existingSet);
+        if (decisions === null) {
+          activeUploadController = null;
+          showToast('Upload cancelled', 2500);
+          return;
+        }
+        toUpload = applyConflictDecisions(filtered, decisions);
+        if (!toUpload.length) {
+          activeUploadController = null;
+          showToast('Nothing to upload — every duplicate was skipped', 3200);
+          return;
+        }
+
+        // Re-show the progress bar for the upload phase
+        progressStart('Uploading…', true);
+      }
+    }
+
+    // ---- Phase 3: actual upload -----------------------------------------
     const total = toUpload.length;
     let done = 0, failed = 0;
     let idx = 0;
 
-    uploadCancelRequested = false;
-    activeUploadController = new AbortController();
-    const signal = activeUploadController.signal;
-
     progressStart('Uploading ' + total + ' file' + (total === 1 ? '' : 's') + '…', true);
+    progressTitle.textContent = 'Uploading ' + total + ' file' + (total === 1 ? '' : 's') + '…';
+    progressCount.textContent = 'Phase 3 of 3';
     progressUpdate(0, total, '');
 
     const failures = [];
