@@ -2271,6 +2271,10 @@
    - Shared view + Share modal + passwords
    - Parallel folder downloads (DOWNLOAD_CONCURRENCY)
    - Fixed: OS-file drag & drop (synchronous capture before awaits)
+   - Fixed: file vs folder detection (uses metadata AND id, with extension
+            and content-based safety checks so uploaded files never get
+            mistaken for folders and "disappear" when clicked)
+   - Fixed: transient network errors no longer wipe the current list
    ============================================================================ */
 (function(){
   'use strict';
@@ -4381,7 +4385,45 @@
     return '📄';
   }
 
-  function isFolder(it) { return !it || !it.metadata; }
+  /* ============================================================================
+     FOLDER vs FILE DETECTION (FIXED)
+     ============================================================================
+     Supabase Storage list response rules:
+       - Folder entries:  { name, id: null,       metadata: null }
+       - File entries:    { name, id: "<uuid>",   metadata: { size, ... } }
+
+     The OLD code used:  `return !it || !it.metadata;`
+     This treated ANY entry without metadata as a folder — which caused
+     uploaded files to "disappear" when clicked (the app opened them as
+     if they were folders and navigated into an empty listing).
+
+     The NEW code is defensive:
+       1. Explicit `isFolder` flag on the item (used internally) wins.
+       2. If the entry HAS metadata OR HAS an id → it's a FILE.
+       3. Only when BOTH are null/undefined do we treat it as a folder.
+     ============================================================================ */
+  function hasRealId(it) {
+    return it && it.id !== null && it.id !== undefined && it.id !== '';
+  }
+  function hasRealMetadata(it) {
+    return it && it.metadata !== null && it.metadata !== undefined;
+  }
+  function isFolder(it) {
+    if (!it) return false;
+    if (it.isFolder === true) return true;
+    if (it.isFolder === false) return false;
+    // If it has metadata OR an id → definitely a file
+    if (hasRealMetadata(it) || hasRealId(it)) return false;
+    // No metadata and no id → it's a folder
+    return true;
+  }
+
+  function looksLikeFilePath(name) {
+    if (!name) return false;
+    // Matches names ending in ".ext" (1-8 alphanumeric chars)
+    return /\.[A-Za-z0-9]{1,8}$/.test(String(name));
+  }
+
   function getItemTime(it) {
     const t = it.updated_at || it.created_at;
     const ms = t ? Date.parse(t) : 0;
@@ -5410,7 +5452,7 @@
   }
 
   /* ============================================================================
-     NEW: synchronous drag-item extraction
+     synchronous drag-item extraction
      Must be called SYNCHRONOUSLY inside the drop event (before any await) —
      otherwise dataTransfer.items becomes empty.
      ============================================================================ */
@@ -5740,8 +5782,34 @@
     renderItems();
   }
 
-  function handleItemDblClick(it) {
+  /* ============================================================================
+     DOUBLE-CLICK / SINGLE-TAP-TO-OPEN (FIXED)
+     ============================================================================
+     Before navigating into an entry as if it were a folder, we verify it
+     really is a folder by attempting to list its contents. If the list
+     comes back empty AND the name looks like a file (has an extension),
+     we treat it as a FILE and open its preview instead of "entering" it.
+     This prevents uploaded files from disappearing when tapped/clicked.
+     ============================================================================ */
+  async function handleItemDblClick(it) {
+    if (!it) return;
+
     if (isFolder(it)) {
+      // Safety net: verify the folder is real before navigating into it.
+      let entries = [];
+      try {
+        entries = await listFolder(fullPathFor(it.name) + '/');
+      } catch (e) {
+        entries = [];
+      }
+
+      // Empty listing + filename with an extension = almost certainly a file
+      // that was mislabeled as a folder. Open it as a preview instead.
+      if (entries.length === 0 && looksLikeFilePath(it.name)) {
+        openPreview(it);
+        return;
+      }
+
       currentPath = (currentPath || '') + it.name + '/';
       selected.clear();
       lastClickedIndex = -1;
@@ -6199,6 +6267,17 @@
     }, 320);
   }
 
+  /* ============================================================================
+     REFRESH (FIXED)
+     ============================================================================
+     Before: any list failure on the root path wiped `allItems` and displayed
+     the "folder does not exist" lock screen, hiding every file until the user
+     manually refreshed the page.
+
+     Now: we only treat the root as "missing" if it really is missing AND we
+     don't already have cached items. A transient network blip on the root
+     keeps the current listing intact, and we just show a toast.
+     ============================================================================ */
   async function refresh() {
     if (currentView === 'shared') {
       await loadSharedItems();
@@ -6223,15 +6302,23 @@
       const looksLikeNetwork = isNetworkError(err);
       if (looksLikeNetwork) Connection.reportNetworkFailure();
 
-      if (currentPath === '') {
+      if (currentPath === '' && allItems.length === 0) {
+        // Genuine first-load failure on the root — treat as missing folder
         rootExists = false;
         lockUploadsForMissingRoot();
         loading.hidden = true;
         stopHeroSpin();
         return;
       }
-      showToast('Failed to list: ' + err.message, 4000);
-      allItems = [];
+
+      // Otherwise: keep whatever we had, just warn the user.
+      showToast(
+        looksLikeNetwork
+          ? 'Server unreachable — showing last known contents'
+          : 'Failed to refresh: ' + err.message,
+        4000
+      );
+      // Re-render the last known items (from before the failure)
       applyFilterAndSort();
       renderItems();
     } finally {
@@ -7248,7 +7335,7 @@
   }
 
   /* ============================================================================
-     DROPZONE EVENTS (FIXED)
+     DROPZONE EVENTS
      - Extract the OS-file data SYNCHRONOUSLY before any `await` so the
        `dataTransfer` object is still valid.
      - If the drag contains OS files (`Files` in dataTransfer.types), we
