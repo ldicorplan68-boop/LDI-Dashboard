@@ -461,6 +461,18 @@
       width: 250px;
     }
     #fm-search::placeholder, #shared-search::placeholder { color: var(--muted); }
+
+    /* Autofill guard: lets the JS detect a Chrome autofill on the search boxes
+       (see armAutofillGuard) so the value can be wiped right away. */
+    @keyframes ldiAutoFillStart { from { opacity: 1; } to { opacity: 1; } }
+    #fm-search:-webkit-autofill,
+    #shared-search:-webkit-autofill {
+      animation-name: ldiAutoFillStart;
+      animation-duration: .001s;
+    }
+    /* These boxes ship locked (readonly) so Chrome cannot restore/autofill a
+       value into them before the script arms the guard. */
+    #fm-search[readonly], #shared-search[readonly] { cursor: text; }
     .fm-search-clear {
       position: absolute; right: 6px; background: transparent;
       border: 0; color: var(--muted); font-size: 16px;
@@ -1826,7 +1838,8 @@
                   <span class="fm-search-icon">&#128269;</span>
                   <input type="text" id="fm-search" placeholder="Search files…" autocomplete="off"
                          autocorrect="off" autocapitalize="off" spellcheck="false"
-                         name="fm-search-x9q2" value="" aria-label="Search files">
+                         data-lpignore="true" data-form-type="other"
+                         value="" aria-label="Search files" readonly>
                   <button type="button" class="fm-search-clear" id="fm-search-clear" hidden aria-label="Clear search">&times;</button>
                 </div>
                 <select id="fm-sort" class="fm-sort-select" aria-label="Sort files">
@@ -1858,7 +1871,8 @@
                   <span class="fm-search-icon">&#128269;</span>
                   <input type="text" id="shared-search" placeholder="Search shared…" autocomplete="off"
                          autocorrect="off" autocapitalize="off" spellcheck="false"
-                         name="shared-search-y7k3" value="" aria-label="Search shared items">
+                         data-lpignore="true" data-form-type="other"
+                         value="" aria-label="Search shared items" readonly>
                   <button type="button" class="fm-search-clear" id="shared-search-clear" hidden aria-label="Clear search">&times;</button>
                 </div>
                 <select id="shared-sort" class="fm-sort-select" aria-label="Sort shared items">
@@ -1891,7 +1905,7 @@
   <div class="fm-modal">
     <h3 id="fm-modal-title">New Folder</h3>
     <p class="fm-hint" id="fm-modal-hint">Type a name for the new folder.</p>
-    <input type="text" id="fm-modal-input" placeholder="Folder name" autocomplete="off">
+    <input type="text" id="fm-modal-input" placeholder="Folder name" autocomplete="off" readonly>
     <div class="fm-modal-actions">
       <button class="button fm-btn-light" id="fm-modal-cancel" type="button">Cancel</button>
       <button class="button primary" id="fm-modal-confirm" type="button">Create</button>
@@ -1903,7 +1917,7 @@
   <div class="fm-modal">
     <h3 id="fm-rename-title">Rename</h3>
     <p class="fm-hint" id="fm-rename-hint">Enter a new name.</p>
-    <input type="text" id="fm-rename-input" placeholder="New name" autocomplete="off">
+    <input type="text" id="fm-rename-input" placeholder="New name" autocomplete="off" readonly>
     <div class="fm-modal-actions">
       <button class="button fm-btn-light" id="fm-rename-cancel" type="button">Cancel</button>
       <button class="button primary" id="fm-rename-confirm" type="button">Rename</button>
@@ -1952,11 +1966,11 @@
         <div class="manage-form-row">
           <div class="fm-field">
             <label class="fm-label" for="manage-btn-label">Label</label>
-            <input type="text" id="manage-btn-label" placeholder="e.g. Reports" maxlength="40" autocomplete="off">
+            <input type="text" id="manage-btn-label" placeholder="e.g. Reports" maxlength="40" autocomplete="off" readonly>
           </div>
           <div class="fm-field">
             <label class="fm-label" for="manage-btn-link">Link (optional)</label>
-            <input type="text" id="manage-btn-link" placeholder="reports.html or https://…" autocomplete="off">
+            <input type="text" id="manage-btn-link" placeholder="reports.html or https://…" autocomplete="off" readonly>
           </div>
         </div>
         <div class="fm-field" style="margin-top:14px">
@@ -2299,6 +2313,18 @@
         - createTusUpload supports a `noUpsert` fallback for 409 conflicts.
         - Real error messages are surfaced to the user (instead of a
           generic "Resume failed").
+
+     6. SEARCH BOX AUTOFILL GUARD (Chrome kept pre-filling the search box):
+        Chrome ignores autocomplete="off" and restores/offers values the user
+        typed before. Both search inputs — plus the New Folder, Rename and
+        Manage Sidebar text inputs — now:
+          - render `readonly` so Chrome cannot restore or autofill them,
+          - unlock `readonly` on the first click/tap/key/focus (typing is
+            unaffected),
+          - rotate their `name` on every page load so Chrome's per-name value
+            history can never map onto them again (no suggestions),
+          - detect a real Chrome autofill via the :-webkit-autofill animation
+            and wipe it, re-syncing the search/filter state.
    ============================================================================ */
 (function(){
   'use strict';
@@ -2556,6 +2582,94 @@
     if (sharedSearchClear) sharedSearchClear.hidden = true;
   }
 
+  /* ============================================================================
+     AUTOFILL / FORM-RESTORE GUARD
+     Chrome ignores autocomplete="off" and keeps restoring values the user typed
+     earlier (and offering them as dropdown suggestions) because it remembers
+     fields by name/id. Strategy, in layers:
+       1. Every guarded input ships `readonly` — Chrome does not restore or
+          autofill readonly fields, so nothing arrives pre-filled.
+       2. `readonly` is released on the first real interaction (click / tap /
+          key / focus) BEFORE the caret is needed, so typing is unaffected.
+       3. The `name` is rotated on every page load, so Chrome's per-name value
+          history can never map onto these fields again → no suggestions.
+       4. If Chrome still fills a field (the :-webkit-autofill animation fires),
+          the value is wiped and `resetFn` puts the app state back in sync.
+     ============================================================================ */
+  function releaseAutofillReadonly(input) {
+    if (input && input.hasAttribute('readonly')) input.removeAttribute('readonly');
+  }
+
+  function armAutofillGuard(input, resetFn, opts) {
+    if (!input) return;
+
+    const options = opts || {};
+
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('autocapitalize', 'off');
+    input.setAttribute('spellcheck', 'false');
+    input.setAttribute('name', 'ldi-' + Math.random().toString(36).slice(2, 10));
+    input.setAttribute('readonly', '');
+
+    let userTyped = false;
+
+    function release() { releaseAutofillReadonly(input); }
+
+    function wipe() {
+      if (typeof resetFn === 'function') {
+        try { resetFn(); } catch (err) { console.warn('[autofill] reset failed:', err.message); }
+      } else {
+        input.value = '';
+      }
+    }
+
+    ['pointerdown', 'mousedown', 'touchstart'].forEach((evt) => {
+      input.addEventListener(evt, release, { passive: true });
+    });
+    input.addEventListener('keydown', release);
+    input.addEventListener('focus', () => {
+      release();
+      // Anything that shows up without the user typing is not ours.
+      if (options.wipeOnFocus && !userTyped && input.value) wipe();
+    });
+    input.addEventListener('input', () => { userTyped = true; });
+    input.addEventListener('paste', () => { userTyped = true; });
+    input.addEventListener('animationstart', (e) => {
+      if (e.animationName === 'ldiAutoFillStart') wipe();
+    });
+  }
+
+  function resetFileSearchFromAutofill() {
+    if (!searchInput) return;
+    searchInput.value = '';
+    searchInput.defaultValue = '';
+    if (searchClear) searchClear.hidden = true;
+    searchTerm = '';
+    selected.clear();
+    lastClickedIndex = -1;
+    applyFilterAndSort();
+    renderItems();
+  }
+
+  function resetSharedSearchFromAutofill() {
+    if (!sharedSearch) return;
+    sharedSearch.value = '';
+    sharedSearch.defaultValue = '';
+    if (sharedSearchClear) sharedSearchClear.hidden = true;
+    sharedSearchTerm = '';
+    applySharedFilterAndSort();
+    if (sharedDrill) renderSharedFolderContents();
+    else renderSharedItems();
+  }
+
+  // Value the Manage Sidebar form should hold right now (empty when adding).
+  function currentManageFormValue(which) {
+    const btn = editingButtonId ? sidebarButtons.find(b => b.id === editingButtonId) : null;
+    if (!btn) return '';
+    return which === 'label' ? (btn.label || '') : (btn.link || '');
+  }
+
   window.addEventListener('pageshow', function() {
     clearSearchInputsHard();
     try {
@@ -2576,6 +2690,9 @@
       }
     } catch (e) {}
   });
+
+  // Belt and braces: also clear on `load` (Chrome may restore values late).
+  window.addEventListener('load', clearSearchInputsHard);
 
   function syncTopbarHeight() {
     const topbar = document.querySelector('.topbar');
@@ -4315,6 +4432,7 @@
 
     if (!label) {
       showToast('Please enter a label', 2500);
+      releaseAutofillReadonly(manageBtnLabel);
       manageBtnLabel.focus();
       return;
     }
@@ -4798,6 +4916,7 @@
     renameTitle.textContent = 'Rename ' + (isDir ? 'Folder' : 'File');
     renameHint.textContent = 'Enter a new name for "' + item.name + '".';
     renameInput.value = item.name;
+    releaseAutofillReadonly(renameInput);
     renameInput.disabled = false;
     renameConfirm.disabled = false;
     renameConfirm.textContent = 'Rename';
@@ -6458,6 +6577,7 @@
           input.className = 'fm-conflict-input';
           input.value = d.newName;
           input.hidden = d.action !== 'rename';
+          armAutofillGuard(input, () => { input.value = d.newName; });
           input.addEventListener('input', () => { d.newName = input.value; });
 
           const choiceWrap = document.createElement('div');
@@ -6474,7 +6594,7 @@
                 x.classList.toggle('active', x === btn);
               });
               input.hidden = val !== 'rename';
-              if (val === 'rename') setTimeout(() => { input.focus(); input.select(); }, 20);
+              if (val === 'rename') setTimeout(() => { releaseAutofillReadonly(input); input.focus(); input.select(); }, 20);
             });
             choiceWrap.appendChild(btn);
           });
@@ -7402,6 +7522,7 @@
     modalInput.value = '';
     modalInput.placeholder = 'Folder name';
     modalInput.disabled = false;
+    releaseAutofillReadonly(modalInput);
     modalConfirm.disabled = false;
     modalConfirm.textContent = 'Create';
     modal.hidden = false;
@@ -7567,6 +7688,7 @@
     selected.clear();
     applyFilterAndSort();
     renderItems();
+    releaseAutofillReadonly(searchInput);
     searchInput.focus();
   });
   sortSelect.addEventListener('change', () => {
@@ -7604,6 +7726,7 @@
       applySharedFilterAndSort();
       if (sharedDrill) renderSharedFolderContents();
       else renderSharedItems();
+      releaseAutofillReadonly(sharedSearch);
       sharedSearch.focus();
     });
   }
@@ -7796,9 +7919,11 @@
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
       e.preventDefault();
       if (currentView === 'shared') {
+        releaseAutofillReadonly(sharedSearch);
         sharedSearch.focus();
         sharedSearch.select();
       } else {
+        releaseAutofillReadonly(searchInput);
         searchInput.focus();
         searchInput.select();
       }
@@ -7842,6 +7967,20 @@
     sharedSearchTerm = '';
     if (sharedSearch) { sharedSearch.value = ''; sharedSearch.defaultValue = ''; }
     if (sharedSearchClear) sharedSearchClear.hidden = true;
+
+    // Arm the autofill guards (search boxes + modal / manage text inputs)
+    armAutofillGuard(searchInput, resetFileSearchFromAutofill, { wipeOnFocus: true });
+    armAutofillGuard(sharedSearch, resetSharedSearchFromAutofill, { wipeOnFocus: true });
+    armAutofillGuard(modalInput, () => { modalInput.value = ''; });
+    armAutofillGuard(renameInput, () => {
+      renameInput.value = renameTarget ? renameTarget.name : '';
+    });
+    armAutofillGuard(manageBtnLabel, () => {
+      manageBtnLabel.value = currentManageFormValue('label');
+    });
+    armAutofillGuard(manageBtnLink, () => {
+      manageBtnLink.value = currentManageFormValue('link');
+    });
 
     buildIconPicker();
     setSelectedIcon(DEFAULT_ICON);
