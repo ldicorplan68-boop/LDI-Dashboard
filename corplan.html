@@ -106,7 +106,6 @@
       display: flex; flex-direction: column;
     }
 
-    /* ================= CONNECTION BANNER ================= */
     .conn-banner {
       position: fixed; left: 50%; transform: translateX(-50%);
       top: calc(10px + var(--safe-top)); z-index: 600;
@@ -142,7 +141,6 @@
     .conn-retry:hover { background: rgba(255,255,255,.34); }
     .conn-retry:disabled { opacity: .5; cursor: wait; }
 
-    /* ================= TOPBAR ================= */
     .topbar {
       position: sticky; top: 0; z-index: 50;
       background-image: linear-gradient(90deg, rgba(13,13,122,.88) 0%, rgba(27,27,179,.78) 45%, rgba(13,13,122,.88) 100%), url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/ldi1.png');
@@ -187,7 +185,6 @@
       position: relative;
     }
 
-    /* ================= SIDEBAR ================= */
     .sidebar {
       width: var(--sidebar-w); flex-shrink: 0;
       background: var(--royal-deep);
@@ -299,7 +296,6 @@
       width: 100%; max-width: 1180px; min-width: 0; margin: 0 auto;
     }
 
-    /* ================= HERO ================= */
     .hero {
       position: relative; color: #fff;
       padding: 20px 24px; border-radius: var(--r-lg);
@@ -421,7 +417,6 @@
     .hero-refresh.spinning { transform: rotate(360deg); }
     .hero-refresh:disabled { opacity: .55; cursor: wait; transform: none; }
 
-    /* ================= BREADCRUMBS + SEARCH ================= */
     .fm-crumb-bar {
       display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
       margin-bottom: 14px; padding: 10px 14px;
@@ -485,7 +480,6 @@
       box-shadow: 0 0 0 3px rgba(27,27,179,.14);
     }
 
-    /* ================= DROPZONE & GRID ================= */
     .fm-dropzone {
       position: relative; min-height: 440px;
       background: var(--surface); border-radius: var(--r-md);
@@ -539,7 +533,6 @@
     .fm-empty .empty-icon { font-size: 44px; margin-bottom: 8px; display: block; color: var(--muted); }
     .fm-empty p { margin: 0; }
 
-    /* ================= DRAG & DROP VISUAL STATES ================= */
     .fm-item.dragging {
       opacity: 0.4;
       cursor: grabbing;
@@ -570,7 +563,6 @@
     }
     .fm-item.drag-forbidden { cursor: not-allowed; }
 
-    /* ================= CONTEXT MENU ================= */
     .fm-context-menu {
       position: fixed; z-index: 250; background: #fff;
       border: 1px solid var(--border); border-radius: 10px;
@@ -610,7 +602,6 @@
       max-width: 200px;
     }
 
-    /* ================= MOVE-TO MODAL ================= */
     .move-to-list {
       display: flex; flex-direction: column; gap: 6px;
       max-height: 320px; overflow-y: auto;
@@ -659,7 +650,6 @@
       border-radius: 10px;
     }
 
-    /* ================= MODALS ================= */
     .fm-modal-overlay {
       position: fixed; inset: 0; background: rgba(13,13,122,.55);
       backdrop-filter: blur(6px); z-index: 200;
@@ -735,7 +725,6 @@
     }
     .fm-alert-stat-value.danger { color: var(--red); }
 
-    /* ================= MANAGE MODAL ================= */
     .manage-modal { max-width: 620px; }
     .manage-status-bar {
       display: flex; align-items: center; gap: 8px;
@@ -859,7 +848,6 @@
       box-shadow: 0 0 0 2px rgba(27,27,179,.18);
     }
 
-    /* ================= ROLE PICKER ================= */
     .role-picker {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -902,7 +890,6 @@
       background: #0d7a3e; border-color: #0d7a3e; color: #fff;
     }
 
-    /* ================= PROGRESS / TOAST ================= */
     .fm-progress {
       position: fixed; bottom: 26px;
       bottom: calc(26px + var(--safe-bottom));
@@ -955,7 +942,6 @@
       to { opacity: 1; transform: translate(-50%, 0); }
     }
 
-    /* ================= CONFLICT MODAL ================= */
     .fm-conflict-modal { max-width: 560px; }
     .fm-conflict-quick { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
     .fm-conflict-list {
@@ -1002,7 +988,6 @@
       box-shadow: 0 0 0 3px rgba(27,27,179,.12);
     }
 
-    /* ================= PREVIEW ================= */
     .fm-preview-overlay {
       position: fixed; inset: 0; background: rgba(10, 12, 30, .82);
       backdrop-filter: blur(10px); z-index: 400;
@@ -1161,7 +1146,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ================= PENDING / RESUMABLE UPLOADS ================= */
     .fm-pending-fab {
       position: fixed;
       right: 20px;
@@ -1282,9 +1266,6 @@
     .fm-pending-row.busy { opacity: .7; pointer-events: none; }
     .fm-pending-row.resuming { border-color: var(--royal); background: #eef1fb; }
 
-    /* ==========================================================================
-       SHARED VIEW / SHARE MODAL / USER PICKER
-       ========================================================================== */
     .shared-by {
       font-size: 10px;
       color: var(--royal);
@@ -1417,10 +1398,6 @@
     .share-owner-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--royal); }
     .share-owner-name { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 1px; }
     .share-item-name { font-size: 12px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* ==========================================================================
-       RESPONSIVE BREAKPOINTS
-       ========================================================================== */
 
     @media (min-width: 1441px) {
       .content { max-width: 1520px; }
@@ -2293,6 +2270,7 @@
    - "Shared" sidebar button placed right after "Files"
    - Shared view + Share modal + passwords
    - Parallel folder downloads (DOWNLOAD_CONCURRENCY)
+   - Fixed: OS-file drag & drop (synchronous capture before awaits)
    ============================================================================ */
 (function(){
   'use strict';
@@ -2370,7 +2348,6 @@
     return false;
   })();
 
-  /* ---------------- DOM refs ---------------- */
   const layout        = document.getElementById('art-layout');
   const sideToggle    = document.getElementById('side-toggle');
   const heroTitle     = document.getElementById('hero-title');
@@ -2568,7 +2545,6 @@
     if (tb) ro.observe(tb);
   }
 
-  /* ---------------- STATE ---------------- */
   let currentPath      = '';
   let allItems         = [];
   let items            = [];
@@ -3136,8 +3112,6 @@
   function renderSidebar() {
     sideButtonsContainer.innerHTML = '';
 
-    // Helper: identify the "Files" default button even when the isFiles
-    // flag was not persisted to Supabase (the column doesn't exist).
     function isFilesButton(btn) {
       if (btn.isFiles) return true;
       if (btn.id === 'files') return true;
@@ -3146,7 +3120,6 @@
       return false;
     }
 
-    // Prepare the Shared button element (we'll insert it later)
     const sharedBtn = document.createElement('button');
     sharedBtn.type = 'button';
     sharedBtn.className = 'side-btn';
@@ -3168,11 +3141,9 @@
     }
     sharedBtn.addEventListener('click', () => switchView('shared'));
 
-    // Managed sidebar buttons
     const visible = sidebarButtons.filter(btn => canAccessButton(btn, currentUserRoles));
 
     if (!visible.length) {
-      // No managed buttons — put Shared at the top + empty message
       sideButtonsContainer.appendChild(sharedBtn);
       const emptyMsg = document.createElement('div');
       emptyMsg.className = 'side-empty';
@@ -3195,9 +3166,6 @@
       el.className = 'side-btn';
       el.dataset.id = btn.id;
 
-      // ---- Active state ----
-      // Only managed buttons reflect "active" in Files view.
-      // In Shared view, ONLY the fixed Shared button is active.
       let isActive = false;
 
       if (currentView === 'files') {
@@ -3246,14 +3214,11 @@
       if (isFilesButton(btn)) filesBtnEl = el;
     });
 
-    // Insert the Shared button RIGHT AFTER the Files button.
     if (filesBtnEl && filesBtnEl.nextSibling) {
       sideButtonsContainer.insertBefore(sharedBtn, filesBtnEl.nextSibling);
     } else if (filesBtnEl) {
-      // Files button is the last child — append Shared at the end.
       sideButtonsContainer.appendChild(sharedBtn);
     } else {
-      // No Files button found — fallback: put Shared at the top.
       sideButtonsContainer.insertBefore(sharedBtn, sideButtonsContainer.firstChild);
     }
   }
@@ -5443,26 +5408,52 @@
       for (const child of children) await traverseEntry(child, nextBase, out);
     }
   }
-  async function collectFilesFromDataTransfer(dataTransfer) {
+
+  /* ============================================================================
+     NEW: synchronous drag-item extraction
+     Must be called SYNCHRONOUSLY inside the drop event (before any await) —
+     otherwise dataTransfer.items becomes empty.
+     ============================================================================ */
+  function extractDragItemsSync(dataTransfer) {
+    if (!dataTransfer) return null;
+    try {
+      const items = dataTransfer.items;
+      if (items && items.length && typeof items[0].webkitGetAsEntry === 'function') {
+        const entries = [];
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.kind !== 'file') continue;
+          try {
+            const entry = item.webkitGetAsEntry && item.webkitGetAsEntry();
+            if (entry) entries.push(entry);
+          } catch (err) {}
+        }
+        if (entries.length) return { entries, files: [] };
+      }
+    } catch (err) {}
+    let files = [];
+    try {
+      files = Array.from(dataTransfer.files || []);
+    } catch (err) { files = []; }
+    return { entries: [], files };
+  }
+
+  async function processDragItems({ entries, files }) {
     const out = [];
-    const items = dataTransfer.items;
-    if (items && items.length && typeof items[0].webkitGetAsEntry === 'function') {
-      const entries = [];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.kind !== 'file') continue;
-        const entry = item.webkitGetAsEntry && item.webkitGetAsEntry();
-        if (entry) entries.push(entry);
-      }
-      if (entries.length) {
-        for (const e of entries) await traverseEntry(e, '', out);
-        return out;
-      }
+    if (entries && entries.length) {
+      for (const e of entries) await traverseEntry(e, '', out);
+      return out;
     }
-    const files = dataTransfer.files || [];
-    for (let i = 0; i < files.length; i++) out.push({ file: files[i], relativePath: files[i].name });
+    for (const f of (files || [])) out.push({ file: f, relativePath: f.name });
     return out;
   }
+
+  async function collectFilesFromDataTransfer(dataTransfer) {
+    const extracted = extractDragItemsSync(dataTransfer);
+    if (!extracted) return [];
+    return await processDragItems(extracted);
+  }
+
   function collectFilesFromFolderInput(fileList) {
     const out = [];
     for (const f of Array.from(fileList || [])) {
@@ -7256,7 +7247,25 @@
     });
   }
 
+  /* ============================================================================
+     DROPZONE EVENTS (FIXED)
+     - Extract the OS-file data SYNCHRONOUSLY before any `await` so the
+       `dataTransfer` object is still valid.
+     - If the drag contains OS files (`Files` in dataTransfer.types), we
+       IGNORE the stale `draggedItem` state (which only applies to internal
+       drag-to-move).
+     ============================================================================ */
   let dragDepth = 0;
+
+  function dragHasFiles(e) {
+    try {
+      const dt = e.dataTransfer;
+      if (!dt || !dt.types) return false;
+      const types = Array.from(dt.types);
+      return types.indexOf('Files') !== -1;
+    } catch (err) { return false; }
+  }
+
   ['dragenter','dragover'].forEach(ev => {
     dropzone.addEventListener(ev, (e) => {
       if (!rootExists) {
@@ -7264,7 +7273,8 @@
         if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
         return;
       }
-      if (draggedItem) {
+      const isFileDrag = dragHasFiles(e);
+      if (draggedItem && !isFileDrag) {
         e.preventDefault();
         try { e.dataTransfer.dropEffect = 'none'; } catch (err) {}
         return;
@@ -7277,6 +7287,7 @@
       if (e.dataTransfer) e.dataTransfer.dropEffect = isFull ? 'none' : 'copy';
     });
   });
+
   dropzone.addEventListener('dragleave', (e) => {
     e.preventDefault();
     dragDepth = Math.max(0, dragDepth - 1);
@@ -7285,15 +7296,38 @@
       dropzone.classList.remove('full');
     }
   });
+
   dropzone.addEventListener('drop', async (e) => {
-    if (draggedItem) {
+    // ---- CRITICAL: capture the drag items SYNCHRONOUSLY before any await ----
+    const dt = e.dataTransfer;
+    const isFileDrag = dragHasFiles(e);
+    const extracted = extractDragItemsSync(dt);
+
+    // If this was an internal drag-to-move (no OS files), let the folder
+    // handlers deal with it — do nothing here.
+    if (draggedItem && !isFileDrag) {
       e.preventDefault();
       return;
     }
+
     e.preventDefault();
     dragDepth = 0;
     dropzone.classList.remove('drag-over');
     dropzone.classList.remove('full');
+
+    // Reset any stale internal drag state so future operations aren't blocked.
+    draggedItem = null;
+    draggedItemEl = null;
+    clearDragOverHighlights();
+
+    const hasItems = extracted && (
+      (extracted.entries && extracted.entries.length) ||
+      (extracted.files && extracted.files.length)
+    );
+    if (!hasItems) {
+      showToast('Nothing to upload');
+      return;
+    }
 
     if (!guardOnline()) return;
 
@@ -7305,9 +7339,7 @@
     }
     rootExists = true;
 
-    const dt = e.dataTransfer;
-    if (!dt) return;
-    const collected = await collectFilesFromDataTransfer(dt);
+    const collected = await processDragItems(extracted);
     if (!collected.length) { showToast('Nothing to upload'); return; }
     await uploadEntries(collected);
   });
