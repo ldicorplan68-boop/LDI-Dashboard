@@ -2344,6 +2344,11 @@
           after the server round-trip, plain files no longer depend on the
           fragile FileSystemEntry handles, and traversal failures are logged
           instead of being swallowed.
+        - FOLDER drops: read through the File System Access API handles first
+          (getAsFileSystemHandle, reliable on https/localhost), then the older
+          webkitGetAsEntry() entries. When a dropped folder cannot be read at
+          all, the toast now says so and points at the "Upload Folder" button
+          instead of the misleading "Nothing to upload".
    ============================================================================ */
 (function(){
   'use strict';
@@ -5631,10 +5636,20 @@
         console.warn('[drop] could not read entry:', basePath + entry.name, err && (err.name + ': ' + err.message));
       }
     } else if (entry.isDirectory) {
-      const reader = entry.createReader();
-      const children = await readAllDirEntries(reader);
-      const nextBase = basePath + entry.name + '/';
-      for (const child of children) await traverseEntry(child, nextBase, out);
+      try {
+        const reader = entry.createReader();
+        const children = await readAllDirEntries(reader);
+        if (!children.length) {
+          console.warn('[drop] folder entry returned no children:', basePath + entry.name);
+        }
+        const nextBase = basePath + entry.name + '/';
+        for (const child of children) await traverseEntry(child, nextBase, out);
+      } catch (err) {
+        console.warn('[drop] could not list folder entry:', basePath + entry.name, err && (err.name + ': ' + err.message));
+      }
+    } else {
+      console.warn('[drop] unsupported entry dropped (isFile=' + entry.isFile + ', isDirectory=' + entry.isDirectory + '):',
+        basePath + (entry.name || ''), entry);
     }
   }
 
@@ -5693,6 +5708,64 @@
     return (files || [])
       .filter(f => f && (!guardAgainstFolders || !(f.size === 0 && !f.type && !/\.[A-Za-z0-9]{1,8}$/.test(f.name || ''))))
       .map(f => ({ file: f, relativePath: f.name }));
+  }
+
+  /* ---------------------------------------------------------------------------
+     FOLDER DROPS — File System Access API (Chrome 86+, secure contexts only).
+     The older webkitGetAsEntry() path often returns an empty directory listing
+     for dropped folders ("folder entry returned no children"), so handle-based
+     reading is tried first. The handles must be requested while the drop event
+     is still alive, but they stay usable afterwards.
+     --------------------------------------------------------------------------- */
+  function collectFileSystemHandles(dataTransfer) {
+    const handles = [];
+    try {
+      const items = (dataTransfer && dataTransfer.items) || [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!item || item.kind !== 'file' || typeof item.getAsFileSystemHandle !== 'function') continue;
+        try {
+          const pending = item.getAsFileSystemHandle();
+          if (pending && typeof pending.then === 'function') handles.push(pending);
+        } catch (err) {}
+      }
+    } catch (err) {}
+    return handles;
+  }
+
+  async function collectFromFolderHandle(handle, basePath, out) {
+    if (!handle) return;
+    if (handle.kind === 'file') {
+      try {
+        const file = await handle.getFile();
+        out.push({ file, relativePath: basePath + file.name });
+      } catch (err) {
+        console.warn('[drop] could not read file handle:', basePath + (handle.name || ''), err && (err.name + ': ' + err.message));
+      }
+      return;
+    }
+    if (handle.kind === 'directory') {
+      const nextBase = basePath + handle.name + '/';
+      try {
+        for await (const child of handle.values()) {
+          await collectFromFolderHandle(child, nextBase, out);
+        }
+      } catch (err) {
+        console.warn('[drop] could not list folder handle:', nextBase, err && (err.name + ': ' + err.message));
+      }
+    }
+  }
+
+  async function collectFromFileSystemHandles(handlePromises) {
+    const out = [];
+    for (const pending of handlePromises) {
+      try {
+        await collectFromFolderHandle(await pending, '', out);
+      } catch (err) {
+        console.warn('[drop] getAsFileSystemHandle failed:', err && (err.name + ': ' + err.message));
+      }
+    }
+    return out;
   }
 
   async function processDragItems({ entries, files }) {
@@ -7689,10 +7762,20 @@
     const fileListFiles = extractTransferFiles(dt);
     const itemFiles = extractItemFiles(dt);
     const plainFiles = fileListFiles.length ? fileListFiles : itemFiles;
+    const handlePromises = collectFileSystemHandles(dt);
     const entries = (extracted && Array.isArray(extracted.entries)) ? extracted.entries : [];
     const hasFolder = entries.some(en => en && en.isDirectory);
+    const handleFilesPromise = handlePromises.length
+      ? collectFromFileSystemHandles(handlePromises).catch((err) => {
+          console.warn('[drop] folder handle read failed:', err && (err.name + ': ' + err.message));
+          return [];
+        })
+      : null;
     const entryFilesPromise = ((hasFolder || !plainFiles.length) && entries.length)
-      ? processDragItems({ entries, files: [] }).catch(() => [])
+      ? processDragItems({ entries, files: [] }).catch((err) => {
+          console.warn('[drop] entry traversal failed:', err && (err.name + ': ' + err.message));
+          return [];
+        })
       : null;
 
     dragDepth = 0;
@@ -7721,23 +7804,24 @@
     }
     rootExists = true;
 
-    // Plain files: use the File objects straight from the transfer (most
-    // reliable). Folders: use the FileSystem entries, falling back to the plain
-    // files if Chrome already released the entry handles.
+    // Plain files: use the File objects from the transfer (most reliable).
+    // Folders: try the File System Access handles first, then the older
+    // webkitGetAsEntry() entries, then the plain files as a last resort.
     let collected = (!hasFolder && plainFiles.length) ? filesToUploadItems(plainFiles, false) : [];
-    if (!collected.length && entryFilesPromise) {
-      collected = await entryFilesPromise;
-      if (!collected.length && plainFiles.length) {
-        collected = filesToUploadItems(plainFiles, true);
-        if (collected.length) {
-          console.warn('[drop] entry handles were unusable — fell back to plain files (' + collected.length + ' file(s))');
-        }
+    if (!collected.length && handleFilesPromise) collected = await handleFilesPromise;
+    if (!collected.length && entryFilesPromise) collected = await entryFilesPromise;
+    if (!collected.length && plainFiles.length) {
+      collected = filesToUploadItems(plainFiles, true);
+      if (collected.length) {
+        console.warn('[drop] folder reading failed — fell back to plain files (' + collected.length + ' file(s))');
       }
     }
 
     if (!collected.length) {
       console.warn('[drop] no readable file data', { entries: entries.length, plainFiles: plainFiles.length, hasFolder });
-      showToast('Nothing to upload');
+      showToast(hasFolder
+        ? 'Could not read that folder — use "Upload Folder", or open it and drop the files inside'
+        : 'Nothing to upload', hasFolder ? 6500 : 2500);
       return;
     }
     await uploadEntries(collected);
