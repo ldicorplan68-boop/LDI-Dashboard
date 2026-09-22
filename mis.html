@@ -2262,29 +2262,43 @@
 <script>
 /* ============================================================================
    ART FILE MANAGER
-   - Role-based sidebar access control
-   - Blob-based previews/downloads with connection-aware retry
-   - Resumable (TUS) uploads with a Resume button
-   - Auto-recovery when the Cloudflare tunnel comes back online
-   - Touch-friendly single-tap-to-open on mobile devices
-   - Drag & drop to move files/folders between folders
-   - "Move to…" context menu fallback for touch devices
-   - Robust topbar height sync for iOS Safari (URL bar / safe-area)
-   - "Shared" sidebar button placed right after "Files"
-   - Shared view + Share modal + passwords
-   - Parallel folder downloads (DOWNLOAD_CONCURRENCY)
-   - OS-file drag & drop (synchronous capture before awaits)
+   ----------------------------------------------------------------------------
+   Features:
+     - Role-based sidebar access control
+     - Blob-based previews/downloads with connection-aware retry
+     - Resumable (TUS) uploads with a Resume button
+     - Auto-recovery when the Cloudflare tunnel comes back online
+     - Touch-friendly single-tap-to-open on mobile devices
+     - Drag & drop to move files/folders between folders
+     - "Move to…" context menu fallback for touch devices
+     - Shared view + Share modal + passwords
+     - Parallel folder downloads
 
-   FIXES in this version:
-   - File vs folder detection now uses metadata AND id (so uploaded
-     files never get mistaken for folders and "disappear" when clicked).
-   - handleItemDblClick now verifies the target really is a folder
-     before navigating into it, with a filename-extension safety net.
-   - refresh() no longer wipes the current listing on transient
-     network errors — it keeps the last known contents.
-   - Search box is cleared on page load and on bfcache restore
-     (pageshow event) and on init(), so it never pre-fills with
-     stale text from a previous session.
+   Fixes applied in this version:
+     1. FOLDER vs FILE detection now checks BOTH `metadata` AND `id`.
+        Uploaded files no longer get mistaken for folders and "disappear"
+        when clicked/tapped.
+
+     2. handleItemDblClick verifies the target is really a folder before
+        navigating into it (filename-extension + empty-listing safety net).
+
+     3. refresh() no longer wipes the current listing on transient network
+        errors — it keeps the last known contents.
+
+     4. Search box is cleared on page load and on bfcache restore
+        (pageshow event) and on init() so it never pre-fills with stale
+        text from a previous session. Unique `name` attributes are used
+        to defeat browser autofill.
+
+     5. RESUMABLE UPLOAD RESUME FIX:
+        - On resume, the old TUS URL is verified with HEAD. If it's dead
+          (404/401/403) or out of range, it's deleted and a fresh session
+          is created.
+        - Fresh-page resumes (from localStorage) discard the stale URL
+          immediately before retrying.
+        - createTusUpload supports a `noUpsert` fallback for 409 conflicts.
+        - Real error messages are surfaced to the user (instead of a
+          generic "Resume failed").
    ============================================================================ */
 (function(){
   'use strict';
@@ -2544,12 +2558,10 @@
 
   window.addEventListener('pageshow', function() {
     clearSearchInputsHard();
-    // Reset the JS variables too, so no ghost filter is applied
     try {
       searchTerm = '';
       sharedSearchTerm = '';
     } catch (e) {}
-    // Re-render whatever is currently displayed
     try {
       if (currentView === 'shared') {
         if (typeof applySharedFilterAndSort === 'function') applySharedFilterAndSort();
@@ -4436,13 +4448,9 @@
        - Folder entries:  { name, id: null,     metadata: null }
        - File entries:    { name, id: "<uuid>", metadata: { size, ... } }
 
-     The OLD code used: `return !it || !it.metadata;`
-     That treated ANY entry without metadata as a folder — which caused
-     uploaded files to "disappear" when clicked (the app opened them as
-     if they were folders and navigated into an empty listing).
-
-     NEW: an entry is a folder only when BOTH id and metadata are null/
-     undefined. If it has either one, it's a file.
+     Old behavior treated ANY entry without `metadata` as a folder, which
+     caused uploaded files to "disappear" when clicked. New behavior treats
+     an entry as a file if it has EITHER `id` OR `metadata`.
      ============================================================================ */
   function hasRealId(it) {
     return it && it.id !== null && it.id !== undefined && it.id !== '';
@@ -5819,17 +5827,15 @@
   /* ============================================================================
      DOUBLE-CLICK / SINGLE-TAP-TO-OPEN (FIXED)
      ============================================================================
-     Before navigating into an entry as if it were a folder, we verify it
-     really is a folder by attempting to list its contents. If the list
-     comes back empty AND the name looks like a file (has an extension),
-     we treat it as a FILE and open its preview instead of "entering" it.
-     This prevents uploaded files from disappearing when tapped/clicked.
+     Before navigating into an entry as if it were a folder, verify it really
+     is a folder by attempting to list its contents. If the list comes back
+     empty AND the name looks like a file (has an extension), treat it as a
+     FILE and open its preview instead of "entering" it.
      ============================================================================ */
   async function handleItemDblClick(it) {
     if (!it) return;
 
     if (isFolder(it)) {
-      // Safety check: verify the folder is real before navigating into it.
       let entries = [];
       try {
         entries = await listFolder(fullPathFor(it.name) + '/');
@@ -5837,8 +5843,6 @@
         entries = [];
       }
 
-      // Empty listing + filename with an extension = almost certainly a file
-      // that was mislabeled as a folder. Open it as a preview instead.
       if (entries.length === 0 && looksLikeFilePath(it.name)) {
         openPreview(it);
         return;
@@ -6337,7 +6341,6 @@
       if (looksLikeNetwork) Connection.reportNetworkFailure();
 
       if (currentPath === '' && allItems.length === 0) {
-        // Genuine first-load failure on the root — treat as missing folder
         rootExists = false;
         lockUploadsForMissingRoot();
         loading.hidden = true;
@@ -6345,7 +6348,6 @@
         return;
       }
 
-      // Otherwise: keep whatever we had, just warn the user.
       showToast(
         looksLikeNetwork
           ? 'Server unreachable — showing last known contents'
@@ -6654,28 +6656,39 @@
     } catch (e) {}
   }
 
-  async function createTusUpload(fullPath, file, signal) {
+  /* ============================================================================
+     TUS UPLOAD (RESUMABLE)
+     ============================================================================
+     FIXED: createTusUpload now accepts an `opts` object with a `noUpsert`
+     fallback. When the first attempt fails with 409 (an unfinished upload
+     already exists for the same object), we retry without `x-upsert: true`,
+     which typically resolves the conflict.
+     ============================================================================ */
+  async function createTusUpload(fullPath, file, signal, opts) {
+    opts = opts || {};
     const url = SUPABASE_URL + '/storage/v1/upload/resumable';
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: Object.assign(authHeaders(), {
-        'Tus-Resumable': '1.0.0',
-        'Upload-Length': String(file.size),
-        'Upload-Metadata': buildTusMetadata({
-          bucketName: BUCKET,
-          objectName: fullPath,
-          contentType: file.type || 'application/octet-stream',
-          cacheControl: '3600'
-        }),
-        'x-upsert': 'true'
-      }),
-      signal
+
+    const headers = Object.assign(authHeaders(), {
+      'Tus-Resumable': '1.0.0',
+      'Upload-Length': String(file.size),
+      'Upload-Metadata': buildTusMetadata({
+        bucketName: BUCKET,
+        objectName: fullPath,
+        contentType: file.type || 'application/octet-stream',
+        cacheControl: '3600'
+      })
     });
+    if (!opts.noUpsert) {
+      headers['x-upsert'] = 'true';
+    }
+
+    const res = await fetch(url, { method: 'POST', headers, signal });
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       const err = new Error('TUS init failed: HTTP ' + res.status +
         (body ? ' — ' + body.slice(0, 180) : ''));
+      err.status    = res.status;
       err.retryable = RETRYABLE_STATUS.has(res.status) || res.status >= 500;
       throw err;
     }
@@ -6700,6 +6713,7 @@
     });
     if (!res.ok) {
       const err = new Error('TUS head: HTTP ' + res.status);
+      err.status    = res.status;
       err.retryable = RETRYABLE_STATUS.has(res.status);
       throw err;
     }
@@ -6723,6 +6737,7 @@
       const body = await res.text().catch(() => '');
       const err = new Error('TUS chunk: HTTP ' + res.status +
         (body ? ' — ' + body.slice(0, 180) : ''));
+      err.status    = res.status;
       err.retryable = RETRYABLE_STATUS.has(res.status) || res.status >= 500;
       throw err;
     }
@@ -6740,25 +6755,65 @@
     } catch (e) {}
   }
 
+  /* ============================================================================
+     runTusUpload (FIXED)
+     ============================================================================
+     Before running, we HEAD the existing upload URL:
+       - If the offset is valid (0 ≤ offset ≤ size), we resume from there.
+       - Otherwise the URL is stale/dead: we DELETE it, clear it from the
+         session, and create a fresh one.
+     This makes resuming reliable even if the persisted URL has expired, if
+     the Cloudflare tunnel URL has changed, or if Supabase has cleaned up
+     the session server-side.
+     ============================================================================ */
   async function runTusUpload(session, signal) {
     const file = session.file;
     if (!file) throw new Error('File reference missing — please re-select the file');
 
-    if (session.uploadUrl && session.offset > 0) {
+    // --- Verify the existing URL (if any) is still alive ---
+    if (session.uploadUrl) {
+      let alive = false;
       try {
         const serverOffset = await tusGetOffset(session.uploadUrl, signal);
-        session.offset = serverOffset;
+        if (typeof serverOffset === 'number' && serverOffset >= 0 && serverOffset <= file.size) {
+          session.offset = serverOffset;
+          alive = true;
+          console.log('[tus] resumed at offset', serverOffset, 'of', file.size);
+        } else {
+          console.warn('[tus] server offset out of range:', serverOffset, 'file.size:', file.size);
+        }
       } catch (err) {
+        console.warn('[tus] HEAD failed, will start fresh:', err.message);
+      }
+
+      if (!alive) {
+        try { await tusDelete(session.uploadUrl); } catch (e) {}
         session.uploadUrl = null;
         session.offset = 0;
+        persistSessions();
       }
     }
 
+    // --- Create a fresh session if we don't have a valid one ---
     if (!session.uploadUrl) {
-      session.uploadUrl = await createTusUpload(session.fullPath, file, signal);
-      session.offset = 0;
+      try {
+        session.uploadUrl = await createTusUpload(session.fullPath, file, signal);
+        session.offset = 0;
+        persistSessions();
+        console.log('[tus] created new upload URL for', file.name);
+      } catch (err) {
+        if (err.status === 409 || err.status === 400) {
+          console.warn('[tus] init conflict — retrying without x-upsert');
+          session.uploadUrl = await createTusUpload(session.fullPath, file, signal, { noUpsert: true });
+          session.offset = 0;
+          persistSessions();
+        } else {
+          throw err;
+        }
+      }
     }
 
+    // --- Upload chunks ---
     while (session.offset < file.size) {
       if (signal && signal.aborted) {
         throw new DOMException('Aborted', 'AbortError');
@@ -6781,6 +6836,13 @@
     return err;
   }
 
+  /* ============================================================================
+     uploadLargeResumable (FIXED)
+     ============================================================================
+     When resuming from a fresh page load (the persisted session has no live
+     file reference), the saved TUS URL is very likely stale. We proactively
+     delete it and start a fresh session before retrying.
+     ============================================================================ */
   async function uploadLargeResumable(fullPath, file, outerSignal, existingSession) {
     const fingerprint = makeFingerprint(file, fullPath);
     let session = existingSession || resumableSessions.get(fingerprint);
@@ -6805,6 +6867,16 @@
       session.file = file;
       session.updatedAt = Date.now();
     }
+
+    // Fresh-page resume: discard the stale URL before retrying.
+    const isFreshPageResume = existingSession && existingSession.file === null;
+    if (isFreshPageResume && existingSession.uploadUrl) {
+      console.log('[tus] fresh-page resume — discarding stale URL');
+      try { await tusDelete(existingSession.uploadUrl); } catch (e) {}
+      session.uploadUrl = null;
+      session.offset = 0;
+    }
+
     persistSessions();
 
     let lastErr = null;
@@ -6830,7 +6902,18 @@
           throw err;
         }
         lastErr = err;
+        console.error('[tus] attempt', attempt + 1, 'failed:', err.message);
         persistSessions();
+
+        // Drop the URL on auth/not-found errors so the next attempt is fresh.
+        if (err.status === 401 || err.status === 403 || err.status === 404) {
+          if (session.uploadUrl) {
+            try { await tusDelete(session.uploadUrl); } catch (e) {}
+          }
+          session.uploadUrl = null;
+          session.offset = 0;
+        }
+
         if (err && err.retryable === false) break;
       }
     }
@@ -7135,6 +7218,12 @@
     });
   }
 
+  /* ============================================================================
+     resumeSession (FIXED)
+     ============================================================================
+     - Real error messages are surfaced (instead of a generic "Resume failed").
+     - Status codes are logged to console for debugging.
+     ============================================================================ */
   async function resumeSession(fingerprint) {
     const session = resumableSessions.get(fingerprint);
     if (!session) return;
@@ -7201,7 +7290,9 @@
       if (err && err.name === 'AbortError') {
         showToast('Resume cancelled — progress kept', 3200);
       } else {
-        showToast('Resume failed: ' + ((err && err.message) || err), 4500);
+        const msg = (err && err.message) || String(err);
+        console.error('[resume] failed:', err);
+        showToast('Resume failed: ' + msg, 6000);
       }
       if (row) row.classList.remove('resuming');
       renderPendingUploads();
@@ -7410,7 +7501,7 @@
   });
 
   dropzone.addEventListener('drop', async (e) => {
-    // ---- CRITICAL: capture the drag items SYNCHRONOUSLY before any await ----
+    // Capture drag items SYNCHRONOUSLY before any await
     const dt = e.dataTransfer;
     const isFileDrag = dragHasFiles(e);
     const extracted = extractDragItemsSync(dt);
@@ -7744,7 +7835,7 @@
   });
 
   (async function init() {
-    // Clear search inputs BEFORE anything else so no ghost filter is applied
+    // Clear search inputs FIRST so no ghost filter is applied
     searchTerm = '';
     if (searchInput) { searchInput.value = ''; searchInput.defaultValue = ''; }
     if (searchClear) searchClear.hidden = true;
