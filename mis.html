@@ -2338,6 +2338,12 @@
           the shared uploadDroppedFiles() path, with the dropzone hint as the
           visual cue. Modals, the shared view and a missing root folder still
           block the drop, and internal item moves are untouched.
+        - "Nothing to upload" fixes: everything is captured synchronously while
+          the drop event is still alive (dataTransfer.files AND items[i].getAsFile()
+          AND webkitGetAsEntry()), folder entries are read immediately instead of
+          after the server round-trip, plain files no longer depend on the
+          fragile FileSystemEntry handles, and traversal failures are logged
+          instead of being swallowed.
    ============================================================================ */
 (function(){
   'use strict';
@@ -5621,7 +5627,9 @@
       try {
         const file = await readEntryFile(entry);
         out.push({ file, relativePath: basePath + entry.name });
-      } catch (err) {}
+      } catch (err) {
+        console.warn('[drop] could not read entry:', basePath + entry.name, err && (err.name + ': ' + err.message));
+      }
     } else if (entry.isDirectory) {
       const reader = entry.createReader();
       const children = await readAllDirEntries(reader);
@@ -5652,6 +5660,39 @@
       files = Array.from(dataTransfer.files || []);
     } catch (err) { files = []; }
     return { entries: [], files };
+  }
+
+  // Plain File objects from the transfer — read them while the drop event is
+  // still being dispatched, the DataTransfer is not readable afterwards.
+  function extractTransferFiles(dataTransfer) {
+    try {
+      return Array.from((dataTransfer && dataTransfer.files) || []);
+    } catch (err) { return []; }
+  }
+
+  // Second source of plain File objects: the items themselves (works when
+  // dataTransfer.files came back empty).
+  function extractItemFiles(dataTransfer) {
+    const out = [];
+    try {
+      const items = (dataTransfer && dataTransfer.items) || [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!item || item.kind !== 'file' || typeof item.getAsFile !== 'function') continue;
+        const file = item.getAsFile();
+        if (file) out.push(file);
+      }
+    } catch (err) {}
+    return out;
+  }
+
+  // Turn File objects into upload entries. Zero-byte, extension-less, typeless
+  // entries are skipped: Chrome reports folders that way when the FileSystem
+  // entry handles died before we could read them.
+  function filesToUploadItems(files, guardAgainstFolders) {
+    return (files || [])
+      .filter(f => f && (!guardAgainstFolders || !(f.size === 0 && !f.type && !/\.[A-Za-z0-9]{1,8}$/.test(f.name || ''))))
+      .map(f => ({ file: f, relativePath: f.name }));
   }
 
   async function processDragItems({ entries, files }) {
@@ -7119,6 +7160,7 @@
           if (decisions === null) { showToast('Upload cancelled', 2500); return; }
           toUpload = applyConflictDecisions(filtered, decisions);
           if (!toUpload.length) {
+            console.warn('[upload] every duplicate was skipped', { files: filtered.length, conflicts: conflicts.length });
             showToast('Nothing to upload — every duplicate was skipped', 3200);
             return;
           }
@@ -7639,9 +7681,19 @@
   });
 
   async function uploadDroppedFiles(e) {
-    // Capture drag items SYNCHRONOUSLY before any await
+    // The DataTransfer is only readable while the drop event is being
+    // dispatched, so capture it and START reading the entries right here —
+    // before any await (Chrome releases the entry handles otherwise).
     const dt = e.dataTransfer;
     const extracted = extractDragItemsSync(dt);
+    const fileListFiles = extractTransferFiles(dt);
+    const itemFiles = extractItemFiles(dt);
+    const plainFiles = fileListFiles.length ? fileListFiles : itemFiles;
+    const entries = (extracted && Array.isArray(extracted.entries)) ? extracted.entries : [];
+    const hasFolder = entries.some(en => en && en.isDirectory);
+    const entryFilesPromise = ((hasFolder || !plainFiles.length) && entries.length)
+      ? processDragItems({ entries, files: [] }).catch(() => [])
+      : null;
 
     dragDepth = 0;
     dropzone.classList.remove('drag-over');
@@ -7652,11 +7704,9 @@
     draggedItemEl = null;
     clearDragOverHighlights();
 
-    const hasItems = extracted && (
-      (extracted.entries && extracted.entries.length) ||
-      (extracted.files && extracted.files.length)
-    );
-    if (!hasItems) {
+    if (!entries.length && !plainFiles.length) {
+      console.warn('[drop] nothing to upload — the drop carried no entries and no files',
+        { items: (dt && dt.items) ? dt.items.length : 0, dataTransferFiles: fileListFiles.length, itemFiles: itemFiles.length, types: dt ? Array.from(dt.types || []) : [] });
       showToast('Nothing to upload');
       return;
     }
@@ -7671,8 +7721,25 @@
     }
     rootExists = true;
 
-    const collected = await processDragItems(extracted);
-    if (!collected.length) { showToast('Nothing to upload'); return; }
+    // Plain files: use the File objects straight from the transfer (most
+    // reliable). Folders: use the FileSystem entries, falling back to the plain
+    // files if Chrome already released the entry handles.
+    let collected = (!hasFolder && plainFiles.length) ? filesToUploadItems(plainFiles, false) : [];
+    if (!collected.length && entryFilesPromise) {
+      collected = await entryFilesPromise;
+      if (!collected.length && plainFiles.length) {
+        collected = filesToUploadItems(plainFiles, true);
+        if (collected.length) {
+          console.warn('[drop] entry handles were unusable — fell back to plain files (' + collected.length + ' file(s))');
+        }
+      }
+    }
+
+    if (!collected.length) {
+      console.warn('[drop] no readable file data', { entries: entries.length, plainFiles: plainFiles.length, hasFolder });
+      showToast('Nothing to upload');
+      return;
+    }
     await uploadEntries(collected);
   }
 
