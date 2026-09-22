@@ -5603,7 +5603,7 @@
     fullTitleEl.textContent = 'Folder is Full';
     fullIconEl.className = 'fm-alert-icon error';
     fullIconEl.innerHTML = '&#9940;';
-    fullMessage.innerHTML = 'This folder has reached its storage limit and cannot accept more files. Delete some files to free up space, then try again.';
+    fullMessage.innerHTML = 'This folder has reached its storage limit and cannot accept more files. Delete some files to free up space, or <strong>contact your administrator</strong> to have the folder limit increased.';
     fullUsedEl.textContent = formatBytes(info.used);
     fullLimitEl.textContent = formatBytes(info.limit);
     fullAvailEl.textContent = formatBytes(info.available);
@@ -5611,6 +5611,35 @@
     fullModal.hidden = false;
   }
   function closeFullModal() { fullModal.hidden = true; }
+
+  /* ---------------------------------------------------------------------------
+     "NOT ENOUGH STORAGE" — detected from the SERVER reply.
+     Supabase storage answers 413 (Payload Too Large) / 507 / 403 carrying a
+     quota message when the bucket or the object-size limit is exceeded, which
+     the cheap client-side pre-check cannot always predict.
+     --------------------------------------------------------------------------- */
+  function isStorageQuotaError(err) {
+    if (!err) return false;
+    const status = err.status || (err.cause && err.cause.status);
+    if (status === 413 || status === 507) return true;
+    const msg = String((err && err.message) || err).toLowerCase();
+    return /quota|insufficient storage|not enough (storage|space)|exceed(ed|s)? (the )?(maximum )?(allowed )?(size|storage)|payload too large|storage limit|no space left|disk full/.test(msg);
+  }
+
+  function showInsufficientStorageAlert(detail) {
+    fullTitleEl.textContent = 'Not Enough Storage';
+    fullIconEl.className = 'fm-alert-icon error';
+    fullIconEl.innerHTML = '&#9940;';
+    fullMessage.innerHTML =
+      'There is not enough storage space to accept these file(s), so the upload was stopped. ' +
+      'Delete some files to free up space, or <strong>contact your administrator</strong> to have the folder storage limit increased.' +
+      (detail ? '<br><br><small style="color:var(--muted)">' + escapeHtml(String(detail).slice(0, 220)) + '</small>' : '');
+    fullUsedEl.textContent  = storageLimit != null ? formatBytes(storageUsed) : '—';
+    fullLimitEl.textContent = storageLimit != null ? formatBytes(storageLimit) : '—';
+    fullAvailEl.textContent = storageLimit != null ? formatBytes(Math.max(0, storageLimit - storageUsed)) : '—';
+    fullNeededEl.textContent = '—';
+    fullModal.hidden = false;
+  }
 
   function readEntryFile(entry) { return new Promise((resolve, reject) => entry.file(resolve, reject)); }
   function readAllDirEntries(reader) {
@@ -5645,6 +5674,7 @@
         const nextBase = basePath + entry.name + '/';
         for (const child of children) await traverseEntry(child, nextBase, out);
       } catch (err) {
+        lastFolderDropError = (err && err.name) || 'Error';
         console.warn('[drop] could not list folder entry:', basePath + entry.name, err && (err.name + ': ' + err.message));
       }
     } else {
@@ -7156,6 +7186,14 @@
         console.error('[tus] attempt', attempt + 1, 'failed:', err.message);
         persistSessions();
 
+        // Out of space: retrying or "resuming" can never succeed — surface the
+        // real error so the caller can show the storage prompt instead of
+        // marking the upload as merely "paused".
+        if (isStorageQuotaError(err)) {
+          renderPendingUploads();
+          throw err;
+        }
+
         // Drop the URL on auth/not-found errors so the next attempt is fresh.
         if (err.status === 401 || err.status === 403 || err.status === 404) {
           if (session.uploadUrl) {
@@ -7259,10 +7297,12 @@
 
     const failures = [];
     let paused = 0;
+    let quotaHit = false;
+    let quotaMessage = '';
 
     async function worker() {
       while (true) {
-        if (uploadCancelRequested) return;
+        if (uploadCancelRequested || quotaHit) return;
         const myIndex = idx++;
         if (myIndex >= toUpload.length) return;
         const entry = toUpload[myIndex];
@@ -7290,6 +7330,11 @@
               error: (err && err.message) || String(err)
             });
             console.error('[upload] failed:', entry.file.name, err);
+            if (isStorageQuotaError(err) && !quotaHit) {
+              quotaHit = true;
+              quotaMessage = (err && err.message) || '';
+              console.warn('[upload] server refused the upload — not enough storage:', quotaMessage);
+            }
           }
         }
         progressUpdate(done + failed, total, entry.file.name);
@@ -7310,6 +7355,9 @@
         ? 'Upload cancelled — ' + done + ' uploaded, ' + paused + ' can be resumed'
         : 'Upload cancelled — ' + done + ' of ' + total + ' uploaded';
       showToast(msg, 4800);
+    } else if (quotaHit) {
+      showInsufficientStorageAlert(quotaMessage);
+      showToast('Not enough storage — upload stopped. Contact your administrator to increase the folder limit.', 7000);
     } else if (failed === 0 && paused === 0) {
       showToast('Uploaded ' + done + ' file' + (done === 1 ? '' : 's'));
     } else if (paused > 0 && failed === 0) {
@@ -7753,10 +7801,14 @@
     }
   });
 
+  // Last error name from reading a dropped folder (EncodingError = OneDrive etc.)
+  let lastFolderDropError = null;
+
   async function uploadDroppedFiles(e) {
     // The DataTransfer is only readable while the drop event is being
     // dispatched, so capture it and START reading the entries right here —
     // before any await (Chrome releases the entry handles otherwise).
+    lastFolderDropError = null;
     const dt = e.dataTransfer;
     const extracted = extractDragItemsSync(dt);
     const fileListFiles = extractTransferFiles(dt);
@@ -7819,9 +7871,12 @@
 
     if (!collected.length) {
       console.warn('[drop] no readable file data', { entries: entries.length, plainFiles: plainFiles.length, hasFolder });
+      const folderHint = (lastFolderDropError === 'EncodingError' || lastFolderDropError === 'NotFoundError')
+        ? ' (Windows/OneDrive-synced folders cannot be read by the browser)'
+        : '';
       showToast(hasFolder
-        ? 'Could not read that folder — use "Upload Folder", or open it and drop the files inside'
-        : 'Nothing to upload', hasFolder ? 6500 : 2500);
+        ? 'Could not read that folder' + folderHint + ' — use "Upload Folder", or open it and drop the files inside'
+        : 'Nothing to upload', hasFolder ? 7500 : 2500);
       return;
     }
     await uploadEntries(collected);
