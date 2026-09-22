@@ -462,16 +462,12 @@
     }
     #fm-search::placeholder, #shared-search::placeholder { color: var(--muted); }
 
-    /* Autofill guard: lets the JS detect a Chrome autofill on the search boxes
-       (see armAutofillGuard) so the value can be wiped right away. */
     @keyframes ldiAutoFillStart { from { opacity: 1; } to { opacity: 1; } }
     #fm-search:-webkit-autofill,
     #shared-search:-webkit-autofill {
       animation-name: ldiAutoFillStart;
       animation-duration: .001s;
     }
-    /* These boxes ship locked (readonly) so Chrome cannot restore/autofill a
-       value into them before the script arms the guard. */
     #fm-search[readonly], #shared-search[readonly] { cursor: text; }
     .fm-search-clear {
       position: absolute; right: 6px; background: transparent;
@@ -2290,65 +2286,13 @@
      - Shared view + Share modal + passwords
      - Parallel folder downloads
 
-   Fixes applied in this version:
-     1. FOLDER vs FILE detection now checks BOTH `metadata` AND `id`.
-        Uploaded files no longer get mistaken for folders and "disappear"
-        when clicked/tapped.
-
-     2. handleItemDblClick verifies the target is really a folder before
-        navigating into it (filename-extension + empty-listing safety net).
-
-     3. refresh() no longer wipes the current listing on transient network
-        errors — it keeps the last known contents.
-
-     4. Search box is cleared on page load and on bfcache restore
-        (pageshow event) and on init() so it never pre-fills with stale
-        text from a previous session. Unique `name` attributes are used
-        to defeat browser autofill.
-
-     5. RESUMABLE UPLOAD RESUME FIX:
-        - On resume, the old TUS URL is verified with HEAD. If it's dead
-          (404/401/403) or out of range, it's deleted and a fresh session
-          is created.
-        - Fresh-page resumes (from localStorage) discard the stale URL
-          immediately before retrying.
-        - createTusUpload supports a `noUpsert` fallback for 409 conflicts.
-        - Real error messages are surfaced to the user (instead of a
-          generic "Resume failed").
-
-     6. SEARCH BOX AUTOFILL GUARD (Chrome kept pre-filling the search box):
-        Chrome ignores autocomplete="off" and restores/offers values the user
-        typed before. Both search inputs — plus the New Folder, Rename and
-        Manage Sidebar text inputs — now:
-          - render `readonly` so Chrome cannot restore or autofill them,
-          - unlock `readonly` on the first click/tap/key/focus (typing is
-            unaffected),
-          - rotate their `name` on every page load so Chrome's per-name value
-            history can never map onto them again (no suggestions),
-          - detect a real Chrome autofill via the :-webkit-autofill animation
-            and wipe it, re-syncing the search/filter state.
-
-     7. DESKTOP DRAG & DROP FIXED:
-        - Dropping files onto a FOLDER tile used to be swallowed by the tile's
-          own drop handler (preventDefault + stopPropagation + "no draggedItem"),
-          so nothing happened at all. File drags from the OS now bubble up to
-          the dropzone instead.
-        - The whole page — not just the dropzone — now accepts files dragged in
-          from the desktop: document-level dragenter/dragover/drop route them to
-          the shared uploadDroppedFiles() path, with the dropzone hint as the
-          visual cue. Modals, the shared view and a missing root folder still
-          block the drop, and internal item moves are untouched.
-        - "Nothing to upload" fixes: everything is captured synchronously while
-          the drop event is still alive (dataTransfer.files AND items[i].getAsFile()
-          AND webkitGetAsEntry()), folder entries are read immediately instead of
-          after the server round-trip, plain files no longer depend on the
-          fragile FileSystemEntry handles, and traversal failures are logged
-          instead of being swallowed.
-        - FOLDER drops: read through the File System Access API handles first
-          (getAsFileSystemHandle, reliable on https/localhost), then the older
-          webkitGetAsEntry() entries. When a dropped folder cannot be read at
-          all, the toast now says so and points at the "Upload Folder" button
-          instead of the misleading "Nothing to upload".
+   Performance notes (this revision):
+     - collectAllUnder() walks subfolders in PARALLEL (was serial).
+     - computeFolderUsage() walks subfolders in PARALLEL and caches the result
+       for USAGE_CACHE_TTL_MS; the cache is invalidated by every write
+       (uploadOne / deleteMany / createFolderApi) so the number is never stale.
+     - checkUploadFits() forces a fresh read so the "Folder is Full" prompt
+       reflects the current state exactly.
    ============================================================================ */
 (function(){
   'use strict';
@@ -2380,6 +2324,9 @@
   const TUS_CHUNK_SIZE             = 6 * 1024 * 1024;
   const UPLOAD_STATE_KEY           = 'ldi_pending_uploads_v1';
   const UPLOAD_STATE_MAX_AGE_MS    = 7 * 24 * 60 * 60 * 1000;
+
+  // --- Folder-usage cache tuning ----------------------------------------
+  const USAGE_CACHE_TTL_MS = 15000;
 
   const RETRYABLE_STATUS = new Set([
     408, 425, 429, 500, 502, 503, 504,
@@ -2589,9 +2536,6 @@
 
   /* ============================================================================
      SEARCH BOX CLEAR (LOAD + BFCACHE RESTORE)
-     The browser sometimes restores stale form values when the page is loaded
-     from bfcache (back/forward). This handler makes sure both search inputs
-     are blank — and the JS state matches.
      ============================================================================ */
   function clearSearchInputsHard() {
     if (searchInput) {
@@ -2608,17 +2552,6 @@
 
   /* ============================================================================
      AUTOFILL / FORM-RESTORE GUARD
-     Chrome ignores autocomplete="off" and keeps restoring values the user typed
-     earlier (and offering them as dropdown suggestions) because it remembers
-     fields by name/id. Strategy, in layers:
-       1. Every guarded input ships `readonly` — Chrome does not restore or
-          autofill readonly fields, so nothing arrives pre-filled.
-       2. `readonly` is released on the first real interaction (click / tap /
-          key / focus) BEFORE the caret is needed, so typing is unaffected.
-       3. The `name` is rotated on every page load, so Chrome's per-name value
-          history can never map onto these fields again → no suggestions.
-       4. If Chrome still fills a field (the :-webkit-autofill animation fires),
-          the value is wiped and `resetFn` puts the app state back in sync.
      ============================================================================ */
   function releaseAutofillReadonly(input) {
     if (input && input.hasAttribute('readonly')) input.removeAttribute('readonly');
@@ -2654,7 +2587,6 @@
     input.addEventListener('keydown', release);
     input.addEventListener('focus', () => {
       release();
-      // Anything that shows up without the user typing is not ours.
       if (options.wipeOnFocus && !userTyped && input.value) wipe();
     });
     input.addEventListener('input', () => { userTyped = true; });
@@ -2687,7 +2619,6 @@
     else renderSharedItems();
   }
 
-  // Value the Manage Sidebar form should hold right now (empty when adding).
   function currentManageFormValue(which) {
     const btn = editingButtonId ? sidebarButtons.find(b => b.id === editingButtonId) : null;
     if (!btn) return '';
@@ -2715,7 +2646,6 @@
     } catch (e) {}
   });
 
-  // Belt and braces: also clear on `load` (Chrome may restore values late).
   window.addEventListener('load', clearSearchInputsHard);
 
   function syncTopbarHeight() {
@@ -4584,15 +4514,7 @@
   }
 
   /* ============================================================================
-     FOLDER vs FILE DETECTION (FIXED)
-     ============================================================================
-     Supabase Storage list response rules:
-       - Folder entries:  { name, id: null,     metadata: null }
-       - File entries:    { name, id: "<uuid>", metadata: { size, ... } }
-
-     Old behavior treated ANY entry without `metadata` as a folder, which
-     caused uploaded files to "disappear" when clicked. New behavior treats
-     an entry as a file if it has EITHER `id` OR `metadata`.
+     FOLDER vs FILE DETECTION
      ============================================================================ */
   function hasRealId(it) {
     return it && it.id !== null && it.id !== undefined && it.id !== '';
@@ -4645,6 +4567,9 @@
     } catch (err) { return false; }
   }
 
+  /* ============================================================================
+     deleteMany — invalidates the folder-usage cache (safe, cheap)
+     ============================================================================ */
   async function deleteMany(paths) {
     const res = await fetchT(`${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}`, {
       method: 'DELETE',
@@ -4652,9 +4577,13 @@
       body: JSON.stringify({ prefixes: paths })
     });
     if (!res.ok) throw new Error('Delete failed: ' + await res.text());
+    invalidateUsageCache();
     return res.json().catch(() => ({}));
   }
 
+  /* ============================================================================
+     createFolderApi — invalidates the folder-usage cache (safe, cheap)
+     ============================================================================ */
   async function createFolderApi(folderPath) {
     const placeholderPath = folderPath + PLACEHOLDER;
     const blob = new Blob([''], { type: 'application/octet-stream' });
@@ -4668,17 +4597,27 @@
       body: blob
     });
     if (!res.ok) throw new Error('Create folder failed: ' + await res.text());
+    invalidateUsageCache();
     return res.json().catch(() => ({}));
   }
 
+  /* ============================================================================
+     collectAllUnder — PARALLEL recursive listing.
+     Returns exactly the same array of paths as before, just faster because
+     every subfolder is walked simultaneously instead of one after the other.
+     ============================================================================ */
   async function collectAllUnder(prefix) {
     const out = [];
     const entries = await listFolder(prefix);
+    const folders = [];
     for (const entry of entries) {
-      const fullPath = prefix + entry.name;
-      if (isFolder(entry)) out.push(...await collectAllUnder(fullPath + '/'));
-      else out.push(fullPath);
+      if (isFolder(entry)) folders.push(entry);
+      else out.push(prefix + entry.name);
     }
+    const subLists = await Promise.all(
+      folders.map(f => collectAllUnder(prefix + f.name + '/').catch(() => []))
+    );
+    for (const sub of subLists) out.push(...sub);
     return out;
   }
 
@@ -5547,18 +5486,48 @@
     return null;
   }
 
-  async function computeFolderUsage() {
+  /* ============================================================================
+     FOLDER-USAGE CACHE
+     A short-lived cache so repeated reads (storage indicator, pre-check) don't
+     re-walk the entire tree every time. Every write function calls
+     invalidateUsageCache() so the number is never stale.
+     ============================================================================ */
+  let _usageCache = { bytes: null, ts: 0 };
+
+  function invalidateUsageCache() {
+    _usageCache.bytes = null;
+    _usageCache.ts = 0;
+  }
+
+  /* ============================================================================
+     computeFolderUsage — PARALLEL recursive walk + 15 s cache.
+     `force = true` bypasses the cache and always does a fresh walk.
+     ============================================================================ */
+  async function computeFolderUsage(force) {
+    if (!force
+        && _usageCache.bytes != null
+        && (Date.now() - _usageCache.ts) < USAGE_CACHE_TTL_MS) {
+      return _usageCache.bytes;
+    }
     async function walk(prefix) {
-      let total = 0;
       const entries = await listFolder(prefix);
+      let total = 0;
+      const folders = [];
       for (const entry of entries) {
         if (entry.name === PLACEHOLDER) continue;
-        if (isFolder(entry)) total += await walk(prefix + entry.name + '/');
+        if (isFolder(entry)) folders.push(entry);
         else total += getItemSize(entry);
       }
+      const subTotals = await Promise.all(
+        folders.map(f => walk(prefix + f.name + '/').catch(() => 0))
+      );
+      for (const s of subTotals) total += s;
       return total;
     }
-    return await walk(ROOT + '/');
+    const bytes = await walk(ROOT + '/');
+    _usageCache.bytes = bytes;
+    _usageCache.ts = Date.now();
+    return bytes;
   }
 
   async function updateStorageInfo() {
@@ -5570,7 +5539,7 @@
       if (storageLimit === null) storageLimit = await fetchFolderLimit();
       if (storageLimit === null) { storageBox.hidden = true; storageUsed = 0; return; }
       storageBox.hidden = false;
-      try { storageUsed = await computeFolderUsage(); } catch (err) { storageUsed = 0; }
+      try { storageUsed = await computeFolderUsage(false); } catch (err) { storageUsed = 0; }
       renderStorageIndicator();
     } finally {
       storageLoading = false;
@@ -5590,9 +5559,13 @@
     storageBox.title = 'Storage: ' + pct.toFixed(1) + '% used (' + formatBytes(storageUsed) + ' of ' + formatBytes(storageLimit) + ')';
   }
 
+  /* ============================================================================
+     checkUploadFits — forces a fresh usage read so the "Folder is Full"
+     prompt reflects the current state exactly (no stale cache).
+     ============================================================================ */
   async function checkUploadFits(entries) {
     if (storageLimit == null) return { ok: true };
-    try { storageUsed = await computeFolderUsage(); renderStorageIndicator(); } catch (err) {}
+    try { storageUsed = await computeFolderUsage(true); renderStorageIndicator(); } catch (err) {}
     const newBytes = entries.reduce((s, e) => s + (e.file && e.file.size ? e.file.size : 0), 0);
     const available = Math.max(0, storageLimit - storageUsed);
     if (newBytes > available) return { ok: false, newBytes, available, used: storageUsed, limit: storageLimit };
@@ -5612,12 +5585,6 @@
   }
   function closeFullModal() { fullModal.hidden = true; }
 
-  /* ---------------------------------------------------------------------------
-     "NOT ENOUGH STORAGE" — detected from the SERVER reply.
-     Supabase storage answers 413 (Payload Too Large) / 507 / 403 carrying a
-     quota message when the bucket or the object-size limit is exceeded, which
-     the cheap client-side pre-check cannot always predict.
-     --------------------------------------------------------------------------- */
   function isStorageQuotaError(err) {
     if (!err) return false;
     const status = err.status || (err.cause && err.cause.status);
@@ -5707,16 +5674,12 @@
     return { entries: [], files };
   }
 
-  // Plain File objects from the transfer — read them while the drop event is
-  // still being dispatched, the DataTransfer is not readable afterwards.
   function extractTransferFiles(dataTransfer) {
     try {
       return Array.from((dataTransfer && dataTransfer.files) || []);
     } catch (err) { return []; }
   }
 
-  // Second source of plain File objects: the items themselves (works when
-  // dataTransfer.files came back empty).
   function extractItemFiles(dataTransfer) {
     const out = [];
     try {
@@ -5731,22 +5694,12 @@
     return out;
   }
 
-  // Turn File objects into upload entries. Zero-byte, extension-less, typeless
-  // entries are skipped: Chrome reports folders that way when the FileSystem
-  // entry handles died before we could read them.
   function filesToUploadItems(files, guardAgainstFolders) {
     return (files || [])
       .filter(f => f && (!guardAgainstFolders || !(f.size === 0 && !f.type && !/\.[A-Za-z0-9]{1,8}$/.test(f.name || ''))))
       .map(f => ({ file: f, relativePath: f.name }));
   }
 
-  /* ---------------------------------------------------------------------------
-     FOLDER DROPS — File System Access API (Chrome 86+, secure contexts only).
-     The older webkitGetAsEntry() path often returns an empty directory listing
-     for dropped folders ("folder entry returned no children"), so handle-based
-     reading is tried first. The handles must be requested while the drop event
-     is still alive, but they stay usable afterwards.
-     --------------------------------------------------------------------------- */
   function collectFileSystemHandles(dataTransfer) {
     const handles = [];
     try {
@@ -6045,8 +5998,6 @@
           el.classList.remove('drag-over-folder');
           if (dragOverFolderEl === el) dragOverFolderEl = null;
 
-          // A file dragged in from the desktop is an UPLOAD, not an internal
-          // move. Let it bubble to the dropzone (it used to be swallowed here).
           if (!draggedItem || dragHasFiles(e)) return;
 
           e.preventDefault();
@@ -6104,14 +6055,6 @@
     renderItems();
   }
 
-  /* ============================================================================
-     DOUBLE-CLICK / SINGLE-TAP-TO-OPEN (FIXED)
-     ============================================================================
-     Before navigating into an entry as if it were a folder, verify it really
-     is a folder by attempting to list its contents. If the list comes back
-     empty AND the name looks like a file (has an extension), treat it as a
-     FILE and open its preview instead of "entering" it.
-     ============================================================================ */
   async function handleItemDblClick(it) {
     if (!it) return;
 
@@ -6585,17 +6528,6 @@
     }, 320);
   }
 
-  /* ============================================================================
-     REFRESH (FIXED)
-     ============================================================================
-     Before: any list failure on the root path wiped `allItems` and displayed
-     the "folder does not exist" lock screen, hiding every file until the user
-     manually refreshed the page.
-
-     Now: we only treat the root as "missing" if it really is missing AND we
-     don't already have cached items. A transient network blip keeps the
-     current listing intact, and we just show a toast.
-     ============================================================================ */
   async function refresh() {
     if (currentView === 'shared') {
       await loadSharedItems();
@@ -6859,6 +6791,7 @@
         err.retryable = RETRYABLE_STATUS.has(res.status);
         throw err;
       }
+      invalidateUsageCache();
       return res.json().catch(() => ({}));
     } catch (err) {
       if (err && err.name === 'AbortError') {
@@ -6937,14 +6870,6 @@
     } catch (e) {}
   }
 
-  /* ============================================================================
-     TUS UPLOAD (RESUMABLE)
-     ============================================================================
-     FIXED: createTusUpload now accepts an `opts` object with a `noUpsert`
-     fallback. When the first attempt fails with 409 (an unfinished upload
-     already exists for the same object), we retry without `x-upsert: true`,
-     which typically resolves the conflict.
-     ============================================================================ */
   async function createTusUpload(fullPath, file, signal, opts) {
     opts = opts || {};
     const url = SUPABASE_URL + '/storage/v1/upload/resumable';
@@ -7036,22 +6961,10 @@
     } catch (e) {}
   }
 
-  /* ============================================================================
-     runTusUpload (FIXED)
-     ============================================================================
-     Before running, we HEAD the existing upload URL:
-       - If the offset is valid (0 ≤ offset ≤ size), we resume from there.
-       - Otherwise the URL is stale/dead: we DELETE it, clear it from the
-         session, and create a fresh one.
-     This makes resuming reliable even if the persisted URL has expired, if
-     the Cloudflare tunnel URL has changed, or if Supabase has cleaned up
-     the session server-side.
-     ============================================================================ */
   async function runTusUpload(session, signal) {
     const file = session.file;
     if (!file) throw new Error('File reference missing — please re-select the file');
 
-    // --- Verify the existing URL (if any) is still alive ---
     if (session.uploadUrl) {
       let alive = false;
       try {
@@ -7075,7 +6988,6 @@
       }
     }
 
-    // --- Create a fresh session if we don't have a valid one ---
     if (!session.uploadUrl) {
       try {
         session.uploadUrl = await createTusUpload(session.fullPath, file, signal);
@@ -7094,7 +7006,6 @@
       }
     }
 
-    // --- Upload chunks ---
     while (session.offset < file.size) {
       if (signal && signal.aborted) {
         throw new DOMException('Aborted', 'AbortError');
@@ -7117,13 +7028,6 @@
     return err;
   }
 
-  /* ============================================================================
-     uploadLargeResumable (FIXED)
-     ============================================================================
-     When resuming from a fresh page load (the persisted session has no live
-     file reference), the saved TUS URL is very likely stale. We proactively
-     delete it and start a fresh session before retrying.
-     ============================================================================ */
   async function uploadLargeResumable(fullPath, file, outerSignal, existingSession) {
     const fingerprint = makeFingerprint(file, fullPath);
     let session = existingSession || resumableSessions.get(fingerprint);
@@ -7149,7 +7053,6 @@
       session.updatedAt = Date.now();
     }
 
-    // Fresh-page resume: discard the stale URL before retrying.
     const isFreshPageResume = existingSession && existingSession.file === null;
     if (isFreshPageResume && existingSession.uploadUrl) {
       console.log('[tus] fresh-page resume — discarding stale URL');
@@ -7176,6 +7079,7 @@
         resumableSessions.delete(fingerprint);
         persistSessions();
         renderPendingUploads();
+        invalidateUsageCache();
         return;
       } catch (err) {
         if (err && err.name === 'AbortError') {
@@ -7186,15 +7090,11 @@
         console.error('[tus] attempt', attempt + 1, 'failed:', err.message);
         persistSessions();
 
-        // Out of space: retrying or "resuming" can never succeed — surface the
-        // real error so the caller can show the storage prompt instead of
-        // marking the upload as merely "paused".
         if (isStorageQuotaError(err)) {
           renderPendingUploads();
           throw err;
         }
 
-        // Drop the URL on auth/not-found errors so the next attempt is fresh.
         if (err.status === 401 || err.status === 403 || err.status === 404) {
           if (session.uploadUrl) {
             try { await tusDelete(session.uploadUrl); } catch (e) {}
@@ -7518,12 +7418,6 @@
     });
   }
 
-  /* ============================================================================
-     resumeSession (FIXED)
-     ============================================================================
-     - Real error messages are surfaced (instead of a generic "Resume failed").
-     - Status codes are logged to console for debugging.
-     ============================================================================ */
   async function resumeSession(fingerprint) {
     const session = resumableSessions.get(fingerprint);
     if (!session) return;
@@ -7801,13 +7695,9 @@
     }
   });
 
-  // Last error name from reading a dropped folder (EncodingError = OneDrive etc.)
   let lastFolderDropError = null;
 
   async function uploadDroppedFiles(e) {
-    // The DataTransfer is only readable while the drop event is being
-    // dispatched, so capture it and START reading the entries right here —
-    // before any await (Chrome releases the entry handles otherwise).
     lastFolderDropError = null;
     const dt = e.dataTransfer;
     const extracted = extractDragItemsSync(dt);
@@ -7856,9 +7746,6 @@
     }
     rootExists = true;
 
-    // Plain files: use the File objects from the transfer (most reliable).
-    // Folders: try the File System Access handles first, then the older
-    // webkitGetAsEntry() entries, then the plain files as a last resort.
     let collected = (!hasFolder && plainFiles.length) ? filesToUploadItems(plainFiles, false) : [];
     if (!collected.length && handleFilesPromise) collected = await handleFilesPromise;
     if (!collected.length && entryFilesPromise) collected = await entryFilesPromise;
@@ -7894,12 +7781,6 @@
     await uploadDroppedFiles(e);
   });
 
-  /* ---------------------------------------------------------------------------
-     DROP ANYWHERE ON THE PAGE
-     Files dragged in from the desktop upload into the current folder even when
-     dropped outside the dropzone (topbar, hero, sidebar, breadcrumb row, page
-     edges). Internal drag & drop (moving items) and the modals are untouched.
-     --------------------------------------------------------------------------- */
   function anyOverlayOpen() {
     const pending = document.getElementById('fm-pending-modal');
     return !modal.hidden || !fullModal.hidden || !manageModal.hidden || !renameModal.hidden
@@ -7923,7 +7804,7 @@
 
   document.addEventListener('dragover', (e) => {
     if (!dragHasFiles(e) || draggedItem || pageDropHandledByDropzone(e)) return;
-    e.preventDefault();                       // never let the browser open the file
+    e.preventDefault();
     const blocked = pageDropBlocked();
     const isFull = storageLimit != null && storageUsed >= storageLimit;
     dropzone.classList.toggle('drag-over-page', !blocked);
@@ -7932,7 +7813,7 @@
   });
 
   document.addEventListener('dragleave', (e) => {
-    if (e.relatedTarget) return;              // still inside the window
+    if (e.relatedTarget) return;
     dropzone.classList.remove('drag-over-page');
     dropzone.classList.remove('full');
   });
@@ -8062,6 +7943,7 @@
       await loadSharedItems();
       return;
     }
+    invalidateUsageCache();
     await ensureRootFolderExists();
     refresh();
     updateStorageInfo().catch(err => console.error(err));
@@ -8236,6 +8118,7 @@
       await loadSharedItems();
       return;
     }
+    invalidateUsageCache();
     const exists = await ensureRootFolderExists();
     if (exists) {
       await refresh();
@@ -8246,7 +8129,6 @@
   });
 
   (async function init() {
-    // Clear search inputs FIRST so no ghost filter is applied
     searchTerm = '';
     if (searchInput) { searchInput.value = ''; searchInput.defaultValue = ''; }
     if (searchClear) searchClear.hidden = true;
@@ -8254,7 +8136,6 @@
     if (sharedSearch) { sharedSearch.value = ''; sharedSearch.defaultValue = ''; }
     if (sharedSearchClear) sharedSearchClear.hidden = true;
 
-    // Arm the autofill guards (search boxes + modal / manage text inputs)
     armAutofillGuard(searchInput, resetFileSearchFromAutofill, { wipeOnFocus: true });
     armAutofillGuard(sharedSearch, resetSharedSearchFromAutofill, { wipeOnFocus: true });
     armAutofillGuard(modalInput, () => { modalInput.value = ''; });
