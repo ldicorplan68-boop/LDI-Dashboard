@@ -1320,7 +1320,8 @@
 // ============================================================
 // UNIFIED SALES DASHBOARD — read-only client groups + targets
 // ============================================================
-// OPTIMIZED: parallel pagination + min/max year query
+// FIXED: automatic detection of Supabase max-rows cap + full pagination
+// so ALL rows are fetched (not just the first few thousand).
 // ============================================================
 
 const DEFAULT_CLIENT_GROUPS = [
@@ -1431,8 +1432,16 @@ const PALETTE = [
 const PHP = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const INT = new Intl.NumberFormat('en-PH');
 
-const PAGE_SIZE = 10000;
-const FETCH_CONCURRENCY = 3;       // ⚡ parallel requests per wave (max safe sa Cloudflare tunnel)
+// ============================================================
+// PAGINATION CONFIG
+// ============================================================
+// Supabase/PostgREST imposes a server-side max-rows cap (default 1000,
+// sometimes 500). We *probe* with a large range on the first request,
+// detect the real cap, and then page through everything using that
+// detected size. This guarantees we fetch ALL rows, not just the first
+// 1000×N.
+const PAGE_SIZE = 10000;        // probe size — will be reduced to the real cap
+const FETCH_CONCURRENCY = 3;    // parallel requests per wave
 const CLIENT_RENDER_LIMIT = Infinity;
 const SERIES_TOP_N = 8;
 const CHART_TOP_N = 15;
@@ -1485,6 +1494,77 @@ function escapeHtml(s) {
 
 function fmtSales(v) { return '₱' + PHP.format(v); }
 function fmtSku(v)   { return INT.format(v); }
+
+// ============================================================
+// ⚡ UNIVERSAL PAGED FETCH
+// ------------------------------------------------------------
+// makeQuery(from, to) must return a *fresh* Supabase query builder
+// already configured with filters/order, WITHOUT .range() applied
+// (we apply .range() ourselves).
+// ============================================================
+async function fetchAllRowsPaged(makeQuery, total, onProgress) {
+  const rows = [];
+  const probeSize = PAGE_SIZE;
+
+  // ---- 1) Probe: request a big range. Server will cap it. ----
+  const probeRes = await makeQuery(0, probeSize - 1);
+  if (probeRes.error) throw probeRes.error;
+
+  const first = probeRes.data || [];
+  rows.push(...first);
+  if (onProgress) onProgress(rows.length, total);
+
+  if (!first.length) return rows;                 // nothing to fetch
+  if (rows.length >= total) return rows;          // already complete
+
+  // ---- 2) Effective chunk = what the server actually gave us ----
+  const chunk = Math.max(1, Math.min(probeSize, first.length));
+  const totalPages = Math.max(1, Math.ceil(total / chunk));
+
+  console.log(
+    `[fetch] total=${total} · probe returned ${first.length} · using chunk=${chunk} · pages=${totalPages}`
+  );
+
+  // ---- 3) Fetch remaining pages in parallel waves ----
+  for (let batchStart = 1; batchStart < totalPages; batchStart += FETCH_CONCURRENCY) {
+    const batch = [];
+    const batchEnd = Math.min(batchStart + FETCH_CONCURRENCY, totalPages);
+    for (let p = batchStart; p < batchEnd; p++) {
+      const from = p * chunk;
+      batch.push(makeQuery(from, from + chunk - 1));
+    }
+    const results = await Promise.all(batch);
+    for (const { data, error } of results) {
+      if (error) throw error;
+      if (data && data.length) rows.push(...data);
+    }
+    if (onProgress) onProgress(rows.length, total);
+  }
+
+  // ---- 4) Safety dedupe by id (in case of any overlap) ----
+  if (rows.length > total) {
+    const seen = new Set();
+    const unique = [];
+    for (const r of rows) {
+      const id = r && r.id;
+      if (id != null) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+      }
+      unique.push(r);
+    }
+    if (unique.length !== rows.length) {
+      console.warn(`[fetch] deduped ${rows.length - unique.length} overlapping row(s)`);
+      return unique;
+    }
+  }
+
+  if (rows.length < total) {
+    console.warn(`[fetch] expected ${total} rows but got ${rows.length}. Some rows may be missing.`);
+  }
+
+  return rows;
+}
 
 // ============================================================
 // CLIENT KEYWORD GROUPING (read-only)
@@ -2107,7 +2187,7 @@ async function init() {
 }
 
 // ============================================================
-// ⚡ OPTIMIZED — LOAD AVAILABLE YEARS (2 queries instead of 300+)
+// ⚡ LOAD AVAILABLE YEARS (2 queries)
 // ============================================================
 async function loadAvailableYears() {
   const activeCodes = getActiveSrCodes();
@@ -2124,7 +2204,6 @@ async function loadAvailableYears() {
   console.log('[dashboard] loadAvailableYears: fetching min/max year…');
   const t0 = performance.now();
 
-  // ✅ 2 parallel queries: MIN(year) and MAX(year) — walang full table scan
   const minQ = STATE.client.from('sales')
     .select('year')
     .order('year', { ascending: true })
@@ -2164,7 +2243,7 @@ async function loadAvailableYears() {
 }
 
 // ============================================================
-// ⚡ OPTIMIZED — LOAD YEAR DATA (parallel waves)
+// ⚡ LOAD YEAR DATA — fetch ALL rows via adaptive pagination
 // ============================================================
 async function loadYearData() {
   $('#loader').hidden = false;
@@ -2199,10 +2278,10 @@ async function loadYearData() {
   const t0 = performance.now();
 
   try {
-    // 1) Count muna (fast — header only, walang data)
+    // 1) Count — exact row count for this year + SR filter
     let countQ = STATE.client
       .from('sales')
-      .select('id', { count: 'planned', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('year', STATE.year);
     if (activeCodes?.length) countQ = countQ.in('sr_code', activeCodes);
     const countRes = await countQ;
@@ -2220,39 +2299,26 @@ async function loadYearData() {
       return;
     }
 
-    // 2) ⚡ Parallel wave fetch — FETCH_CONCURRENCY requests at a time
-    const CHUNK = PAGE_SIZE;
-    const pages = Math.ceil(total / CHUNK);
-    const rows = [];
-
-    const fetchPage = (pageIdx) => {
-      const from = pageIdx * CHUNK;
+    // 2) Query factory — no .range() here; fetchAllRowsPaged applies it
+    const makeQuery = (from, to) => {
       let q = STATE.client
         .from('sales')
         .select('id, date, year, company, division, area, area2, sr_code, client, items, sku, sales')
         .eq('year', STATE.year)
         .order('id', { ascending: true })
-        .range(from, from + CHUNK - 1);
+        .range(from, to);
       if (activeCodes?.length) q = q.in('sr_code', activeCodes);
       return q;
     };
 
-    for (let batchStart = 0; batchStart < pages; batchStart += FETCH_CONCURRENCY) {
-      const batch = [];
-      const batchEnd = Math.min(batchStart + FETCH_CONCURRENCY, pages);
-      for (let j = batchStart; j < batchEnd; j++) {
-        batch.push(fetchPage(j));
-      }
-      const results = await Promise.all(batch);
-      results.forEach(({ data, error }) => {
-        if (error) throw error;
-        if (data) rows.push(...data);
-      });
-      setLoadProgress(rows.length, total);
-    }
+    // 3) Adaptive paginated fetch — gets ALL rows regardless of server cap
+    const rows = await fetchAllRowsPaged(makeQuery, total, setLoadProgress);
 
     STATE.allRows = rows;
-    console.log(`[dashboard] ✅ loaded ${rows.length} rows in ${Math.round(performance.now() - t0)}ms (${pages} pages, concurrency ${FETCH_CONCURRENCY})`);
+    console.log(
+      `[dashboard] ✅ loaded ${rows.length} / ${total} rows in ` +
+      `${Math.round(performance.now() - t0)}ms (adaptive pagination)`
+    );
 
     rebuildFilterList();
 
@@ -2269,7 +2335,7 @@ async function loadYearData() {
 }
 
 // ============================================================
-// ⚡ OPTIMIZED — LOAD ALL YEARS (for Compare mode, parallel waves)
+// ⚡ LOAD ALL YEARS (Compare mode) — adaptive pagination
 // ============================================================
 async function loadAllYearsData() {
   if (STATE.compareLoaded || STATE.compareLoading) return;
@@ -2286,40 +2352,23 @@ async function loadAllYearsData() {
   try {
     let countQ = STATE.client
       .from('sales')
-      .select('id', { count: 'planned', head: true });
+      .select('id', { count: 'exact', head: true });
     if (activeCodes?.length) countQ = countQ.in('sr_code', activeCodes);
     const countRes = await countQ;
     if (countRes.error) throw countRes.error;
     const total = countRes.count || 0;
 
-    const CHUNK = PAGE_SIZE;
-    const pages = Math.ceil(total / CHUNK);
-    const rows = [];
-
-    const fetchPage = (pageIdx) => {
-      const from = pageIdx * CHUNK;
+    const makeQuery = (from, to) => {
       let q = STATE.client
         .from('sales')
         .select('id, date, year, company, division, area, area2, sr_code, client, items, sku, sales')
         .order('id', { ascending: true })
-        .range(from, from + CHUNK - 1);
+        .range(from, to);
       if (activeCodes?.length) q = q.in('sr_code', activeCodes);
       return q;
     };
 
-    for (let batchStart = 0; batchStart < pages; batchStart += FETCH_CONCURRENCY) {
-      const batch = [];
-      const batchEnd = Math.min(batchStart + FETCH_CONCURRENCY, pages);
-      for (let j = batchStart; j < batchEnd; j++) {
-        batch.push(fetchPage(j));
-      }
-      const results = await Promise.all(batch);
-      results.forEach(({ data, error }) => {
-        if (error) throw error;
-        if (data) rows.push(...data);
-      });
-      setCompareProgress(rows.length, total);
-    }
+    const rows = await fetchAllRowsPaged(makeQuery, total, setCompareProgress);
 
     STATE.compareRows = rows;
     STATE.compareLoaded = true;
