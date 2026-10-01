@@ -1,9 +1,9 @@
 @echo off
-title Upload to GitHub
+title Replace GitHub with Local Files
 cd /d "C:\Users\User\Desktop\Sales"
 
 echo ========================================
-echo       UPLOADING FILES TO GITHUB
+echo    REPLACING GITHUB WITH LOCAL FILES
 echo ========================================
 echo.
 
@@ -12,17 +12,21 @@ git add -A
 
 echo.
 echo Creating commit...
-git commit -m "Update files"
+git commit -m "Replace GitHub with latest local files"
 
 echo.
-echo Pushing to GitHub...
-git push origin main
+echo Pushing to GitHub and replacing remote...
+git push origin main --force
 
 echo.
 if %errorlevel%==0 (
     echo ========================================
     echo       UPLOAD SUCCESSFUL!
     echo ========================================
+    echo.
+    echo GitHub has been replaced with
+    echo the current files in:
+    echo C:\Users\User\Desktop\Sales
 ) else (
     echo ========================================
     echo         UPLOAD FAILED!
