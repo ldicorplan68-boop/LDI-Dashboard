@@ -1320,11 +1320,7 @@
 // ============================================================
 // UNIFIED SALES DASHBOARD — read-only client groups + targets
 // ============================================================
-//
-// Management of client groups and sales targets now lives in
-// setting.html. This page only READS those tables:
-//   sales.client_groups  (label, keywords text[], clients text[], sort_order)
-//   sales.sales_targets  (year, dimension, name, period_type, period_index, target_amount)
+// OPTIMIZED: parallel pagination + min/max year query
 // ============================================================
 
 const DEFAULT_CLIENT_GROUPS = [
@@ -1436,6 +1432,7 @@ const PHP = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFr
 const INT = new Intl.NumberFormat('en-PH');
 
 const PAGE_SIZE = 1000;
+const FETCH_CONCURRENCY = 6;       // ⚡ parallel requests per wave (max safe sa Cloudflare tunnel)
 const CLIENT_RENDER_LIMIT = Infinity;
 const SERIES_TOP_N = 8;
 const CHART_TOP_N = 15;
@@ -2110,7 +2107,7 @@ async function init() {
 }
 
 // ============================================================
-// LOAD AVAILABLE YEARS
+// ⚡ OPTIMIZED — LOAD AVAILABLE YEARS (2 queries instead of 300+)
 // ============================================================
 async function loadAvailableYears() {
   const activeCodes = getActiveSrCodes();
@@ -2124,38 +2121,35 @@ async function loadAvailableYears() {
     return;
   }
 
-  let countQ = STATE.client.from('sales').select('*', { count: 'exact', head: true });
-  if (activeCodes && activeCodes.length) countQ = countQ.in('sr_code', activeCodes);
-  const countRes = await countQ;
-  if (countRes.error) throw countRes.error;
-  const total = countRes.count || 0;
+  console.log('[dashboard] loadAvailableYears: fetching min/max year…');
+  const t0 = performance.now();
 
-  const yearsSet = new Set();
-  const PAGE = PAGE_SIZE;
-  let from = 0;
+  // ✅ 2 parallel queries: MIN(year) and MAX(year) — walang full table scan
+  const minQ = STATE.client.from('sales')
+    .select('year')
+    .order('year', { ascending: true })
+    .limit(1);
+  const maxQ = STATE.client.from('sales')
+    .select('year')
+    .order('year', { ascending: false })
+    .limit(1);
 
-  try {
-    while (from < total) {
-      let q = STATE.client
-        .from('sales')
-        .select('year')
-        .order('year', { ascending: false })
-        .order('id', { ascending: true })
-        .range(from, from + PAGE - 1);
-      if (activeCodes && activeCodes.length) q = q.in('sr_code', activeCodes);
-      const { data, error } = await q;
-      if (error) throw error;
-      if (!data || !data.length) break;
-      data.forEach(r => { if (r.year != null) yearsSet.add(r.year); });
-      from += data.length;
-      if (data.length < PAGE) break;
-    }
-  } catch (err) {
-    console.error('[dashboard] loadAvailableYears failed:', err);
-    throw err;
+  const [minRes, maxRes] = await Promise.all([
+    activeCodes?.length ? minQ.in('sr_code', activeCodes) : minQ,
+    activeCodes?.length ? maxQ.in('sr_code', activeCodes) : maxQ,
+  ]);
+
+  if (minRes.error) throw minRes.error;
+  if (maxRes.error) throw maxRes.error;
+
+  const minYear = Number(minRes.data?.[0]?.year) || null;
+  const maxYear = Number(maxRes.data?.[0]?.year) || null;
+
+  let years = [];
+  if (minYear && maxYear && maxYear >= minYear) {
+    for (let y = maxYear; y >= minYear; y--) years.push(y);
   }
 
-  const years = [...yearsSet].sort((a, b) => b - a);
   STATE.availableYears = years.length ? years : [new Date().getFullYear()];
   STATE.year = STATE.availableYears[0];
 
@@ -2165,8 +2159,13 @@ async function loadAvailableYears() {
   sel.value = STATE.year;
 
   STATE.compareYears = new Set(STATE.availableYears);
+
+  console.log(`[dashboard] ✅ years loaded in ${Math.round(performance.now() - t0)}ms: ${years.join(', ') || 'none'}`);
 }
 
+// ============================================================
+// ⚡ OPTIMIZED — LOAD YEAR DATA (parallel waves)
+// ============================================================
 async function loadYearData() {
   $('#loader').hidden = false;
   $('#loader-text').textContent = 'Loading data…';
@@ -2197,41 +2196,63 @@ async function loadYearData() {
     return;
   }
 
-  let countQ = STATE.client
-    .from('sales')
-    .select('*', { count: 'exact', head: true })
-    .eq('year', STATE.year);
-  if (activeCodes && activeCodes.length) countQ = countQ.in('sr_code', activeCodes);
-  const countRes = await countQ;
-  if (countRes.error) throw countRes.error;
-  const total = countRes.count || 0;
-
-  const rows = [];
-  let from = 0;
-  const CHUNK = PAGE_SIZE;
+  const t0 = performance.now();
 
   try {
-    while (from < total) {
+    // 1) Count muna (fast — header only, walang data)
+    let countQ = STATE.client
+      .from('sales')
+      .select('id', { count: 'planned', head: true })
+      .eq('year', STATE.year);
+    if (activeCodes?.length) countQ = countQ.in('sr_code', activeCodes);
+    const countRes = await countQ;
+    if (countRes.error) throw countRes.error;
+    const total = countRes.count || 0;
+
+    if (!total) {
+      STATE.allRows = [];
+      $('#loader').hidden = true;
+      $('#chart-loader').hidden = true;
+      $('#empty').hidden = false;
+      $('#empty').textContent = 'No data found for the current filters.';
+      $('#chart-empty').hidden = false;
+      $('#chart-empty').textContent = 'No data found for the current filters.';
+      return;
+    }
+
+    // 2) ⚡ Parallel wave fetch — FETCH_CONCURRENCY requests at a time
+    const CHUNK = PAGE_SIZE;
+    const pages = Math.ceil(total / CHUNK);
+    const rows = [];
+
+    const fetchPage = (pageIdx) => {
+      const from = pageIdx * CHUNK;
       let q = STATE.client
         .from('sales')
         .select('id, date, year, company, division, area, area2, sr_code, client, items, sku, sales')
         .eq('year', STATE.year)
         .order('id', { ascending: true })
         .range(from, from + CHUNK - 1);
-      if (activeCodes && activeCodes.length) q = q.in('sr_code', activeCodes);
+      if (activeCodes?.length) q = q.in('sr_code', activeCodes);
+      return q;
+    };
 
-      const { data, error } = await q;
-      if (error) throw error;
-      if (!data || !data.length) break;
-
-      rows.push(...data);
-      from += data.length;
-      setLoadProgress(from, total);
-      if (data.length < CHUNK) break;
+    for (let batchStart = 0; batchStart < pages; batchStart += FETCH_CONCURRENCY) {
+      const batch = [];
+      const batchEnd = Math.min(batchStart + FETCH_CONCURRENCY, pages);
+      for (let j = batchStart; j < batchEnd; j++) {
+        batch.push(fetchPage(j));
+      }
+      const results = await Promise.all(batch);
+      results.forEach(({ data, error }) => {
+        if (error) throw error;
+        if (data) rows.push(...data);
+      });
+      setLoadProgress(rows.length, total);
     }
 
     STATE.allRows = rows;
-    console.log(`[dashboard] loaded ${rows.length} of ${total} rows for ${STATE.year}`);
+    console.log(`[dashboard] ✅ loaded ${rows.length} rows in ${Math.round(performance.now() - t0)}ms (${pages} pages, concurrency ${FETCH_CONCURRENCY})`);
 
     rebuildFilterList();
 
@@ -2247,6 +2268,9 @@ async function loadYearData() {
   }
 }
 
+// ============================================================
+// ⚡ OPTIMIZED — LOAD ALL YEARS (for Compare mode, parallel waves)
+// ============================================================
 async function loadAllYearsData() {
   if (STATE.compareLoaded || STATE.compareLoading) return;
   STATE.compareLoading = true;
@@ -2257,38 +2281,49 @@ async function loadAllYearsData() {
   $('#chart-wrap').hidden = true;
   $('#chart-cmp-progress').hidden = false;
 
+  const t0 = performance.now();
+
   try {
-    let countQ = STATE.client.from('sales').select('*', { count: 'exact', head: true });
-    if (activeCodes && activeCodes.length) countQ = countQ.in('sr_code', activeCodes);
+    let countQ = STATE.client
+      .from('sales')
+      .select('id', { count: 'planned', head: true });
+    if (activeCodes?.length) countQ = countQ.in('sr_code', activeCodes);
     const countRes = await countQ;
     if (countRes.error) throw countRes.error;
     const total = countRes.count || 0;
 
-    const rows = [];
-    let from = 0;
     const CHUNK = PAGE_SIZE;
+    const pages = Math.ceil(total / CHUNK);
+    const rows = [];
 
-    while (from < total) {
+    const fetchPage = (pageIdx) => {
+      const from = pageIdx * CHUNK;
       let q = STATE.client
         .from('sales')
         .select('id, date, year, company, division, area, area2, sr_code, client, items, sku, sales')
         .order('id', { ascending: true })
         .range(from, from + CHUNK - 1);
-      if (activeCodes && activeCodes.length) q = q.in('sr_code', activeCodes);
+      if (activeCodes?.length) q = q.in('sr_code', activeCodes);
+      return q;
+    };
 
-      const { data, error } = await q;
-      if (error) throw error;
-      if (!data || !data.length) break;
-
-      rows.push(...data);
-      from += data.length;
-      setCompareProgress(from, total);
-      if (data.length < CHUNK) break;
+    for (let batchStart = 0; batchStart < pages; batchStart += FETCH_CONCURRENCY) {
+      const batch = [];
+      const batchEnd = Math.min(batchStart + FETCH_CONCURRENCY, pages);
+      for (let j = batchStart; j < batchEnd; j++) {
+        batch.push(fetchPage(j));
+      }
+      const results = await Promise.all(batch);
+      results.forEach(({ data, error }) => {
+        if (error) throw error;
+        if (data) rows.push(...data);
+      });
+      setCompareProgress(rows.length, total);
     }
 
     STATE.compareRows = rows;
     STATE.compareLoaded = true;
-    console.log(`[dashboard] loaded ALL ${rows.length} rows`);
+    console.log(`[dashboard] ✅ loaded ALL ${rows.length} rows in ${Math.round(performance.now() - t0)}ms`);
 
     $('#chart-cmp-progress').hidden = true;
     rebuildFilterList();
