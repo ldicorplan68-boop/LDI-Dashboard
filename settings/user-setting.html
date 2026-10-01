@@ -266,6 +266,15 @@ a.button{text-decoration:none}
 .check-item{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:#f2f5fd;border:1px solid var(--border-strong);font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;user-select:none;transition:all var(--fast);min-height:38px}
 .check-item:hover{background:#e6ebff;border-color:#c7d1ff}
 .check-item input{accent-color:var(--royal);width:15px;height:15px;cursor:pointer;margin:0}
+.company-dropdown{position:relative}
+.company-dropdown>summary{list-style:none;min-height:44px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:#fff;padding:11px 38px 11px 12px;font-size:13.5px;color:var(--text);cursor:pointer;user-select:none}
+.company-dropdown>summary::-webkit-details-marker{display:none}
+.company-dropdown>summary::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:11px}
+.company-dropdown[open]>summary{border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
+.company-dropdown[open]>summary::after{transform:translateY(-50%) rotate(180deg)}
+.company-checkboxes{display:flex;flex-direction:column;gap:8px;margin-top:8px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:#fff}
+.company-checkboxes label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-2)}
+.company-checkboxes input{width:15px;height:15px;cursor:pointer;margin:0}
 .check-item:has(input:checked){background:#e6ebff;border-color:var(--royal);color:var(--royal);box-shadow:0 2px 8px rgba(27,27,179,.18)}
 .check-item .hi-href{font-size:10.5px;color:var(--muted);font-weight:500;margin-left:2px}
 .check-item:has(input:checked) .hi-href{color:var(--royal);opacity:.75}
@@ -516,6 +525,7 @@ a.button{text-decoration:none}
                   <th>ID</th>
                   <th>Full Name</th>
                   <th>Username</th>
+                  <th>Job Title / Position</th>
                   <th>Email Address</th>
                   <th>Contact Number</th>
                   <th>Approvers</th>
@@ -528,7 +538,7 @@ a.button{text-decoration:none}
                 </tr>
               </thead>
               <tbody id="users-tbody">
-                <tr class="empty-row"><td class="empty" colspan="13">Loading users&hellip;</td></tr>
+                <tr class="empty-row"><td class="empty" colspan="14">Loading users&hellip;</td></tr>
               </tbody>
             </table>
           </div>
@@ -734,12 +744,14 @@ const state = {
   activeUsers: [],
   selectedId: null,
   heroButtons: [],
-  hasHeroButtonsColumn: true
+  hasHeroButtonsColumn: true,
+  departmentFolders: []
 };
 
 const HERO_ALL = 'all';
 const MAX_APPROVERS = 3;
 const MAX_HERO_BADGES = 2;
+const COMPANY_OPTIONS = ['LDI', 'FEI', 'LCPI'];
 const STRIPPABLE_COLUMNS = ['allowed_hero_buttons','full_name','approver','contact','email'];
 
 /* ---------- role helpers ---------- */
@@ -1119,6 +1131,187 @@ async function loadActiveUsers(){
 }
 
 /* ============================================================
+   DEPARTMENT FOLDERS
+   users.department is driven by the folders that really exist in
+   the "department" bucket; picking one creates the user's own
+   sub-folder inside it (fire-safe: storage errors never block a save)
+   ============================================================ */
+const DEPARTMENT_BUCKET  = 'department';
+const FOLDER_PLACEHOLDER = '.emptyFolderPlaceholder';
+
+function storageHeaders(extra){
+  return Object.assign({
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+    'ngrok-skip-browser-warning': 'true'
+  }, extra || {});
+}
+
+async function storageHttpError(res, action){
+  const body = await res.text().catch(() => '');
+  return new Error(action + ' — Storage HTTP ' + res.status + ': ' + (body || res.statusText || 'request failed'));
+}
+
+async function listDepartmentFolders(){
+  const rows = await supabase.from('hero_buttons')
+    .select('href,label,sort_order')
+    .gt('sort_order', 0)
+    .order('sort_order', { ascending: true });
+  if (!Array.isArray(rows)) throw new Error('hero_buttons department list returned no array');
+  return rows
+    .map(row => ({
+      value: String(row.href || '').trim().replace(/\.html?$/i, ''),
+      label: String(row.label || '').trim()
+    }))
+    .filter(row => row.value && row.label);
+}
+
+async function loadDepartmentFolders(){
+  try {
+    state.departmentFolders = await listDepartmentFolders();
+  } catch (err) {
+    console.warn('[departments] folder list failed:', err.message || err);
+    state.departmentFolders = [];
+  }
+}
+
+/* Folder name for the user: full name, slugified. */
+function userFolderName(u){
+  const base = String((u && u.full_name) || '').trim().toLowerCase();
+  return base
+    .replace(/[^a-z0-9._-]+/g, '_')
+    .replace(/\.html?$/, '')
+    .replace(/^[._-]+|[._-]+$/g, '');
+}
+
+async function createDepartmentSubFolder(dept, name){
+  const path = dept + '/' + name + '/' + FOLDER_PLACEHOLDER;
+  const url  = SUPABASE_URL + '/storage/v1/object/' + encodeURIComponent(DEPARTMENT_BUCKET) + '/' +
+               path.split('/').map(encodeURIComponent).join('/');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: storageHeaders({
+      'Content-Type': 'application/octet-stream',
+      'x-upsert': 'true',
+      'cache-control': 'no-cache'
+    }),
+    body: new Blob([''], { type: 'application/octet-stream' })
+  });
+  if (!res.ok) throw await storageHttpError(res, 'Create user sub-folder failed');
+}
+
+async function createDepartmentFolder(dept){
+  const path = dept + '/' + FOLDER_PLACEHOLDER;
+  const url  = SUPABASE_URL + '/storage/v1/object/' + encodeURIComponent(DEPARTMENT_BUCKET) + '/' +
+               path.split('/').map(encodeURIComponent).join('/');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: storageHeaders({
+      'Content-Type': 'application/octet-stream',
+      'x-upsert': 'true',
+      'cache-control': 'no-cache'
+    }),
+    body: new Blob([''], { type: 'application/octet-stream' })
+  });
+  if (!res.ok) throw await storageHttpError(res, 'Create department folder failed');
+}
+
+async function listDepartmentPath(prefix){
+  const res = await fetch(SUPABASE_URL + '/storage/v1/object/list/' + encodeURIComponent(DEPARTMENT_BUCKET), {
+    method: 'POST',
+    headers: storageHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ prefix: prefix, limit: 1000, offset: 0 })
+  });
+  if (!res.ok) throw await storageHttpError(res, 'List folder path failed');
+  const rows = await res.json().catch(() => []);
+  return Array.isArray(rows) ? rows : [];
+}
+
+async function moveDepartmentUserObject(sourceKey, destinationKey){
+  const url = SUPABASE_URL + '/storage/v1/object/move';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: storageHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({
+      bucketId: DEPARTMENT_BUCKET,
+      sourceKey,
+      destinationKey
+    })
+  });
+  if (!res.ok) throw await storageHttpError(res, 'Move folder item failed');
+}
+
+async function deleteDepartmentObject(key){
+  const url = SUPABASE_URL + '/storage/v1/object/' + encodeURIComponent(DEPARTMENT_BUCKET) + '/' +
+               key.split('/').map(encodeURIComponent).join('/');
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: storageHeaders()
+  });
+  if (!res.ok) throw await storageHttpError(res, 'Delete old folder item failed');
+}
+
+/* Runs after a successful save. Never throws, never blocks the save.
+   When department changes, the existing user folder is moved first. The old
+   source path is removed by Storage only after that move succeeds. */
+async function syncUserDepartmentFolder(data, previousUser){
+  const dept = String((data && data.department) || '').trim();
+  if (!dept) return;
+  const name = userFolderName(data);
+  if (!name){ console.warn('[departments] no folder name for user'); return; }
+
+  const oldDept = String((previousUser && previousUser.department) || '').trim();
+  const oldName = userFolderName(previousUser);
+  const departmentChanged = oldDept && oldDept.toLowerCase() !== dept.toLowerCase();
+
+  try {
+    if (departmentChanged && oldName){
+      const source = oldDept + '/' + oldName;
+      const destination = dept + '/' + name;
+      const sourceRows = await listDepartmentPath(source + '/');
+      const destinationRows = await listDepartmentPath(destination + '/');
+
+      if (sourceRows.length && destinationRows.length){
+        toast('Folder "' + destination + '" already exists. Source folder "' + source + '" was kept.', 'warn');
+      } else if (sourceRows.length){
+        const newDeptRows = await listDepartmentPath(dept + '/');
+        if (!newDeptRows.length) await createDepartmentFolder(dept);
+        const sourcePrefix = source + '/';
+        for (const row of sourceRows){
+          const listed = String((row && row.name) || '');
+          if (!listed) continue;
+          const item = listed.startsWith(sourcePrefix) ? listed : sourcePrefix + listed.replace(/^\/+/, '');
+          const relative = item.slice(sourcePrefix.length);
+          if (!relative) continue;
+          await moveDepartmentUserObject(item, destination + '/' + relative);
+        }
+        const movedRows = await listDepartmentPath(destination + '/');
+        if (!movedRows.length) throw new Error('Moved folder could not be verified');
+        const remainingSourceRows = await listDepartmentPath(source + '/');
+        for (const row of remainingSourceRows){
+          const listed = String((row && row.name) || '');
+          if (!listed) continue;
+          const item = listed.startsWith(sourcePrefix) ? listed : sourcePrefix + listed.replace(/^\/+/, '');
+          if (item !== source && item.startsWith(sourcePrefix)) await deleteDepartmentObject(item);
+        }
+        toast('Folder moved to "' + destination + '".');
+      } else {
+        await createDepartmentSubFolder(dept, name);
+        toast('Sub-folder "' + destination + '" is ready.');
+      }
+    } else {
+      await createDepartmentSubFolder(dept, name);
+      toast('Sub-folder "' + dept + '/' + name + '" is ready.');
+    }
+  } catch (err) {
+    const reason = String((err && err.message) || err || 'unknown error');
+    console.warn('[departments] folder sync failed:', reason);
+    toast('User saved — folder move to "' + dept + '/' + name + '" could not be completed: ' + reason, 'warn');
+  }
+  await loadDepartmentFolders();
+}
+
+/* ============================================================
    USER FORM
    ============================================================ */
 const ROLES    = ['superadmin','admin','user'];
@@ -1200,6 +1393,24 @@ function userFormHTML(prefix, u = {}){
     `<option value="${s}"${(u.status || 'pending') === s ? ' selected' : ''}>${s}</option>`
   ).join('');
 
+  /* Department options come from the folders that really exist in the
+     "department" bucket; the user's current value is kept even when its
+     folder is gone, so nothing is lost while editing. */
+  const deptValue = String(u.department || '').trim();
+  const deptList  = (state.departmentFolders || []).slice();
+  const deptOpts = [`<option value="">&mdash; none &mdash;</option>`].concat(
+    deptList.map(d => {
+      const selected = d.value.toLowerCase() === deptValue.toLowerCase();
+      return `<option value="${esc(d.value)}"${selected ? ' selected' : ''}>${esc(d.label)}</option>`;
+    })
+  ).join('');
+  const assignedCompanies = Array.isArray(u.assigned_companies)
+    ? u.assigned_companies
+    : textToArr(arrToText(u.assigned_companies));
+  const companyOpts = COMPANY_OPTIONS.map(company =>
+    `<label><input type="checkbox" name="${prefix}-company" value="${company}"${assignedCompanies.includes(company) ? ' checked' : ''}> ${company}</label>`
+  ).join('');
+
   let noticeHTML = '';
   if (lockPassword || lockRoleStatus){
     const locked = [];
@@ -1222,6 +1433,9 @@ function userFormHTML(prefix, u = {}){
       </label>
       <label class="field"><span>Username</span>
         <input id="${prefix}-username" type="text" autocomplete="off" placeholder="e.g. jdoe" value="${esc(u.username || '')}">
+      </label>
+      <label class="field"><span>Job Position</span>
+        <input id="${prefix}-position" type="text" autocomplete="off" placeholder="e.g. Sales Representative" value="${esc(u.position || '')}">
       </label>
       <label class="field">
         <span>Password ${lockPassword ? '<em>locked &mdash; superadmin account</em>' : ''}</span>
@@ -1247,6 +1461,12 @@ function userFormHTML(prefix, u = {}){
           ${statusOpts}
         </select>
       </label>
+      <label class="field">
+        <span>Department <em>folder inside the department bucket</em></span>
+        <select id="${prefix}-department">
+          ${deptOpts}
+        </select>
+      </label>
     </div>
 
     <div class="field">
@@ -1256,9 +1476,15 @@ function userFormHTML(prefix, u = {}){
 
     ${heroButtonsCheckboxesHTML(prefix, u)}
 
-    <label class="field"><span>Assigned Companies <em>comma separated</em></span>
-      <input id="${prefix}-companies" type="text" placeholder="Company A, Company B" value="${esc(arrToText(u.assigned_companies))}">
-    </label>
+    <div class="field">
+      <span>Assigned Companies <em>select one or more</em></span>
+      <details class="company-dropdown">
+        <summary>Select Companies</summary>
+        <div class="company-checkboxes">
+          ${companyOpts}
+        </div>
+      </details>
+    </div>
     <label class="field"><span>Assigned Sales Rep Codes <em>comma separated</em></span>
       <input id="${prefix}-codes" type="text" placeholder="SR001, SR002" value="${esc(arrToText(u.assigned_sales_rep_codes))}">
     </label>
@@ -1270,6 +1496,7 @@ function userFormHTML(prefix, u = {}){
 
 function readUserForm(prefix){
   const username = $('#' + prefix + '-username').value.trim();
+  const position = ($('#' + prefix + '-position')?.value || '').trim();
   const pwdEl = $('#' + prefix + '-password');
   const passwordLocked = !!(pwdEl && pwdEl.disabled);
   const password = passwordLocked ? '' : (pwdEl?.value || '').trim();
@@ -1280,6 +1507,7 @@ function readUserForm(prefix){
   const full_name = $('#' + prefix + '-fullname').value.trim();
   const contact   = $('#' + prefix + '-contact').value.trim();
   const email     = $('#' + prefix + '-email').value.trim();
+  const department = ($('#' + prefix + '-department')?.value || '').trim();
 
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
     throw new Error('Please enter a valid email address.');
@@ -1316,12 +1544,16 @@ function readUserForm(prefix){
 
   const payload = {
     full_name,
+    position,
     contact,
     email,
+    department,
     approver,
     username,
     allowed_hero_buttons,
-    assigned_companies: textToArr($('#' + prefix + '-companies').value),
+    assigned_companies: $$(`input[name="${prefix}-company"]:checked`)
+      .map(input => input.value)
+      .filter(company => COMPANY_OPTIONS.includes(company)),
     assigned_sales_rep_codes: textToArr($('#' + prefix + '-codes').value),
     assigned_areas: textToArr($('#' + prefix + '-areas').value)
   };
@@ -1337,7 +1569,7 @@ function readUserForm(prefix){
 const tbody = $('#users-tbody');
 
 async function loadUsers(){
-  tbody.innerHTML = '<tr class="empty-row"><td class="empty" colspan="13">Loading users&hellip;</td></tr>';
+  tbody.innerHTML = '<tr class="empty-row"><td class="empty" colspan="14">Loading users&hellip;</td></tr>';
   try {
     const rows = await supabase.from('users').select('*').order('id', { ascending: true });
     const all  = Array.isArray(rows) ? rows : [];
@@ -1347,7 +1579,7 @@ async function loadUsers(){
     console.error(err);
     state.users = [];
     state.selectedId = null;
-    tbody.innerHTML = `<tr class="empty-row"><td class="empty" colspan="13">Could not load users: ${esc(friendlyError(err))}</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td class="empty" colspan="14">Could not load users: ${esc(friendlyError(err))}</td></tr>`;
     updateSelectionUI();
     return;
   }
@@ -1413,7 +1645,7 @@ function renderUsers(){
   });
 
   if (!rows.length){
-    tbody.innerHTML = `<tr class="empty-row"><td class="empty" colspan="13">No users found.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td class="empty" colspan="14">No users found.</td></tr>`;
     updateSelectionUI();
     return;
   }
@@ -1429,6 +1661,7 @@ function renderUsers(){
         <td class="num">${esc(u.id)}</td>
         <td>${fn}</td>
         <td><strong>${esc(u.username)}</strong></td>
+        <td>${esc(u.position || '—')}</td>
         <td>${email}</td>
         <td>${contact}</td>
         <td>${approverBadgesHTML(u)}</td>
@@ -1477,6 +1710,7 @@ $('#user-search').addEventListener('input', renderUsers);
 $('#btn-refresh').addEventListener('click', async () => {
   await loadHeroButtons();
   await loadActiveUsers();
+  await loadDepartmentFolders();
   await loadUsers();
 });
 
@@ -1527,6 +1761,7 @@ $('#btn-edit').addEventListener('click', () => {
       }
       closeModal();
       toast('User "' + data.username + '" updated.');
+      await syncUserDepartmentFolder(data, u);
       await loadActiveUsers();
       await loadUsers();
     } catch (err) {
@@ -1643,6 +1878,7 @@ async function handleAddSubmit(e){
 
     closeModal();
     toast('User "' + data.username + '" created.');
+    await syncUserDepartmentFolder(data);
     state.selectedId = null;
     await loadActiveUsers();
     await loadUsers();
@@ -1664,6 +1900,7 @@ $('#current-user').textContent = me?.username ? ('Signed in as ' + (me.full_name
 
 await loadHeroButtons();
 await loadActiveUsers();
+await loadDepartmentFolders();
 loadUsers();
 })();
 </script>

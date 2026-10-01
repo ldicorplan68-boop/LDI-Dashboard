@@ -835,6 +835,98 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     return rows
   }
 
+  /* ---------- 1b. DEPARTMENT FOLDER SYNC (hero button -> bucket folder) ------
+     Every hero button must have a folder inside the "department" bucket.
+     Folder name comes from the button href (/reports -> reports); when two
+     buttons would produce the same name, the label is appended to keep it
+     unique. Existing entries are only READ - never overwritten or deleted. */
+  const DEPARTMENT_BUCKET  = 'department'
+  const FOLDER_PLACEHOLDER = '.emptyFolderPlaceholder'
+
+  function slugify(v){
+    return String(v ?? '')
+      .trim().toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, '_')
+      .replace(/\.html?$/, '')            /* walang .html/.htm sa dulo ng folder name */
+      .replace(/^[._-]+|[._-]+$/g, '')
+  }
+
+  function storageHeaders(extra){
+    return {
+      apikey: ANON_KEY,
+      Authorization: 'Bearer ' + ANON_KEY,
+      'ngrok-skip-browser-warning': 'true',
+      ...extra
+    }
+  }
+
+  /* href -> last path segment, e.g. '/reports' -> 'reports'. */
+  function hrefFolderBase(b){
+    const clean = String(b.href ?? '').split('#')[0].split('?')[0]
+    const last  = clean.split('/').filter(Boolean).pop()
+    return slugify(last)
+  }
+
+  function buildFolderNames(buttons){
+    const bases = buttons.map(hrefFolderBase)
+    const count = {}
+    bases.forEach(n => { if(n) count[n] = (count[n] || 0) + 1 })
+
+    const names = new Map()
+    buttons.forEach((b, i) => {
+      let name = bases[i] || slugify(b.label)
+      if(name && count[name] > 1) name = slugify(name + '_' + (b.label || b.id))
+      if(!name) name = 'button_' + b.id
+      names.set(b, name)
+    })
+    return names
+  }
+
+  async function listDepartmentRoot(){
+    const res = await fetch(HOSTNAME + '/storage/v1/object/list/' + encodeURIComponent(DEPARTMENT_BUCKET), {
+      method: 'POST',
+      headers: storageHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        prefix: '',
+        limit: 1000,
+        offset: 0,
+        sortBy: { column: 'name', order: 'asc' }
+      })
+    })
+    if(!res.ok) throw new Error('Folder list failed: ' + await res.text())
+    const rows = await res.json().catch(() => [])
+    return new Set((Array.isArray(rows) ? rows : []).map(r => String(r.name || '').replace(/\/+$/, '')))
+  }
+
+  async function createDepartmentFolder(name){
+    const path = name + '/' + FOLDER_PLACEHOLDER
+    const url  = HOSTNAME + '/storage/v1/object/' + encodeURIComponent(DEPARTMENT_BUCKET) + '/' +
+                 path.split('/').map(encodeURIComponent).join('/')
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: storageHeaders({
+        'Content-Type': 'application/octet-stream',
+        'x-upsert': 'true',
+        'cache-control': 'no-cache'
+      }),
+      body: new Blob([''], { type: 'application/octet-stream' })
+    })
+    if(!res.ok) throw new Error('Create folder failed: ' + await res.text())
+    return res.json().catch(() => ({}))
+  }
+
+  /* Creates only the folders that do not exist yet. */
+  async function ensureDepartmentFolders(buttons){
+    if(!Array.isArray(buttons) || !buttons.length) return
+    const names    = buildFolderNames(buttons)
+    const existing = await listDepartmentRoot()
+    for(const name of names.values()){
+      if(existing.has(name)) continue
+      await createDepartmentFolder(name)
+      existing.add(name)
+    }
+  }
+
   /* ---------- 2. READ PERMISSIONS ---------- */
   async function fetchAllowed(me){
     let allowedRaw = me.allowed_hero_buttons
@@ -916,6 +1008,12 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
         renderHero([])
         return
       }
+
+      /* Fire-and-forget: make sure every catalog button has a folder in the
+         "department" bucket. Never blocks or breaks the hero render. */
+      ensureDepartmentFolders(buttons).catch(e =>
+        console.warn('[hero] folder sync skipped:', e.message || e)
+      )
 
       const visible = filterAllowed(buttons, allowed)
       renderHero(visible)
