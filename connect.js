@@ -5,15 +5,15 @@
 // ============================================================================
 
 const HOSTS = [
-// 'http://192.168.0.5:8000',                                         // 1. local
-// 'https://trainers-police-rome-amplifier.trycloudflare.com',      // 2. cloudflare (fallback)
- //'https://scam-retouch-hull.ngrok-free.dev'                          // 3. ngrok 
-'http://127.0.0.1:54321'
+'http://192.168.0.5:8000',                                         // 1. local
+'https://trainers-police-rome-amplifier.trycloudflare.com',      // 2. cloudflare (fallback)
+'https://scam-retouch-hull.ngrok-free.dev'                          // 3. ngrok 
+//'http://127.0.0.1:54321'
 ];
 
-const ANON_KEY = //'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
 
-'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+//'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
 // --- ngrok interstitial bypass + host failover --------------------------------
 // 1) Lahat ng request sa tunnel host ay binibigyan ng skip header. Kapag wala
