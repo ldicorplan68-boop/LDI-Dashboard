@@ -5,34 +5,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="theme-color" content="#0d0d7a">
 <title>Sales Dashboard — Lakpue Drug Inc</title>
-
-<!-- PERF: warm up the asset host before anything loads -->
-<link rel="preconnect" href="https://trainers-police-rome-amplifier.trycloudflare.com" crossorigin>
-<link rel="dns-prefetch" href="https://trainers-police-rome-amplifier.trycloudflare.com">
-
-<!-- PERF: Google Fonts loaded non-blocking (no render-blocking request) -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
-      media="print" onload="this.media='all'">
-<noscript>
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
-</noscript>
-
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================
-   LDI Sales Dashboard — Brand Theme (PERF EDITION)
+   LDI Sales Dashboard — Brand Theme
+   Motif: royal blue from ldi-40-taon.png,
+   red/amber accents from logo.gif & team-ldi.png
    ---------------------------------------------------------------
-   PERFORMANCE CHANGES vs original:
-   • backdrop-filter removed on mobile (biggest GPU killer)
-   • background-attachment:fixed removed on touch
-   • fonts non-blocking in <head>
-   • content-visibility on off-screen cards
-   • lighter shadows / simplified gradients on small screens
-   • auth-checking fallback reduced 3000ms -> 800ms
-   • <script defer> on all non-critical JS
+   RESPONSIVE STRATEGY
+   • Fluid tokens (clamp) for padding, type and gaps → no jumps
+   • Breakpoints: 1600+ / 1200 / 1024 / 900 / 768 / 600 / 420
+   • Mobile-safe: dvh units, safe-area insets, no fixed bg on touch
+   • Touch targets ≥44px, hover effects gated behind (hover:hover)
    ============================================ */
 :root{
   --royal:#1b1bb3;--royal-2:#2020c8;--royal-deep:#0d0d7a;
@@ -47,12 +31,14 @@
   --r-sm:8px;--r-md:12px;--r-lg:18px;
   --fast:150ms ease;--smooth:280ms cubic-bezier(.4,0,.2,1);
 
-  --gutter:clamp(14px,2.2vw,22px);
-  --gutter-y:clamp(16px,2.4vw,28px);
-  --panel-pad:clamp(16px,1.8vw,24px);
-  --gap:clamp(12px,1.4vw,18px);
-  --tap:44px;
+  /* ---------- fluid layout tokens ---------- */
+  --gutter:clamp(14px,2.2vw,22px);        /* page side padding */
+  --gutter-y:clamp(16px,2.4vw,28px);      /* page top padding  */
+  --panel-pad:clamp(16px,1.8vw,24px);     /* card inner padding */
+  --gap:clamp(12px,1.4vw,18px);           /* grid gaps */
+  --tap:44px;                             /* min touch target */
 
+  /* ---------- fluid type tokens ---------- */
   --fs-hero:clamp(1.22rem,.95rem + 1.4vw,1.7rem);
   --fs-h2:clamp(.98rem,.92rem + .3vw,1.06rem);
   --fs-stat:clamp(1.1rem,.95rem + .85vw,1.45rem);
@@ -76,7 +62,7 @@ button{font-family:inherit}
 input,select{font-family:inherit}
 .num{font-variant-numeric:tabular-nums}
 
-/* PERF: hide app during auth check — but only for a very short window */
+/* Hide the whole app until the session is confirmed (prevents flash of protected UI) */
 html.auth-checking body{visibility:hidden}
 
 /* ---------- Buttons ---------- */
@@ -92,7 +78,7 @@ html.auth-checking body{visibility:hidden}
   .button.danger:hover{background:var(--red-dark)}
 }
 
-/* ---------- Topbar ---------- */
+/* ---------- Topbar (team-ldi.png) ---------- */
 .app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
 .topbar{
   position:sticky;top:0;z-index:50;min-height:68px;
@@ -174,7 +160,6 @@ html.auth-checking body{visibility:hidden}
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   transition:transform var(--fast),box-shadow var(--fast),background var(--fast),opacity var(--fast);
   box-shadow:0 8px 20px rgba(0,0,0,.28);
-  text-decoration:none;
 }
 .hero-btn .hi{font-size:14px;line-height:1}
 .hero-btn.primary{background:#fff;color:var(--royal)}
@@ -189,7 +174,7 @@ html.auth-checking body{visibility:hidden}
   .hero-btn.danger:hover{background:var(--red-dark)}
 }
 
-/* ---------- Hero loading / empty states ---------- */
+/* ---------- Hero: loading / empty states ---------- */
 .hero-empty{font-size:13px;font-weight:600;color:rgba(255,255,255,.82)}
 .hero-skeleton{
   display:inline-block;width:112px;height:38px;border-radius:999px;
@@ -199,7 +184,9 @@ html.auth-checking body{visibility:hidden}
 @keyframes heroShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 #hero-actions[aria-busy="true"]{pointer-events:none}
 
-/* ---------- Empty ---------- */
+/* ============================================================
+   Toolbar / empty
+   ============================================================ */
 .empty{text-align:center;padding:clamp(40px,8vw,70px) 20px;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-md)}
 .empty-icon{font-size:clamp(34px,6vw,44px);margin-bottom:10px}
 .empty h2{font-size:clamp(19px,3vw,24px);margin:0 0 10px}
@@ -238,7 +225,7 @@ html.auth-checking body{visibility:hidden}
 .filters select:focus,.filters input:focus{border-color:var(--royal);box-shadow:0 0 0 3px rgba(27,27,179,.14)}
 .filters input{min-width:150px}
 
-/* ---------- Panels ---------- */
+/* ---------- Panel cards ---------- */
 .chart-card,.monitor-card{padding:var(--panel-pad);margin-bottom:22px}
 .card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:14px;flex-wrap:wrap}
 .card-head h2{font-size:var(--fs-h2);margin:0;font-family:'Space Grotesk',sans-serif;letter-spacing:-.2px}
@@ -277,6 +264,8 @@ html.auth-checking body{visibility:hidden}
 .total-cell{font-weight:700;color:var(--royal-deep);background:#e8edff}
 .name-cell{max-width:220px;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--text)}
 
+/* OPTIONAL stacked tables on phones.
+   Add class="monitor-table stack" and data-label="Column" on each <td>. */
 @media (max-width:640px){
   .monitor-table.stack{min-width:0}
   .monitor-table.stack thead{display:none}
@@ -311,7 +300,7 @@ footer{text-align:center;padding:26px var(--gutter);color:rgba(255,255,255,.75);
 .legend{display:flex;gap:16px;align-items:center;font-size:12px;color:var(--text-2);flex-wrap:wrap}
 .legend i{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
 
-/* ---------- Login page ---------- */
+/* ---------- Login page (split layout) ---------- */
 .login-page{display:block}
 .login-shell{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:minmax(340px,46%) 1fr}
 .login-brand{
@@ -406,16 +395,25 @@ footer{text-align:center;padding:26px var(--gutter);color:rgba(255,255,255,.75);
 .badge-role-sales_rep{background:#fef3e2;color:#b45309}
 .badge-role-area_user{background:#ede9fe;color:#6d28d9}
 
+/* ---------- Links styled as buttons ---------- */
 a.button{text-decoration:none}
 a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block}
 
 /* ============================================================
    BREAKPOINTS
    ============================================================ */
-@media (min-width:1600px){ .content{max-width:1520px} }
-@media (max-width:1280px){ .content{max-width:100%} }
 
-/* PERF: remove fixed-attachment everywhere it hurts, kill GPU-expensive blur */
+/* ---- Large desktop (1600px+) : a little extra room ---- */
+@media (min-width:1600px){
+  .content{max-width:1520px}
+}
+
+/* ---- Small desktop / large laptop (≤1280px) ---- */
+@media (max-width:1280px){
+  .content{max-width:100%}
+}
+
+/* ---- Tablet landscape & small laptop (≤1024px) ---- */
 @media (max-width:1024px){
   .login-shell{grid-template-columns:1fr}
   .login-brand{min-height:clamp(200px,28vh,260px)}
@@ -425,27 +423,13 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
   .hero-btn{flex:1 1 160px}
 }
 
+/* ---- Tablet portrait (≤900px) ---- */
 @media (max-width:900px){
-  /* PERF: fixed background + backdrop-filter are the two biggest mobile repaints */
-  body{
-    background-attachment:scroll,scroll;
-    background-image:linear-gradient(180deg,rgba(27,27,179,.55) 0%,rgba(13,13,122,.85) 100%);
-    background-size:auto,auto;
-  }
-  .topbar,
-  .hero,
-  .login-brand{ background-attachment:scroll; }
-
-  /* PERF: strip backdrop-filter on touch/tablet — massive GPU win */
-  .topbar,
-  .nav-company,
-  .user-info,
-  .button.secondary,
-  .admin-overlay{ backdrop-filter:none; }
-  .topbar{ background-image:linear-gradient(90deg,rgba(13,13,122,.96),rgba(27,27,179,.96)); }
-  .hero{ background-image:linear-gradient(115deg,rgba(13,13,122,.96),rgba(27,27,179,.92) 60%,rgba(227,30,36,.72)); }
-  .admin-overlay{ background:rgba(13,13,122,.75); }
-  .login-brand{ background-image:linear-gradient(160deg,rgba(13,13,122,.92),rgba(27,27,179,.85)); }
+  /* fixed backgrounds cause repaint jank / are ignored on iOS */
+  body{background-attachment:scroll,scroll}
+  .topbar{background-attachment:scroll}
+  .hero{background-attachment:scroll}
+  .login-brand{background-attachment:scroll}
 
   .bar-chart{height:clamp(170px,26vh,220px)}
   .filters select,.filters input{flex:1 1 100%}
@@ -454,8 +438,9 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
   .filter-label{align-self:flex-start}
 }
 
+/* ---- Small tablet / large phone (≤768px) ---- */
 @media (max-width:768px){
-  .topbar{padding:10px max(var(--gutter),env(safe-area-inset-right)) 10px max(var(--gutter),env(safe-area-inset-left));gap:10px;box-shadow:0 2px 8px rgba(13,13,122,.35)}
+  .topbar{padding:10px max(var(--gutter),env(safe-area-inset-right)) 10px max(var(--gutter),env(safe-area-inset-left));gap:10px}
   .brand{flex:1 1 auto}
   .brand small{max-width:46vw}
   .nav-links{margin-left:auto}
@@ -465,6 +450,7 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
   .admin-header{position:sticky;top:0;background:#fff;z-index:2;padding-top:6px}
 }
 
+/* ---- Phones (≤600px) ---- */
 @media (max-width:600px){
   .hero{padding:18px 16px 20px}
   .hero-actions{width:100%}
@@ -481,6 +467,7 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
   .nav-menu{right:auto;left:0;min-width:min(260px,calc(100vw - 2*var(--gutter)))}
 }
 
+/* ---- Small phones (≤420px) ---- */
 @media (max-width:420px){
   .brand small{display:none}
   .nav-company{padding:9px 12px;font-size:12px}
@@ -491,6 +478,7 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
   .admin-user-card{padding:12px 13px}
 }
 
+/* ---- Landscape phones (short viewport) ---- */
 @media (max-height:520px) and (orientation:landscape){
   .topbar{position:static}
   .hero{padding:16px}
@@ -498,20 +486,13 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
   .login-brand{min-height:160px}
 }
 
+/* ---- Touch devices: bigger hit areas, no sticky hover ---- */
 @media (hover:none){
   .button,.hero-btn,.nav-company{min-height:44px}
   .nav-menu button{min-height:46px}
 }
 
-/* PERF: skip rendering of off-screen panels */
-.chart-card,
-.monitor-card,
-.empty,
-.admin-user-card{
-  content-visibility:auto;
-  contain-intrinsic-size: auto 400px;
-}
-
+/* ---- Accessibility: honour reduced motion ---- */
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{
     animation-duration:.001ms !important;
@@ -526,8 +507,7 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
 <div class="app">
 <header class="topbar">
   <div class="brand">
-    <img src="https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/logo.gif"
-         alt="LDI" class="nav-logo" decoding="async">
+    <img src="https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/logo.gif" alt="LDI" class="nav-logo">
     <div><strong>Lakpue Drug Inc</strong><small>Alagang Tunay, Laking LDI</small></div>
   </div>
   <nav class="nav-links">
@@ -552,17 +532,19 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
         <p class="hero-eyebrow">LAKPUE DRUG INC &#8226; COMPANY GROUP</p>
         <h1 class="hero-title">Alagang Tunay, Laking LDI</h1>
       </div>
-      <div class="hero-actions" id="hero-actions" aria-busy="true"></div>
+      <div class="hero-actions" id="hero-actions" aria-busy="true">
+        <!-- Rendered by JS from the hero_buttons table, filtered per user -->
+      </div>
     </div>
   </section>
+  <!-- ===================================================================
+       DATA SECTIONS GO HERE (stat cards / filters / charts / tables /
+       admin panel) — every class is already styled by the inlined CSS.
+       =================================================================== -->
 </main>
 </div>
-
-<!-- PERF: connect.js must be synchronous (defines HOSTNAME/ANON_KEY for inline scripts) -->
 <script src="connect.js"></script>
-
-<!-- PERF: everything else is deferred so HTML paints first -->
-<script defer>
+<script>
 /* ============================================================================
    INLINE SUPABASE CLIENT + AUTH GUARD
    ============================================================================ */
@@ -666,8 +648,6 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
   window.supabase = supabase
 
   document.documentElement.classList.add('auth-checking')
-
-  /* PERF: session check is synchronous-ish. Fail fast; don't wait 3s. */
   ;(async function(){
     try{
       await supabase.init()
@@ -676,19 +656,17 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
         location.replace('index.html')
         return
       }
-      /* PERF: release the gate immediately on success */
-      document.documentElement.classList.remove('auth-checking')
     }catch(e){
       location.replace('index.html')
+      return
     }finally{
-      /* PERF: safety net reduced from 3000ms -> 800ms */
-      setTimeout(()=>document.documentElement.classList.remove('auth-checking'), 800)
+      setTimeout(()=>document.documentElement.classList.remove('auth-checking'), 3000)
+      document.documentElement.classList.remove('auth-checking')
     }
   })()
 })()
 </script>
-
-<script defer>
+<script>
 /* ============================================================================
    SETTINGS FLOATING MENU
    ============================================================================ */
@@ -697,6 +675,7 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
   const menu = document.getElementById('settings-menu')
   if(!btn || !menu){ return }
 
+  /* Keep the dropdown inside the viewport on every screen size */
   function keepInView(){
     menu.style.transform = ''
     const r = menu.getBoundingClientRect()
@@ -745,18 +724,55 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
   window.addEventListener('pageshow', function(e){ if(e.persisted) refreshAdminItem() })
 })()
 </script>
-
-<script defer>
+<script>
 /* ============================================================================
    HERO BUTTONS — DYNAMIC CATALOG + PER-USER PERMISSION FILTER
-   PERF: prefetch on render + prefetch on touchstart, cached folder sync,
-         no repeated fetches on tab refocus.
+   ----------------------------------------------------------------------------
+   Source of truth for WHICH buttons exist : the `hero_buttons` table.
+   Source of truth for WHO SEES what       : users.allowed_hero_buttons.
+
+   Flow
+   ----
+   1. READ CATALOG   — select all rows from `hero_buttons`, ordered by
+                       sort_order then id.
+   2. READ PERMISSION— read the signed-in user's allowed_hero_buttons field
+                       (fresh from the DB, not just the cached session).
+   3. FILTER
+        • "all"               → show every catalog row
+        • list of ids/labels  → show only those (case-insensitive match
+                                against both id and label)
+        • empty / missing     → show nothing (fail closed, no leakage)
+   4. GUARANTEE      — labels in ALWAYS_VISIBLE_LABELS are appended if the
+                       filter removed them. Currently empty, so EVERY
+                       button (including ART) behaves the same: hidden
+                       unless the user is allowed to see it.
+   5. FAIL CLOSED    — if the catalog read fails, render NOTHING. Never the
+                       full set.
+   6. bfcache        — re-runs on Back/Forward and on tab re-focus so a
+                       previous user's DOM can never leak into a new visit.
+
+   Managing buttons
+   ----------------
+   Add a row to `hero_buttons`      → button becomes available to assign.
+   Edit a row                       → label/href/order update everywhere.
+   Delete a row                     → button disappears for everyone.
+
+   Managing visibility
+   -------------------
+   Set users.allowed_hero_buttons to:
+     '["all"]'                  → this user sees every button
+     '["ART","Sales","HRMD"]'   → this user sees only these
+     '[]'                       → this user sees nothing
    ============================================================================ */
 (function(){
   const heroBox = document.getElementById('hero-actions')
   if(!heroBox) return
 
   const TABLE = 'hero_buttons'
+
+  /* Buttons that must remain visible even if the permission list omits them.
+     Set to [] to disable the guarantee entirely. Matched on label.
+     Currently EMPTY — so ART is hidden too when not allowed. */
   const ALWAYS_VISIBLE_LABELS = []
 
   /* ---------- helpers ---------- */
@@ -770,6 +786,7 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
   }
   function norm(v){ return String(v ?? '').trim().toLowerCase() }
 
+  /* Accepts array, JSON string, or CSV string. Returns array of strings. */
   function parseAllowed(v){
     if(Array.isArray(v)) return v.map(x => String(x)).filter(Boolean)
     if(typeof v === 'string' && v.trim()){
@@ -783,22 +800,9 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     return []
   }
   function hasAll(list){ return list.some(x => norm(x) === 'all') }
+
   function readSession(){
     try{ return JSON.parse(sessionStorage.getItem('ldi_session') || 'null') }catch(e){ return null }
-  }
-
-  /* ---------- PERF: prefetch links after render ---------- */
-  const prefetched = new Set()
-  function prefetch(href){
-    if(!href || href === '#' || prefetched.has(href)) return
-    prefetched.add(href)
-    try{
-      const l = document.createElement('link')
-      l.rel  = 'prefetch'
-      l.href = href
-      l.as   = 'document'
-      document.head.appendChild(l)
-    }catch(e){}
   }
 
   /* ---------- render states ---------- */
@@ -818,16 +822,6 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     heroBox.innerHTML = list.map(b =>
       '<a class="hero-btn primary" href="'+esc(b.href || '#')+'">'+esc(b.label || '')+'</a>'
     ).join('')
-
-    /* PERF: warm the network right away */
-    list.forEach(b => prefetch(b.href))
-
-    /* PERF: on tap, prefetch before click completes (idle-priority fallback) */
-    heroBox.querySelectorAll('a.hero-btn').forEach(a => {
-      const h = a.getAttribute('href')
-      a.addEventListener('touchstart', () => prefetch(h), { passive:true, once:true })
-      a.addEventListener('mouseenter', () => prefetch(h), { once:true })
-    })
   }
 
   /* ---------- 1. READ CATALOG ---------- */
@@ -841,19 +835,22 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     return rows
   }
 
-  /* ---------- 1b. DEPARTMENT FOLDER SYNC (cached) ---------- */
+  /* ---------- 1b. DEPARTMENT FOLDER SYNC (hero button -> bucket folder) ------
+     Every hero button must have a folder inside the "department" bucket.
+     Folder name comes from the button href (/reports -> reports); when two
+     buttons would produce the same name, the label is appended to keep it
+     unique. Existing entries are only READ - never overwritten or deleted. */
   const DEPARTMENT_BUCKET  = 'department'
   const FOLDER_PLACEHOLDER = '.emptyFolderPlaceholder'
-  const FOLDER_CACHE_KEY   = 'ldi_folder_sync_v1'
-  const FOLDER_CACHE_TTL   = 24 * 60 * 60 * 1000   /* PERF: 1 day */
 
   function slugify(v){
     return String(v ?? '')
       .trim().toLowerCase()
       .replace(/[^a-z0-9._-]+/g, '_')
-      .replace(/\.html?$/, '')
+      .replace(/\.html?$/, '')            /* walang .html/.htm sa dulo ng folder name */
       .replace(/^[._-]+|[._-]+$/g, '')
   }
+
   function storageHeaders(extra){
     return {
       apikey: ANON_KEY,
@@ -862,15 +859,19 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
       ...extra
     }
   }
+
+  /* href -> last path segment, e.g. '/reports' -> 'reports'. */
   function hrefFolderBase(b){
     const clean = String(b.href ?? '').split('#')[0].split('?')[0]
     const last  = clean.split('/').filter(Boolean).pop()
     return slugify(last)
   }
+
   function buildFolderNames(buttons){
     const bases = buttons.map(hrefFolderBase)
     const count = {}
     bases.forEach(n => { if(n) count[n] = (count[n] || 0) + 1 })
+
     const names = new Map()
     buttons.forEach((b, i) => {
       let name = bases[i] || slugify(b.label)
@@ -880,12 +881,15 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     })
     return names
   }
+
   async function listDepartmentRoot(){
     const res = await fetch(HOSTNAME + '/storage/v1/object/list/' + encodeURIComponent(DEPARTMENT_BUCKET), {
       method: 'POST',
       headers: storageHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
-        prefix: '', limit: 1000, offset: 0,
+        prefix: '',
+        limit: 1000,
+        offset: 0,
         sortBy: { column: 'name', order: 'asc' }
       })
     })
@@ -893,6 +897,7 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     const rows = await res.json().catch(() => [])
     return new Set((Array.isArray(rows) ? rows : []).map(r => String(r.name || '').replace(/\/+$/, '')))
   }
+
   async function createDepartmentFolder(name){
     const path = name + '/' + FOLDER_PLACEHOLDER
     const url  = HOSTNAME + '/storage/v1/object/' + encodeURIComponent(DEPARTMENT_BUCKET) + '/' +
@@ -909,14 +914,10 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     if(!res.ok) throw new Error('Create folder failed: ' + await res.text())
     return res.json().catch(() => ({}))
   }
+
+  /* Creates only the folders that do not exist yet. */
   async function ensureDepartmentFolders(buttons){
     if(!Array.isArray(buttons) || !buttons.length) return
-    /* PERF: skip if we already synced recently */
-    try{
-      const cached = JSON.parse(localStorage.getItem(FOLDER_CACHE_KEY) || 'null')
-      if(cached && Date.now() - cached.at < FOLDER_CACHE_TTL) return
-    }catch(e){}
-
     const names    = buildFolderNames(buttons)
     const existing = await listDepartmentRoot()
     for(const name of names.values()){
@@ -924,12 +925,12 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
       await createDepartmentFolder(name)
       existing.add(name)
     }
-    try{ localStorage.setItem(FOLDER_CACHE_KEY, JSON.stringify({ at: Date.now() })) }catch(e){}
   }
 
   /* ---------- 2. READ PERMISSIONS ---------- */
   async function fetchAllowed(me){
     let allowedRaw = me.allowed_hero_buttons
+
     let q = window.supabase.from('users').select('allowed_hero_buttons')
     if(me.id != null){
       q = q.eq('id', me.id)
@@ -938,6 +939,7 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     }else{
       throw new Error('signed-in user has no id or username')
     }
+
     const fresh = await q.single()
     if(fresh && Object.prototype.hasOwnProperty.call(fresh, 'allowed_hero_buttons')){
       allowedRaw = fresh.allowed_hero_buttons
@@ -945,9 +947,10 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     return parseAllowed(allowedRaw)
   }
 
-  /* ---------- 3 + 4. FILTER ---------- */
+  /* ---------- 3 + 4. FILTER + GUARANTEE ---------- */
   function filterAllowed(buttons, allowed){
     let visible
+
     if(hasAll(allowed)){
       visible = buttons.slice()
     }else if(allowed.length === 0){
@@ -958,53 +961,62 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
         keys.has(norm(b.id)) || keys.has(norm(b.label))
       )
     }
+
+    /* Guarantee the always-visible buttons survive the filter.
+       ALWAYS_VISIBLE_LABELS is currently [] so this block is a no-op. */
     if(ALWAYS_VISIBLE_LABELS.length){
       const want = new Set(ALWAYS_VISIBLE_LABELS.map(norm))
       const have = new Set(visible.map(b => norm(b.label)))
       buttons.forEach(b => {
         if(want.has(norm(b.label)) && !have.has(norm(b.label))){
-          visible.push(b); have.add(norm(b.label))
+          visible.push(b)
+          have.add(norm(b.label))
         }
       })
     }
+
     return visible
   }
 
   /* ---------- main ---------- */
   let running = false
-  let lastRun = 0
 
   async function initHero(){
     if(running) return
     running = true
+
     try{
+      /* Wipe whatever is there — it may be another user's DOM (bfcache). */
       heroBox.removeAttribute('aria-busy')
       heroBox.innerHTML = ''
 
       const me = readSession()
-      if(!me){ return }
+      if(!me){ return }              /* no session → auth guard redirects */
 
       renderLoading()
 
-      let buttons, allowed
+      let buttons
+      let allowed
+
       try{
         buttons = await fetchButtons()
         if(!buttons.length) throw new Error('hero_buttons table is empty')
         allowed = await fetchAllowed(me)
       }catch(e){
+        /* 5. FAIL CLOSED — never render the full set on error. */
         console.warn('[hero] lookup failed — failing closed:', e.message || e)
         renderHero([])
         return
       }
 
-      /* PERF: render first, then sync folders in the background */
-      const visible = filterAllowed(buttons, allowed)
-      renderHero(visible)
-      lastRun = Date.now()
-
+      /* Fire-and-forget: make sure every catalog button has a folder in the
+         "department" bucket. Never blocks or breaks the hero render. */
       ensureDepartmentFolders(buttons).catch(e =>
         console.warn('[hero] folder sync skipped:', e.message || e)
       )
+
+      const visible = filterAllowed(buttons, allowed)
+      renderHero(visible)
 
       console.log(
         '[hero] user=' + (me.username || me.id) +
@@ -1017,20 +1029,19 @@ a.nav-company,a.monitoring-hero-button{text-decoration:none;display:inline-block
     }
   }
 
-  /* Initial run — DOM is already parsed because script is deferred */
+  /* Initial run */
   initHero()
 
-  /* bfcache restore */
+  /* 6. bfcache restore — DOM may still hold a previous user's render. */
   window.addEventListener('pageshow', function(e){
     if(e.persisted) initHero()
   })
 
-  /* PERF: throttle visibility re-check (was firing on every tab switch) */
+  /* Re-check when the tab becomes visible again after a long sleep. */
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState !== 'visible') return
-    if(heroBox.hasAttribute('aria-busy')) return
-    if(Date.now() - lastRun < 60000) return
-    initHero()
+    if(document.visibilityState === 'visible' && !heroBox.hasAttribute('aria-busy')){
+      initHero()
+    }
   })
 })()
 </script>
