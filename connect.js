@@ -6,7 +6,7 @@
 
 const HOSTS = [
 //'http://192.168.0.5:8000',                                         // 1. local
-//'https://trainers-police-rome-amplifier.trycloudflare.com',      // 2. cloudflare (fallback)
+'https://trainers-police-rome-amplifier.trycloudflare.com',      // 2. cloudflare (fallback)
 'https://scam-retouch-hull.ngrok-free.dev'                          // 3. ngrok 
 //'http://127.0.0.1:54321'
 ];
@@ -29,7 +29,7 @@ let   _reracing     = false;
 
 function markHostBad(host){
   _badUntil[host] = Date.now() + FAIL_COOLDOWN;
-  console.warn(`[connect] ❌ host down, cooldown ${FAIL_COOLDOWN / 1000}s: ${host}`);
+  console.warn(`[connect] ❌ host down, cooldown ${FAIL_COOLDOWN / 2500}s: ${host}`);
 }
 function markHostOk(host){ delete _badUntil[host] }
 function pickHost(){
