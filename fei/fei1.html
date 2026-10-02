@@ -1,0 +1,4515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0d7a">
+  <title>Sales Performance — Lakpue Drug Inc</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="../connect.js"></script>
+
+  <style>
+    :root {
+      --royal: #1b1bb3; --royal-2: #2020c8; --royal-deep: #0d0d7a;
+      --red: #e31e24; --amber: #f5a623; --sky: #2e9bd6; --green: #10b981;
+      --surface: #ffffff; --surface-2: #f6f8fd;
+      --text: #101425; --text-2: #4a5572; --muted: #8d97b0;
+      --border: #e3e7f2; --border-strong: #cdd4e6;
+      --shadow-sm: 0 1px 3px rgba(16,20,37,.07);
+      --shadow-md: 0 6px 20px rgba(16,20,37,.09);
+      --shadow-lg: 0 16px 48px rgba(16,20,37,.16);
+      --r-sm: 8px; --r-md: 12px; --r-lg: 18px;
+      --fast: 150ms ease;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px; color: var(--text);
+      background: var(--royal-deep);
+      background-image: linear-gradient(180deg, rgba(27,27,179,.42) 0%, rgba(13,13,122,.72) 100%), url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/background.png');
+      background-size: cover, cover; background-attachment: fixed, fixed;
+      min-height: 100dvh; -webkit-font-smoothing: antialiased;
+    }
+    .app { min-height: 100dvh; display: flex; flex-direction: column; }
+    .main-col {
+      flex: 1; min-width: 0;
+      padding: calc(20px + var(--safe-top)) clamp(12px, 1.6vw, 24px) calc(30px + var(--safe-bottom));
+      padding-left: calc(clamp(12px, 1.6vw, 24px) + var(--safe-left));
+      padding-right: calc(clamp(12px, 1.6vw, 24px) + var(--safe-right));
+    }
+    .main-col-inner { width: 100%; max-width: 1440px; margin: 0 auto; min-width: 0; }
+
+    /* ===== HERO ===== */
+    .hero {
+      position: relative; color: #fff;
+      padding: clamp(16px, 2.4vh, 24px) clamp(16px, 2vw, 28px);
+      border-radius: var(--r-lg);
+      background-image: linear-gradient(115deg, rgba(13,13,122,.95) 0%, rgba(27,27,179,.86) 48%, rgba(227,30,36,.60) 100%), url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/ldi1.png');
+      background-size: cover; background-position: center;
+      border-bottom: 3px solid var(--amber);
+      border-left: 3px solid var(--amber);
+      border-right: 3px solid var(--amber);
+      box-shadow: var(--shadow-md);
+      margin-bottom: 16px; overflow: hidden;
+    }
+    .hero::after {
+      content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+      background: radial-gradient(120% 150% at 100% 0%, rgba(255,255,255,.18), transparent 55%);
+    }
+    .hero-top {
+      position: relative; z-index: 1;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 14px; flex-wrap: wrap;
+    }
+    .hero-text { min-width: 0; flex: 1 1 240px; }
+    .hero-eyebrow {
+      font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase;
+      color: #ffd98a; font-weight: 700; margin-bottom: 5px;
+    }
+    .hero-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(20px, 1.6vw + 14px, 28px);
+      letter-spacing: -.5px; line-height: 1.15;
+      text-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .hero-sub { margin-top: 6px; font-size: 13px; color: rgba(255,255,255,.82); font-weight: 500; }
+
+    .hero-actions {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      flex: 0 1 auto;
+    }
+    .hero-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 16px; border-radius: 999px;
+      font: inherit; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      white-space: nowrap;
+      background: rgba(255,255,255,.14);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.28);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      transition: background var(--fast), border-color var(--fast), transform var(--fast);
+    }
+    .hero-btn:hover { background: rgba(255,255,255,.24); }
+    .hero-btn:active { transform: translateY(1px); }
+    .hero-btn.active {
+      background: var(--amber); color: #3a2703;
+      border-color: var(--amber);
+      box-shadow: 0 4px 14px rgba(245,166,35,.35);
+      cursor: default;
+    }
+    .hero-btn.active:hover { background: var(--amber); }
+    .hero-btn .hero-btn-icon { font-size: 14px; line-height: 1; }
+
+    .status-pill {
+      position: relative; z-index: 1;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 14px; border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.22);
+      color: #fff; font-size: 12px; font-weight: 500;
+      max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .status-pill .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto;
+      background: var(--amber);
+      box-shadow: 0 0 0 3px rgba(245,166,35,.25);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    .status-pill.ok .dot { background: #34d399; box-shadow: 0 0 0 3px rgba(52,211,153,.25); animation: none; }
+    .status-pill.err .dot { background: #f87171; box-shadow: 0 0 0 3px rgba(248,113,113,.25); animation: none; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 14px;
+    }
+
+    /* ===== TOOLBAR ===== */
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 6px 10px;
+      padding: 9px 12px; align-items: flex-end;
+    }
+    .field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .field > span {
+      font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase;
+      color: var(--muted); font-weight: 700; line-height: 1;
+    }
+    .field select {
+      height: 32px;
+      padding: 0 26px 0 10px;
+      border: 1px solid var(--border-strong); border-radius: var(--r-sm);
+      background: var(--surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%234a5572' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>") no-repeat right 9px center;
+      font: inherit; font-size: 12.5px; color: var(--text);
+      cursor: pointer; min-width: 108px;
+      transition: border-color var(--fast), box-shadow var(--fast);
+    }
+    .field select:focus { outline: none; border-color: var(--royal); box-shadow: 0 0 0 3px rgba(27,27,179,.14); }
+    .field#field-scope > span { color: var(--royal); }
+    .field#field-scope select { border-color: var(--royal); }
+
+    /* ===== SEARCH INPUT ===== */
+    .search-wrap { position: relative; display: inline-flex; align-items: center; }
+    .search-wrap input {
+      height: 32px;
+      padding: 0 30px 0 30px;
+      border: 1px solid var(--border-strong); border-radius: var(--r-sm);
+      background: var(--surface);
+      font: inherit; font-size: 12.5px; color: var(--text);
+      min-width: 190px;
+      transition: border-color var(--fast), box-shadow var(--fast);
+    }
+    .search-wrap input:focus { outline: none; border-color: var(--royal); box-shadow: 0 0 0 3px rgba(27,27,179,.14); }
+    .search-wrap input::placeholder { color: var(--muted); }
+    .search-icon {
+      position: absolute; left: 8px;
+      pointer-events: none;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+    }
+    .search-clear {
+      position: absolute; right: 4px;
+      width: 22px; height: 22px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 0; border-radius: 50%;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px; font-weight: 500;
+      cursor: pointer;
+      transition: background var(--fast), color var(--fast);
+    }
+    .search-clear:hover { color: var(--red); background: #fef3f3; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 32px; padding: 0 14px; border-radius: var(--r-sm);
+      font: inherit; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; border: 1px solid transparent;
+      transition: background var(--fast), border-color var(--fast), transform var(--fast);
+      white-space: nowrap;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      background: var(--royal); color: #fff; border-color: var(--royal);
+      box-shadow: 0 4px 12px rgba(27,27,179,.25);
+    }
+    .btn-primary:hover { background: var(--royal-2); border-color: var(--royal-2); }
+    .toolbar .spacer { flex: 1 1 auto; }
+
+    /* Toggle-style button (used for Group Clients and Exclude HW) */
+    .btn-toggle {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 32px; padding: 0 14px; border-radius: var(--r-sm);
+      font: inherit; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border-strong);
+      background: var(--surface); color: var(--text-2);
+      transition: background var(--fast), border-color var(--fast), color var(--fast);
+      white-space: nowrap;
+    }
+    .btn-toggle:hover { border-color: var(--royal); color: var(--royal); }
+    .btn-toggle.active {
+      background: var(--royal); color: #fff;
+      border-color: var(--royal);
+      box-shadow: 0 4px 12px rgba(27,27,179,.25);
+    }
+    .btn-toggle.active:hover { background: var(--royal-2); }
+    /* Special color for the Exclude HW button when active */
+    #btn-exclude-hw.active {
+      background: var(--red);
+      border-color: var(--red);
+      box-shadow: 0 4px 12px rgba(227,30,36,.28);
+    }
+    #btn-exclude-hw.active:hover { background: #c81a20; border-color: #c81a20; }
+
+    /* ===== TABLE ===== */
+    .chev {
+      display: inline-block;
+      vertical-align: -1px;
+      margin-right: 6px;
+      flex: 0 0 auto;
+      transition: transform var(--fast);
+    }
+    tr:hover .chev { transform: translateX(2px); }
+
+    .table-card { overflow: hidden; }
+    .table-wrap {
+      overflow: auto; max-height: calc(100dvh - 260px);
+      background: var(--surface); -webkit-overflow-scrolling: touch;
+    }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+    thead th {
+      position: sticky; top: 0; z-index: 2;
+      background: linear-gradient(180deg, #eef2fb 0%, #e6ecf8 100%);
+      color: var(--text-2); font-weight: 700; text-align: right;
+      padding: 12px 14px; border-bottom: 2px solid var(--border-strong);
+      white-space: nowrap; text-transform: uppercase; font-size: 10.5px; letter-spacing: .06em;
+    }
+    thead th:first-child {
+      text-align: left; position: sticky; left: 0; z-index: 3;
+      background: linear-gradient(180deg, #eef2fb 0%, #e6ecf8 100%);
+    }
+    tbody td {
+      padding: 10px 14px; text-align: right;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap; font-variant-numeric: tabular-nums;
+    }
+    tbody td:first-child {
+      text-align: left; font-weight: 600; position: sticky; left: 0;
+      background: var(--surface); z-index: 1;
+    }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover td { background: #f7f9ff; }
+    tbody tr:hover td:first-child { background: #f7f9ff; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    tfoot td {
+      padding: 12px 14px; text-align: right; font-weight: 700;
+      background: linear-gradient(180deg, #f4f6fb 0%, #e9eefb 100%);
+      border-top: 2px solid var(--border-strong);
+      position: sticky; bottom: 0; z-index: 2;
+      color: var(--royal-deep); font-variant-numeric: tabular-nums;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    tfoot td:first-child {
+      text-align: left; position: sticky; left: 0; z-index: 3;
+      background: linear-gradient(180deg, #f4f6fb 0%, #e9eefb 100%);
+    }
+    td.sales-col { color: var(--royal-deep); font-weight: 600; }
+    td.sku-col { color: var(--text-2); font-size: 12.5px; }
+    td.target-col { color: var(--text-2); font-size: 12.5px; }
+    td.pct-col { font-weight: 700; }
+    td.pct-col.good { color: var(--green); }
+    td.pct-col.mid  { color: var(--amber); }
+    td.pct-col.bad  { color: var(--red); }
+    thead th.target-head { color: var(--green); }
+
+    thead th.sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: color var(--fast), background var(--fast);
+    }
+    thead th.sortable:hover {
+      color: var(--royal);
+      background: linear-gradient(180deg, #e6ecf8 0%, #dbe4f5 100%);
+    }
+    thead th .sort-ind {
+      display: inline-block;
+      margin-left: 4px;
+      font-size: 9px;
+      opacity: .4;
+      vertical-align: middle;
+      transition: opacity var(--fast), color var(--fast);
+    }
+    thead th.sort-active .sort-ind {
+      opacity: 1;
+      color: var(--royal);
+      font-size: 11px;
+    }
+
+    .table-hint {
+      padding: 10px 16px;
+      font-size: 12px; color: var(--text-2);
+      background: var(--surface-2);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: wrap;
+    }
+    .table-hint strong { color: var(--royal); }
+    .table-hint em { color: var(--royal-deep); font-style: normal; font-weight: 600; }
+
+    .loader, .empty {
+      padding: clamp(40px, 6vh, 72px) 24px;
+      text-align: center; color: var(--muted); font-size: 14px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; line-height: 1.6;
+    }
+    .loader::before {
+      content: ''; width: 34px; height: 34px;
+      border: 3px solid var(--border); border-top-color: var(--royal);
+      border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty .empty-actions { margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+    .load-progress { width: min(420px, 90%); margin-top: 6px; }
+    .load-progress-bar {
+      width: 100%; height: 6px;
+      background: var(--border); border-radius: 999px; overflow: hidden;
+    }
+    .load-progress-fill {
+      height: 100%; width: 0%;
+      background: var(--royal);
+      transition: width .2s ease;
+    }
+    .load-progress-text {
+      margin-top: 8px;
+      font-size: 12px; color: var(--text-2);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ===== KPI ===== */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px; margin-bottom: 14px;
+    }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--royal);
+      border-radius: var(--r-md);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-sm);
+      min-width: 0;
+    }
+    .kpi.amber { border-left-color: var(--amber); }
+    .kpi.red   { border-left-color: var(--red); }
+    .kpi.sky   { border-left-color: var(--sky); }
+    .kpi.green { border-left-color: var(--green); }
+    .kpi-label {
+      font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); font-weight: 700; margin-bottom: 6px;
+    }
+    .kpi-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(18px, 2vw + 8px, 26px);
+      color: var(--royal-deep); font-weight: 700;
+      letter-spacing: -.5px; line-height: 1.1;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .kpi-sub { font-size: 11.5px; color: var(--text-2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ===== CHART ===== */
+    .chart-card { padding: 0; }
+
+    .chart-filters {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fbfcff 0%, #f3f6fd 100%);
+      border-bottom: 1px solid var(--border);
+      border-radius: var(--r-md) var(--r-md) 0 0;
+    }
+    .chart-filters .filter-label {
+      font-size: 10px; letter-spacing: .09em; text-transform: uppercase;
+      font-weight: 800; color: var(--muted);
+      padding-right: 4px;
+    }
+
+    .chart-topbar {
+      display: flex; gap: 8px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 12px;
+      flex-wrap: wrap; align-items: center;
+    }
+    .chart-tabs {
+      display: inline-flex; border-radius: var(--r-sm);
+      overflow: hidden; border: 1px solid var(--border-strong);
+      background: var(--surface);
+    }
+    .chart-tabs button {
+      padding: 7px 14px;
+      background: transparent; border: 0;
+      font: inherit; font-size: 12.5px; font-weight: 600;
+      color: var(--text-2); cursor: pointer;
+      border-right: 1px solid var(--border);
+      transition: background var(--fast), color var(--fast);
+    }
+    .chart-tabs button:last-child { border-right: 0; }
+    .chart-tabs button:hover { background: var(--surface-2); }
+    .chart-tabs button.active { background: var(--royal); color: #fff; }
+    .chart-tabs button:disabled { opacity: .4; cursor: not-allowed; }
+
+    .chart-topbar .chart-spacer { flex: 1 1 auto; }
+
+    .chart-toggle {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 32px; padding: 0 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-sm);
+      background: var(--surface);
+      font: inherit; font-size: 12px; font-weight: 600;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: background var(--fast), color var(--fast), border-color var(--fast);
+      white-space: nowrap;
+    }
+    .chart-toggle:hover { border-color: var(--royal); color: var(--royal); }
+    .chart-toggle.active {
+      background: var(--royal); color: #fff;
+      border-color: var(--royal);
+      box-shadow: 0 4px 12px rgba(27,27,179,.25);
+    }
+    .chart-toggle.active:hover { background: var(--royal-2); }
+
+    .chart-dim {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 0 4px 0 10px;
+      height: 32px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-sm);
+      background: var(--surface);
+      font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
+      font-weight: 700; color: var(--muted);
+      white-space: nowrap;
+    }
+    .chart-dim.dim-static {
+      padding: 0 12px;
+      border-style: dashed;
+      color: var(--royal);
+      border-color: var(--border-strong);
+      cursor: default;
+    }
+    .chart-dim select {
+      height: 100%;
+      padding: 0 22px 0 4px;
+      border: 0; background: transparent;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%234a5572' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 4px center;
+      font: inherit; font-size: 12px; font-weight: 600;
+      color: var(--text);
+      text-transform: none; letter-spacing: 0;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .chart-dim select:focus { color: var(--royal); }
+
+    .multi { position: relative; }
+    .multi-trigger {
+      display: inline-flex; align-items: center; gap: 8px;
+      height: 32px; padding: 0 12px; border-radius: var(--r-sm);
+      border: 1px solid var(--border-strong); background: var(--surface);
+      font: inherit; font-size: 12.5px; font-weight: 600;
+      color: var(--text); cursor: pointer;
+      white-space: nowrap; max-width: 280px;
+      transition: border-color var(--fast), box-shadow var(--fast);
+    }
+    .multi-trigger:hover { border-color: var(--royal); }
+    .multi-trigger:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(27,27,179,.14); }
+    .multi-trigger .multi-label {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      max-width: 200px;
+    }
+    .multi-trigger .multi-caret { color: var(--muted); font-size: 10px; }
+    .multi-trigger .multi-badge {
+      background: var(--royal); color: #fff;
+      font-size: 10.5px; font-weight: 700;
+      padding: 2px 6px; border-radius: 999px;
+      line-height: 1;
+    }
+
+    .multi-panel {
+      position: absolute; top: calc(100% + 6px); right: 0;
+      width: min(340px, 90vw);
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-lg);
+      z-index: 60;
+      display: flex; flex-direction: column;
+      max-height: 60vh;
+      animation: fadeIn 140ms ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .multi-search { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .multi-search input {
+      width: 100%; padding: 7px 10px;
+      border: 1px solid var(--border-strong); border-radius: var(--r-sm);
+      font: inherit; font-size: 12.5px;
+    }
+    .multi-search input:focus { outline: none; border-color: var(--royal); box-shadow: 0 0 0 3px rgba(27,27,179,.14); }
+
+    .multi-actions {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    .multi-actions button {
+      padding: 4px 8px; border-radius: 6px;
+      background: transparent; border: 1px solid var(--border-strong);
+      font: inherit; font-size: 11.5px; font-weight: 600;
+      color: var(--text-2); cursor: pointer;
+      transition: background var(--fast), color var(--fast), border-color var(--fast);
+    }
+    .multi-actions button:hover { background: var(--surface); border-color: var(--royal); color: var(--royal); }
+
+    .multi-list { overflow-y: auto; flex: 1 1 auto; padding: 4px 0; -webkit-overflow-scrolling: touch; }
+    .multi-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px; font-size: 12.5px; cursor: pointer;
+      transition: background var(--fast);
+    }
+    .multi-item:hover { background: #f7f9ff; }
+    .multi-item input[type="checkbox"] {
+      flex: 0 0 auto; width: 15px; height: 15px;
+      accent-color: var(--royal); cursor: pointer;
+    }
+    .multi-item .multi-name {
+      flex: 1 1 auto; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .multi-item .multi-val {
+      flex: 0 0 auto; color: var(--muted);
+      font-variant-numeric: tabular-nums; font-size: 11.5px;
+    }
+    .multi-empty { padding: 16px 12px; text-align: center; color: var(--muted); font-size: 12px; }
+
+    .filter-and {
+      display: inline-flex; align-items: center;
+      font-size: 10px; font-weight: 800;
+      color: var(--amber);
+      letter-spacing: .1em;
+      padding: 0 4px;
+      text-transform: uppercase;
+    }
+    .btn-icon-x {
+      width: 32px; height: 32px; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-sm);
+      background: var(--surface);
+      color: var(--text-2);
+      font-size: 16px; font-weight: 500;
+      cursor: pointer;
+      transition: background var(--fast), color var(--fast), border-color var(--fast);
+    }
+    .btn-icon-x:hover { border-color: var(--red); color: var(--red); background: #fef3f3; }
+
+    .chart-head {
+      padding: 14px 20px 8px;
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 10px; flex-wrap: wrap;
+    }
+    .chart-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 700; color: var(--text);
+      letter-spacing: -.2px;
+    }
+    .chart-sub { font-size: 12px; color: var(--muted); }
+
+    .chart-wrap {
+      position: relative;
+      padding: 10px 20px 20px;
+      height: clamp(320px, 52vh, 520px);
+      min-height: 300px;
+    }
+    .chart-wrap canvas { display: block; max-width: 100%; }
+
+    .cmp-progress {
+      padding: 12px 20px 18px;
+      font-size: 12px; color: var(--text-2);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .cmp-progress-bar {
+      flex: 1; height: 5px;
+      background: var(--border); border-radius: 999px; overflow: hidden;
+    }
+    .cmp-progress-fill {
+      height: 100%; width: 0%;
+      background: var(--royal);
+      transition: width .2s ease;
+    }
+
+    /* ===== DRILL MODAL ===== */
+    .drill-overlay {
+      position: fixed; inset: 0;
+      background: rgba(13,13,122,.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 300;
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      animation: fadeIn 200ms ease;
+    }
+    .drill-overlay.active { display: flex; }
+
+    .drill-panel {
+      background: var(--surface);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-lg);
+      width: 100%; max-width: 1400px;
+      max-height: calc(100dvh - 40px);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 240ms cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(18px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .drill-head {
+      padding: 16px 22px 14px;
+      background: linear-gradient(115deg, rgba(13,13,122,.95), rgba(27,27,179,.86) 48%, rgba(227,30,36,.55));
+      color: #fff;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+      border-bottom: 3px solid var(--amber);
+    }
+    .drill-head-text { min-width: 0; flex: 1 1 260px; }
+    .drill-eyebrow {
+      font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase;
+      color: #ffd98a; font-weight: 700; margin-bottom: 4px;
+    }
+    .drill-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(16px, 1vw + 12px, 20px);
+      letter-spacing: -.3px; word-break: break-word;
+    }
+    .drill-meta { margin-top: 4px; font-size: 12px; color: rgba(255,255,255,.85); }
+    .drill-close {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.14);
+      color: #fff; font-size: 20px; font-weight: 500;
+      cursor: pointer; flex: 0 0 auto;
+      display: grid; place-items: center;
+      transition: background var(--fast);
+    }
+    .drill-close:hover { background: rgba(255,255,255,.28); }
+
+    .drill-bar {
+      padding: 12px 22px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap;
+    }
+    .drill-bar label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11.5px; color: var(--text-2); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .drill-bar select {
+      padding: 6px 28px 6px 10px;
+      border: 1px solid var(--border-strong); border-radius: var(--r-sm);
+      background: var(--surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%234a5572' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>") no-repeat right 10px center;
+      font: inherit; font-size: 12.5px; color: var(--text);
+      cursor: pointer;
+      transition: border-color var(--fast), box-shadow var(--fast);
+    }
+    .drill-bar select:focus { outline: none; border-color: var(--royal); box-shadow: 0 0 0 3px rgba(27,27,179,.14); }
+    .drill-bar .drill-back {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 12px; border-radius: var(--r-sm);
+      background: var(--surface); color: var(--text-2);
+      border: 1px solid var(--border-strong);
+      font: inherit; font-size: 12.5px; font-weight: 600;
+      cursor: pointer;
+      transition: background var(--fast), border-color var(--fast), color var(--fast);
+    }
+    .drill-bar .drill-back:hover:not(:disabled) { background: #fff; border-color: var(--royal); color: var(--royal); }
+    .drill-bar .drill-back:disabled { opacity: .45; cursor: not-allowed; }
+
+    .drill-view {
+      display: inline-flex; border-radius: var(--r-sm);
+      overflow: hidden; border: 1px solid var(--border-strong);
+      background: var(--surface);
+    }
+    .drill-view button {
+      padding: 6px 12px; border: 0; background: transparent;
+      font: inherit; font-size: 12px; font-weight: 600;
+      color: var(--text-2); cursor: pointer;
+      transition: background var(--fast), color var(--fast);
+      border-right: 1px solid var(--border);
+    }
+    .drill-view button:last-child { border-right: 0; }
+    .drill-view button:hover { background: var(--surface-2); }
+    .drill-view button.active { background: var(--royal); color: #fff; }
+
+    .drill-crumbs {
+      padding: 10px 22px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      font-size: 12px;
+    }
+    .drill-crumb {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      background: #eef2ff; color: var(--royal-deep);
+      border: 1px solid #dbe4ff;
+      font-family: ui-monospace, monospace;
+      font-size: 11.5px;
+      max-width: 100%;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .drill-crumb .crumb-field {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      color: var(--royal);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      font-size: 10px;
+    }
+    .drill-crumb.crumb-current {
+      background: var(--royal); color: #fff; border-color: var(--royal);
+    }
+    .drill-crumb.crumb-current .crumb-field { color: #ffd98a; }
+    .drill-crumb-sep { color: var(--muted); font-size: 11px; }
+
+    .drill-body {
+      flex: 1 1 auto; min-height: 0;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .drill-body table {
+      width: 100%;
+      border-collapse: separate; border-spacing: 0;
+      font-size: 12.5px;
+      min-width: 100%;
+    }
+    .drill-body thead th {
+      position: sticky; top: 0; z-index: 2;
+      background: linear-gradient(180deg, #eef2fb 0%, #e6ecf8 100%);
+      color: var(--text-2); font-weight: 700; text-align: right;
+      padding: 9px 12px; border-bottom: 2px solid var(--border-strong);
+      white-space: nowrap; text-transform: uppercase; font-size: 10px; letter-spacing: .06em;
+    }
+    .drill-body thead th:first-child {
+      text-align: left; position: sticky; left: 0; z-index: 3;
+      background: linear-gradient(180deg, #eef2fb 0%, #e6ecf8 100%);
+      min-width: 200px; max-width: 280px;
+    }
+    .drill-body tbody td {
+      padding: 8px 12px; text-align: right;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap; font-variant-numeric: tabular-nums;
+    }
+    .drill-body tbody td:first-child {
+      text-align: left; font-weight: 600; position: sticky; left: 0;
+      background: var(--surface); z-index: 1;
+      min-width: 200px; max-width: 280px;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .drill-body tbody tr { cursor: pointer; }
+    .drill-body tbody tr:hover td { background: #f7f9ff; }
+    .drill-body tbody tr:hover td:first-child { background: #f7f9ff; }
+
+    .drill-body tfoot td {
+      padding: 10px 12px; text-align: right; font-weight: 700;
+      background: linear-gradient(180deg, #f4f6fb 0%, #e9eefb 100%);
+      border-top: 2px solid var(--border-strong);
+      position: sticky; bottom: 0; z-index: 2;
+      color: var(--royal-deep);
+    }
+    .drill-body tfoot td:first-child {
+      text-align: left; position: sticky; left: 0; z-index: 3;
+      background: linear-gradient(180deg, #f4f6fb 0%, #e9eefb 100%);
+    }
+    .drill-body .drill-empty {
+      padding: 60px 24px; text-align: center;
+      color: var(--muted); font-size: 13.5px;
+    }
+    .drill-body .drill-empty strong { color: var(--text); }
+
+    .drill-hint {
+      padding: 10px 22px;
+      background: var(--surface-2);
+      border-top: 1px solid var(--border);
+      font-size: 11.5px; color: var(--text-2);
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: wrap;
+    }
+    .drill-hint strong { color: var(--royal); }
+
+    .coverage-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #eef2ff;
+      color: var(--royal);
+      font-variant-numeric: tabular-nums;
+    }
+    .coverage-pill.complete { background: #d1fae5; color: #065f46; }
+    .coverage-pill.partial  { background: #fef3c7; color: #92400e; }
+    .coverage-pill.empty    { background: #f1f5f9; color: var(--muted); }
+
+    @media (min-width: 821px) and (max-height: 900px) {
+      .main-col { padding-top: calc(10px + var(--safe-top)); padding-bottom: calc(12px + var(--safe-bottom)); }
+      .hero { padding: 10px 18px 12px; margin-bottom: 8px; border-radius: var(--r-md); }
+      .hero-eyebrow { font-size: 9.5px; letter-spacing: 1.3px; margin-bottom: 2px; }
+      .hero-title { font-size: 19px; letter-spacing: -.3px; }
+      .hero-sub { font-size: 11.5px; margin-top: 2px; }
+      .hero-btn { padding: 6px 13px; font-size: 11.5px; }
+      .status-pill { padding: 5px 11px; font-size: 11px; }
+      .card { margin-bottom: 8px; }
+      .toolbar { padding: 7px 10px; gap: 4px 8px; }
+      .field { gap: 2px; }
+      .field select { height: 30px; font-size: 12px; }
+      .search-wrap input { height: 30px; font-size: 12px; min-width: 170px; }
+      .btn, .btn-toggle { height: 30px; padding: 0 12px; font-size: 12px; }
+      .table-hint { padding: 6px 14px; font-size: 11px; }
+      .table-wrap { max-height: calc(100dvh - 200px); }
+      tbody td { padding: 8px 12px; font-size: 12.5px; }
+      thead th { padding: 10px 12px; font-size: 10px; }
+      tfoot td { padding: 10px 12px; font-size: 12.5px; }
+      .kpi-grid { gap: 10px; margin-bottom: 10px; }
+      .kpi { padding: 11px 14px; }
+      .kpi-value { font-size: 20px; }
+      .chart-wrap { height: clamp(240px, 40vh, 380px); }
+      .chart-toggle, .multi-trigger, .chart-dim, .btn-icon-x { height: 30px; font-size: 11.5px; }
+      .chart-filters, .chart-topbar { padding: 6px 10px; gap: 6px; }
+    }
+
+    @media (max-width: 820px) {
+      .main-col {
+        padding-top: calc(8px + var(--safe-top));
+        padding-bottom: calc(14px + var(--safe-bottom));
+      }
+      .hero {
+        padding: 9px 12px; margin-bottom: 7px;
+        border-radius: var(--r-md);
+        border-bottom-width: 2px; border-left-width: 2px; border-right-width: 2px;
+      }
+      .hero-eyebrow { font-size: 8.5px; letter-spacing: 1.1px; margin-bottom: 2px; }
+      .hero-title { font-size: 16px; letter-spacing: -.3px; }
+      .hero-sub { font-size: 10.5px; margin-top: 3px; }
+      .hero-btn { padding: 5px 10px; font-size: 10.5px; gap: 4px; }
+      .hero-btn .hero-btn-icon { font-size: 11px; }
+      .status-pill { padding: 4px 9px; font-size: 10px; gap: 6px; }
+      .status-pill .dot { width: 6px; height: 6px; box-shadow: 0 0 0 2px rgba(245,166,35,.25); }
+
+      .card { margin-bottom: 7px; }
+
+      .toolbar { padding: 7px 9px; gap: 5px 7px; }
+      .field { gap: 2px; }
+      .field > span { font-size: 8px; letter-spacing: .06em; }
+      .field select {
+        height: 26px; padding: 0 22px 0 7px;
+        font-size: 11px; min-width: 84px;
+        background-position: right 6px center;
+      }
+      .btn, .btn-toggle { height: 26px; padding: 0 10px; font-size: 11px; gap: 4px; }
+
+      .search-wrap input {
+        height: 26px; padding: 0 24px 0 24px;
+        font-size: 11px; min-width: 130px;
+      }
+      .search-icon { left: 6px; font-size: 10px; }
+      .search-clear { width: 18px; height: 18px; font-size: 12px; right: 3px; }
+
+      .table-wrap { max-height: calc(100dvh - 190px); }
+      table { font-size: 11px; }
+      thead th { padding: 7px 8px; font-size: 9px; letter-spacing: .04em; }
+      tbody td { padding: 6px 8px; font-size: 11px; }
+      tfoot td { padding: 7px 8px; font-size: 11px; }
+      thead th:first-child { min-width: 110px; max-width: 170px; }
+      tbody td:first-child { min-width: 110px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+      tfoot td:first-child { min-width: 110px; max-width: 170px; }
+      .chev { width: 8px; height: 8px; margin-right: 4px; }
+
+      .table-hint { padding: 6px 10px; font-size: 10px; gap: 6px; }
+
+      .loader, .empty { padding: 30px 16px; font-size: 12px; gap: 10px; }
+      .loader::before { width: 26px; height: 26px; border-width: 2px; }
+
+      .kpi-grid { gap: 6px; margin-bottom: 7px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+      .kpi { padding: 8px 10px; border-left-width: 3px; border-radius: var(--r-sm); }
+      .kpi-label { font-size: 8.5px; letter-spacing: .05em; margin-bottom: 3px; }
+      .kpi-value { font-size: 15px; letter-spacing: -.3px; }
+      .kpi-sub { font-size: 9.5px; margin-top: 2px; }
+
+      .chart-filters { padding: 6px 9px; gap: 5px; }
+      .chart-filters .filter-label { font-size: 8.5px; padding-right: 2px; }
+      .chart-topbar { padding: 6px 9px; gap: 5px; }
+      .chart-tabs button { padding: 5px 9px; font-size: 10.5px; }
+      .chart-toggle { height: 26px; padding: 0 9px; font-size: 10.5px; gap: 4px; }
+      .chart-dim { height: 26px; padding: 0 3px 0 8px; font-size: 9px; letter-spacing: .05em; }
+      .chart-dim.dim-static { padding: 0 8px; }
+      .chart-dim select { font-size: 11px; padding: 0 20px 0 3px; background-position: right 3px center; }
+      .multi-trigger { height: 26px; padding: 0 8px; font-size: 11px; gap: 5px; max-width: 180px; }
+      .multi-trigger .multi-label { max-width: 110px; }
+      .multi-trigger .multi-caret { font-size: 9px; }
+      .multi-trigger .multi-badge { font-size: 9px; padding: 1px 4px; }
+      .filter-and { font-size: 9px; padding: 0 3px; letter-spacing: .05em; }
+      .btn-icon-x { width: 26px; height: 26px; font-size: 14px; }
+
+      .multi-panel { width: min(280px, 92vw); }
+      .multi-search { padding: 6px 8px; }
+      .multi-search input { font-size: 11px; padding: 5px 8px; }
+      .multi-actions { padding: 4px 8px; gap: 4px; }
+      .multi-actions button { padding: 3px 6px; font-size: 10px; border-radius: 4px; }
+      .multi-item { padding: 5px 10px; font-size: 11px; gap: 6px; }
+      .multi-item input[type="checkbox"] { width: 13px; height: 13px; }
+      .multi-item .multi-val { font-size: 10px; }
+      .multi-empty { padding: 12px 10px; font-size: 10.5px; }
+
+      .chart-head { padding: 8px 12px 4px; gap: 6px; }
+      .chart-title { font-size: 13px; letter-spacing: -.15px; }
+      .chart-sub { font-size: 10px; }
+      .chart-wrap { height: clamp(230px, 42vh, 360px); min-height: 220px; padding: 6px 10px 12px; }
+      .cmp-progress { padding: 8px 12px 12px; font-size: 10.5px; gap: 8px; }
+
+      .drill-overlay { padding: 8px; }
+      .drill-panel { max-height: calc(100dvh - 16px); border-radius: var(--r-md); }
+      .drill-head { padding: 10px 14px 8px; gap: 8px; border-bottom-width: 2px; }
+      .drill-eyebrow { font-size: 8.5px; letter-spacing: 1.2px; margin-bottom: 2px; }
+      .drill-title { font-size: 13px; letter-spacing: -.2px; }
+      .drill-meta { font-size: 10px; margin-top: 2px; }
+      .drill-close { width: 26px; height: 26px; font-size: 16px; }
+      .drill-bar { padding: 8px 14px; gap: 6px; }
+      .drill-bar label { font-size: 9.5px; gap: 5px; letter-spacing: .03em; }
+      .drill-bar select { padding: 4px 22px 4px 8px; font-size: 11px; background-position: right 6px center; }
+      .drill-bar .drill-back { padding: 4px 9px; font-size: 11px; }
+      .drill-view button { padding: 4px 9px; font-size: 10.5px; }
+      .drill-crumbs { padding: 6px 14px; gap: 4px; font-size: 10px; }
+      .drill-crumb { padding: 3px 8px; font-size: 10px; gap: 4px; }
+      .drill-crumb .crumb-field { font-size: 8.5px; }
+
+      .drill-body thead th { padding: 6px 8px; font-size: 9px; letter-spacing: .04em; }
+      .drill-body thead th:first-child { min-width: 120px; max-width: 170px; }
+      .drill-body tbody td { padding: 6px 8px; font-size: 10.5px; }
+      .drill-body tbody td:first-child { min-width: 120px; max-width: 170px; }
+      .drill-body tfoot td { padding: 6px 8px; font-size: 10.5px; }
+      .drill-hint { padding: 6px 14px; font-size: 10px; gap: 6px; }
+
+      .coverage-pill { padding: 1px 6px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <main class="main-col">
+    <div class="main-col-inner">
+
+      <section class="hero">
+        <div class="hero-top">
+          <div class="hero-text">
+            <p class="hero-eyebrow">LAKPUE DRUG INC</p>
+            <h1 class="hero-title" id="hero-title">Sales Performance</h1>
+            <p class="hero-sub" id="hero-sub">Loading…</p>
+          </div>
+
+          <div class="hero-actions" id="hero-actions">
+            <button class="hero-btn active" data-view="performance" title="Table view">
+              <span class="hero-btn-icon">📈</span>
+              <span>Sales Performance</span>
+            </button>
+            <button class="hero-btn" data-view="dashboard" title="Charts view">
+              <span class="hero-btn-icon">📊</span>
+              <span>Dashboard</span>
+            </button>
+          </div>
+
+          <div class="status-pill" id="conn-status">
+            <span class="dot"></span>
+            <span class="status-text">Connecting…</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <label class="field" id="field-scope" hidden>
+            <span>View Scope</span>
+            <select id="sel-scope">
+              <option value="me">My Data Only</option>
+              <option value="team">Team Total</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Year</span>
+            <select id="sel-year"></select>
+          </label>
+
+          <label class="field">
+            <span>View</span>
+            <select id="sel-view">
+              <option value="Sales">Sales</option>
+              <option value="SKU">SKU</option>
+              <option value="Sales + SKU">Sales + SKU</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Period</span>
+            <select id="sel-period">
+              <option value="Monthly">Monthly</option>
+              <option value="Quarterly">Quarterly</option>
+              <option value="Semi-Annual">Semi-Annual</option>
+              <option value="Annual">Annual</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Group By</span>
+            <select id="sel-group">
+              <option value="Client">Client</option>
+              <option value="Sales Rep">Sales Rep</option>
+              <option value="Item">Item</option>
+              <option value="Area">Area</option>
+              <option value="Area2">Area2</option>
+              <option value="Company">Company</option>
+              <option value="Division">Division</option>
+            </select>
+          </label>
+
+          <label class="field" id="field-search">
+            <span>Search</span>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="search-input" placeholder="Filter by name…" autocomplete="off" spellcheck="false">
+              <button type="button" id="search-clear" class="search-clear" hidden aria-label="Clear search">×</button>
+            </div>
+          </label>
+
+          <div class="spacer"></div>
+
+          <!-- NEW: EXCLUDE HARDWARE / HW BUTTON -->
+          <button id="btn-exclude-hw" class="btn-toggle"
+                  title="Exclude Hardware / HW division from the table and graph">
+            🚫 Exclude HW
+          </button>
+
+          <button id="btn-group-clients" class="btn-toggle active"
+                  title="Toggle client keyword grouping on/off">
+            🔗 Group Clients
+          </button>
+          <button id="btn-export" class="btn btn-primary" title="Export CSV">⬇ Export CSV</button>
+        </div>
+      </section>
+
+      <div id="view-performance">
+        <section class="card table-card">
+          <div id="loader" class="loader">
+            <div id="loader-text">Loading data…</div>
+            <div class="load-progress" id="loader-progress" hidden>
+              <div class="load-progress-bar"><div class="load-progress-fill" id="loader-progress-fill"></div></div>
+              <div class="load-progress-text" id="loader-progress-text">0 / 0 rows</div>
+            </div>
+          </div>
+          <div id="empty" class="empty" hidden>No data found.</div>
+          <div id="table-wrap" class="table-wrap" hidden>
+            <table id="grid">
+              <thead></thead>
+              <tbody></tbody>
+              <tfoot></tfoot>
+            </table>
+          </div>
+          <div class="table-hint" id="table-hint" hidden>
+            Click any row to drill down. Click any <strong>header</strong> to sort by that column.
+          </div>
+        </section>
+      </div>
+
+      <div id="view-dashboard" hidden>
+        <section class="kpi-grid" id="kpi-grid" hidden>
+          <div class="kpi">
+            <div class="kpi-label">Total Sales</div>
+            <div class="kpi-value" id="kpi-sales">₱0.00</div>
+            <div class="kpi-sub" id="kpi-sales-sub">—</div>
+          </div>
+          <div class="kpi amber">
+            <div class="kpi-label">Total SKU</div>
+            <div class="kpi-value" id="kpi-sku">0</div>
+            <div class="kpi-sub" id="kpi-sku-sub">—</div>
+          </div>
+          <div class="kpi sky">
+            <div class="kpi-label">Transactions</div>
+            <div class="kpi-value" id="kpi-tx">0</div>
+            <div class="kpi-sub" id="kpi-tx-sub">—</div>
+          </div>
+          <div class="kpi green">
+            <div class="kpi-label">Total Target</div>
+            <div class="kpi-value" id="kpi-target">—</div>
+            <div class="kpi-sub" id="kpi-target-sub">No targets set</div>
+          </div>
+          <div class="kpi red">
+            <div class="kpi-label">Top Performer</div>
+            <div class="kpi-value" id="kpi-top" style="font-size:16px">—</div>
+            <div class="kpi-sub" id="kpi-top-sub">—</div>
+          </div>
+        </section>
+
+        <section class="card chart-card">
+          <div class="chart-filters">
+            <span class="filter-label">Filter</span>
+            <span class="chart-dim dim-static" id="filter-dim-label"
+                  title="Follows the Group By in the toolbar">by Client</span>
+
+            <!-- PRIMARY FILTER -->
+            <div class="multi" id="filter-multi">
+              <button type="button" class="multi-trigger" id="filter-trigger" aria-haspopup="true" aria-expanded="false">
+                <span class="multi-label" id="filter-label">All</span>
+                <span class="multi-badge" id="filter-badge" hidden>0</span>
+                <span class="multi-caret">▾</span>
+              </button>
+              <div class="multi-panel" id="filter-panel" hidden role="dialog">
+                <div class="multi-search">
+                  <input type="text" id="filter-search" placeholder="Search…" autocomplete="off">
+                </div>
+                <div class="multi-actions">
+                  <button type="button" data-action="all">Select all</button>
+                  <button type="button" data-action="none">Clear</button>
+                  <button type="button" data-action="close" style="margin-left:auto">Close</button>
+                </div>
+                <div class="multi-list" id="filter-list"></div>
+              </div>
+            </div>
+
+            <!-- SECONDARY FILTER -->
+            <span class="filter-and" id="filter2-and" hidden>AND</span>
+
+            <label class="chart-dim" id="filter2-dim-wrap" hidden title="Secondary filter dimension">
+              by
+              <select id="sel-filter2-dim">
+                <option value="Item">Item</option>
+                <option value="Client">Client</option>
+                <option value="Sales Rep">Sales Rep</option>
+                <option value="Area">Area</option>
+                <option value="Area2">Area2</option>
+                <option value="Company">Company</option>
+                <option value="Division">Division</option>
+              </select>
+            </label>
+
+            <div class="multi" id="filter2-multi" hidden>
+              <button type="button" class="multi-trigger" id="filter2-trigger" aria-haspopup="true" aria-expanded="false">
+                <span class="multi-label" id="filter2-label">All</span>
+                <span class="multi-badge" id="filter2-badge" hidden>0</span>
+                <span class="multi-caret">▾</span>
+              </button>
+              <div class="multi-panel" id="filter2-panel" hidden role="dialog">
+                <div class="multi-search">
+                  <input type="text" id="filter2-search" placeholder="Search…" autocomplete="off">
+                </div>
+                <div class="multi-actions">
+                  <button type="button" data-action="all">Select all</button>
+                  <button type="button" data-action="none">Clear</button>
+                  <button type="button" data-action="close" style="margin-left:auto">Close</button>
+                </div>
+                <div class="multi-list" id="filter2-list"></div>
+              </div>
+            </div>
+
+            <button type="button" class="btn-icon-x" id="btn-remove-filter2" hidden title="Remove secondary filter">×</button>
+
+            <!-- TERTIARY FILTER -->
+            <span class="filter-and" id="filter3-and" hidden>AND</span>
+
+            <label class="chart-dim" id="filter3-dim-wrap" hidden title="Third filter dimension">
+              by
+              <select id="sel-filter3-dim">
+                <option value="Item">Item</option>
+                <option value="Client">Client</option>
+                <option value="Sales Rep">Sales Rep</option>
+                <option value="Area">Area</option>
+                <option value="Area2">Area2</option>
+                <option value="Company">Company</option>
+                <option value="Division">Division</option>
+              </select>
+            </label>
+
+            <div class="multi" id="filter3-multi" hidden>
+              <button type="button" class="multi-trigger" id="filter3-trigger" aria-haspopup="true" aria-expanded="false">
+                <span class="multi-label" id="filter3-label">All</span>
+                <span class="multi-badge" id="filter3-badge" hidden>0</span>
+                <span class="multi-caret">▾</span>
+              </button>
+              <div class="multi-panel" id="filter3-panel" hidden role="dialog">
+                <div class="multi-search">
+                  <input type="text" id="filter3-search" placeholder="Search…" autocomplete="off">
+                </div>
+                <div class="multi-actions">
+                  <button type="button" data-action="all">Select all</button>
+                  <button type="button" data-action="none">Clear</button>
+                  <button type="button" data-action="close" style="margin-left:auto">Close</button>
+                </div>
+                <div class="multi-list" id="filter3-list"></div>
+              </div>
+            </div>
+
+            <button type="button" class="btn-icon-x" id="btn-remove-filter3" hidden title="Remove third filter">×</button>
+
+            <!-- ADD FILTER BUTTONS -->
+            <button type="button" class="chart-toggle" id="btn-add-filter2" title="Add a cascading secondary filter">
+              + AND filter
+            </button>
+            <button type="button" class="chart-toggle" id="btn-add-filter3" hidden title="Add a cascading third filter">
+              + AND filter
+            </button>
+          </div>
+
+          <div class="chart-topbar">
+            <div class="chart-tabs" id="chart-tabs" role="tablist">
+              <button data-chart="line" class="active">📈 Line</button>
+              <button data-chart="bar">📊 Bar</button>
+              <button data-chart="pie">🥧 Pie</button>
+            </div>
+
+            <button type="button" class="chart-toggle" id="btn-compare" title="Compare years side-by-side">
+              📅 Compare Years
+            </button>
+
+            <label class="chart-dim" id="series-wrap" title="Draw one line per unique value">
+              Series by
+              <select id="sel-series-dim">
+                <option value="None">None</option>
+                <option value="Item">Item</option>
+                <option value="Client">Client</option>
+                <option value="Sales Rep">Sales Rep</option>
+                <option value="Area">Area</option>
+                <option value="Area2">Area2</option>
+                <option value="Company">Company</option>
+                <option value="Division">Division</option>
+              </select>
+            </label>
+
+            <div class="chart-spacer"></div>
+
+            <div class="multi" id="years-multi" hidden>
+              <button type="button" class="multi-trigger" id="years-trigger" aria-haspopup="true" aria-expanded="false">
+                <span class="multi-label" id="years-label">Years</span>
+                <span class="multi-badge" id="years-badge" hidden>0</span>
+                <span class="multi-caret">▾</span>
+              </button>
+              <div class="multi-panel" id="years-panel" hidden role="dialog">
+                <div class="multi-actions">
+                  <button type="button" data-action="all">Select all</button>
+                  <button type="button" data-action="none">Clear</button>
+                  <button type="button" data-action="close" style="margin-left:auto">Close</button>
+                </div>
+                <div class="multi-list" id="years-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-head">
+            <div class="chart-title" id="chart-title">Trend</div>
+            <div class="chart-sub" id="chart-sub">—</div>
+          </div>
+
+          <div id="chart-loader" class="loader">Loading data…</div>
+          <div id="chart-empty" class="empty" hidden>No data found.</div>
+          <div id="chart-cmp-progress" class="cmp-progress" hidden>
+            <span id="cmp-progress-text">Loading all years…</span>
+            <div class="cmp-progress-bar"><div class="cmp-progress-fill" id="cmp-progress-fill"></div></div>
+          </div>
+          <div id="chart-wrap" class="chart-wrap" hidden>
+            <canvas id="chart"></canvas>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ========== DRILL-DOWN MODAL ========== -->
+<div class="drill-overlay" id="drill-overlay" hidden>
+  <div class="drill-panel" role="dialog" aria-modal="true" aria-labelledby="drill-title">
+    <div class="drill-head">
+      <div class="drill-head-text">
+        <p class="drill-eyebrow">DRILL DOWN</p>
+        <div class="drill-title" id="drill-title">—</div>
+        <div class="drill-meta" id="drill-meta">—</div>
+      </div>
+      <button class="drill-close" id="drill-close" aria-label="Close">×</button>
+    </div>
+
+    <div class="drill-bar">
+      <button class="drill-back" id="drill-back" disabled>← Back</button>
+      <label>
+        Group by
+        <select id="drill-group">
+          <option value="Client">Client</option>
+          <option value="Sales Rep">Sales Rep</option>
+          <option value="Item">Item</option>
+          <option value="Area">Area</option>
+          <option value="Area2">Area2</option>
+          <option value="Company">Company</option>
+          <option value="Division">Division</option>
+        </select>
+      </label>
+      <label>
+        Show
+        <select id="drill-period">
+          <option value="Monthly">Monthly</option>
+          <option value="Quarterly">Quarterly</option>
+          <option value="Semi-Annual">Semi-Annual</option>
+          <option value="Annual">Annual</option>
+        </select>
+      </label>
+      <div class="drill-view" id="drill-view" role="tablist">
+        <button data-mode="Sales">₱ Sales</button>
+        <button data-mode="SKU">SKU</button>
+        <button data-mode="Sales + SKU">Both</button>
+      </div>
+      <button class="drill-back" id="drill-export" style="margin-left:auto" title="Download this drill view as CSV">⬇ Export CSV</button>
+    </div>
+
+    <div class="drill-crumbs" id="drill-crumbs"></div>
+
+    <div class="drill-body" id="drill-body">
+      <div class="drill-empty">Loading…</div>
+    </div>
+
+    <div class="drill-hint" id="drill-hint">
+      Click any row to drill deeper. <strong>Back</strong> to go one level up, <strong>×</strong> to close.
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// UNIFIED SALES DASHBOARD — Company/Area access + 3-level filters + HW exclusion
+// ============================================================
+
+const DEFAULT_CLIENT_GROUPS = [
+  { label: 'Pacifica Group',           keywords: ['pacifica'], clients: [] },
+  { label: 'JM Poultry Group',         keywords: ['jm poultry', 'jm-poultry', 'jmpoultry'], clients: [] },
+  { label: 'Greenline / Negros Jade',  keywords: ['greenline', 'negros jade', 'negros-jade'], clients: [] },
+];
+
+const STATE = {
+  client: null,
+  userId: null,
+  user: null,
+  isAdmin: false,
+  mySrCodes: [],
+  myPersonnel: [],
+  teamSrCodes: [],
+  srCodeToPersonnel: new Map(),
+  viewScope: 'me',
+
+  // 🆕 Company / Area based access control
+  myCompanies: [],
+  myAreas: [],
+  accessLoaded: false,
+
+  allRows: [],
+  availableYears: [],
+  year: null,
+  hostLabel: '',
+
+  activeView: 'performance',
+
+  view: 'Sales',
+  period: 'Monthly',
+  groupBy: 'Client',
+  searchQuery: '',
+
+  groupClients: true,
+
+  // 🆕 Toggle: exclude Hardware / HW division
+  excludeHardware: true,
+
+  sortField: 'name',
+  sortMonthIdx: null,
+  sortDir: 'asc',
+
+  chartType: 'line',
+  chart: null,
+
+  filterDimension: 'Client',
+  selectedFilters: new Set(),
+  availableFilterItems: [],
+  filterSearch: '',
+
+  secondaryDimension: null,
+  secondarySelectedFilters: new Set(),
+  secondaryAvailableItems: [],
+  secondarySearch: '',
+
+  tertiaryDimension: null,
+  tertiarySelectedFilters: new Set(),
+  tertiaryAvailableItems: [],
+  tertiarySearch: '',
+
+  seriesBy: 'None',
+
+  compareMode: false,
+  compareRows: [],
+  compareLoaded: false,
+  compareLoading: false,
+  compareYears: new Set(),
+
+  drillStack: [],
+  drillGroupBy: null,
+  drillPeriod: 'Monthly',
+  drillView: 'Sales',
+
+  targets: new Map(),
+  targetsAvailable: true,
+
+  clientGroups: [],
+  clientGroupsAvailable: true,
+  clientGroupsLoaded: false,
+
+  aggCache: new Map(),
+  pendingRender: null,
+};
+
+const PERIOD_LABELS = {
+  'Monthly':     ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  'Quarterly':   ['Q1','Q2','Q3','Q4'],
+  'Semi-Annual': ['H1','H2'],
+  'Annual':      ['Annual'],
+};
+
+const GROUP_FIELD = {
+  'Client':    'client',
+  'Sales Rep': 'sr_code',
+  'Item':      'items',
+  'Area':      'area',
+  'Area2':     'area2',
+  'Company':   'company',
+  'Division':  'division',
+};
+
+const ALL_DIMENSIONS = ['Item','Client','Sales Rep','Area','Area2','Company','Division'];
+
+const NEXT_DIM = {
+  'Sales Rep':   'Client',
+  'Client':      'Item',
+  'Item':        'Client',
+  'Area':        'Sales Rep',
+  'Area2':       'Client',
+  'Company':     'Client',
+  'Division':    'Client',
+  'My Personnel':'Client',
+};
+
+const PALETTE = [
+  '#1b1bb3','#e31e24','#f5a623','#2e9bd6','#7c3aed',
+  '#10b981','#ec4899','#f97316','#0ea5e9','#84cc16',
+  '#a855f7','#ef4444','#14b8a6','#eab308','#6366f1',
+];
+
+const PHP = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const INT = new Intl.NumberFormat('en-PH');
+
+const PAGE_SIZE = 10000;
+const FETCH_CONCURRENCY = 3;
+const CLIENT_RENDER_LIMIT = Infinity;
+const SERIES_TOP_N = 8;
+const CHART_TOP_N = 15;
+
+const $ = (sel) => document.querySelector(sel);
+
+function el(tag, props = {}, children = []) {
+  const n = document.createElement(tag);
+  for (const [key, val] of Object.entries(props)) {
+    if (key === 'dataset') for (const [dk, dv] of Object.entries(val)) n.dataset[dk] = dv;
+    else if (key === 'style' && val && typeof val === 'object') Object.assign(n.style, val);
+    else if (key === 'class' || key === 'className') n.className = val;
+    else n[key] = val;
+  }
+  children.forEach(c => n.append(c));
+  return n;
+}
+
+function chevronSvg(size = 10, color = '#1b1bb3') {
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('class', 'chev');
+  svg.setAttribute('viewBox', '0 0 12 12');
+  svg.setAttribute('width', String(size));
+  svg.setAttribute('height', String(size));
+  svg.setAttribute('aria-hidden', 'true');
+  svg.style.display = 'inline-block';
+  svg.style.verticalAlign = '-1px';
+  svg.style.marginRight = '6px';
+  const path = document.createElementNS(SVGNS, 'path');
+  path.setAttribute('d', 'M4 2 L9 6 L4 10 Z');
+  path.setAttribute('fill', color);
+  svg.appendChild(path);
+  return svg;
+}
+
+function setStatus(msg, cls = '') {
+  const pill = $('#conn-status');
+  pill.querySelector('.status-text').textContent = msg;
+  pill.classList.remove('ok', 'err');
+  if (cls) pill.classList.add(cls);
+}
+function setHeroSub(msg) { $('#hero-sub').textContent = msg; }
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function fmtSales(v) { return '₱' + PHP.format(v); }
+function fmtSku(v)   { return INT.format(v); }
+
+// ============================================================
+// 🆕 HARDWARE EXCLUSION HELPERS
+// ============================================================
+function isHardwareDivision(row) {
+  const d = String((row && row.division) || '').trim().toLowerCase();
+  return d === 'hardware' || d === 'hw';
+}
+
+function applyGlobalExclusions(rows) {
+  if (!STATE.excludeHardware || !rows || !rows.length) return rows;
+  return rows.filter(r => !isHardwareDivision(r));
+}
+
+function getAllVisibleRows() {
+  return applyGlobalExclusions(STATE.allRows);
+}
+
+function getVisibleCompareRows() {
+  return applyGlobalExclusions(STATE.compareRows);
+}
+
+// ============================================================
+// ⚡ UNIVERSAL PAGED FETCH (adaptive)
+// ============================================================
+async function fetchAllRowsPaged(makeQuery, total, onProgress) {
+  const rows = [];
+  const probeSize = PAGE_SIZE;
+
+  const probeRes = await makeQuery(0, probeSize - 1);
+  if (probeRes.error) throw probeRes.error;
+
+  const first = probeRes.data || [];
+  rows.push(...first);
+  if (onProgress) onProgress(rows.length, total);
+
+  if (!first.length) return rows;
+  if (rows.length >= total) return rows;
+
+  const chunk = Math.max(1, Math.min(probeSize, first.length));
+  const totalPages = Math.max(1, Math.ceil(total / chunk));
+
+  console.log(
+    `[fetch] total=${total} · probe returned ${first.length} · using chunk=${chunk} · pages=${totalPages}`
+  );
+
+  for (let batchStart = 1; batchStart < totalPages; batchStart += FETCH_CONCURRENCY) {
+    const batch = [];
+    const batchEnd = Math.min(batchStart + FETCH_CONCURRENCY, totalPages);
+    for (let p = batchStart; p < batchEnd; p++) {
+      const from = p * chunk;
+      batch.push(makeQuery(from, from + chunk - 1));
+    }
+    const results = await Promise.all(batch);
+    for (const { data, error } of results) {
+      if (error) throw error;
+      if (data && data.length) rows.push(...data);
+    }
+    if (onProgress) onProgress(rows.length, total);
+  }
+
+  if (rows.length > total) {
+    const seen = new Set();
+    const unique = [];
+    for (const r of rows) {
+      const id = r && r.id;
+      if (id != null) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+      }
+      unique.push(r);
+    }
+    if (unique.length !== rows.length) {
+      console.warn(`[fetch] deduped ${rows.length - unique.length} overlapping row(s)`);
+      return unique;
+    }
+  }
+
+  if (rows.length < total) {
+    console.warn(`[fetch] expected ${total} rows but got ${rows.length}.`);
+  }
+
+  return rows;
+}
+
+// ============================================================
+// CLIENT KEYWORD GROUPING
+// ============================================================
+function matchClientGroup(rawName) {
+  if (!STATE.groupClients) return null;
+  if (!rawName) return null;
+  const lower = String(rawName).trim().toLowerCase();
+  if (!lower) return null;
+  for (const g of STATE.clientGroups) {
+    if (!g || !g.label) continue;
+    const list = Array.isArray(g.clients) ? g.clients : [];
+    for (const c of list) {
+      if (!c) continue;
+      if (String(c).trim().toLowerCase() === lower) return g.label;
+    }
+    const kws = Array.isArray(g.keywords) ? g.keywords : [];
+    for (const kw of kws) {
+      if (!kw) continue;
+      if (lower.includes(String(kw).trim().toLowerCase())) return g.label;
+    }
+  }
+  return null;
+}
+
+function resolveGroupKey(dim, rawValue) {
+  if (rawValue == null) return null;
+  const s = String(rawValue).trim();
+  if (!s) return null;
+  if (dim === 'Client') {
+    const grouped = matchClientGroup(s);
+    if (grouped) return grouped;
+  }
+  return s;
+}
+
+function resolveGroupMembers(dim, value) {
+  if (!STATE.groupClients) return null;
+  if (dim !== 'Client' || !value) return null;
+  const g = STATE.clientGroups.find(x => x.label === value);
+  if (!g) return null;
+  const members = new Set();
+  // 🆕 Respect hardware exclusion here too
+  getAllVisibleRows().forEach(r => {
+    const raw = String(r.client || '').trim();
+    if (!raw) return;
+    if (matchClientGroup(raw) === value) members.add(raw);
+  });
+  return [...members];
+}
+
+async function loadClientGroupsFromDB() {
+  if (!STATE.client) return;
+  try {
+    const { data, error } = await STATE.client
+      .from('client_groups')
+      .select('id, label, keywords, clients, sort_order')
+      .order('sort_order', { ascending: true })
+      .order('label', { ascending: true });
+
+    if (error) {
+      const msg = String(error.message || '').toLowerCase();
+      if (error.code === '42P01' || msg.includes('does not exist')) {
+        console.warn('[groups] sales.client_groups not found; using defaults.');
+        STATE.clientGroupsAvailable = false;
+        STATE.clientGroups = DEFAULT_CLIENT_GROUPS.map((g, i) => ({
+          id: null, label: g.label, keywords: [...g.keywords], clients: [], sort_order: i,
+        }));
+        return;
+      }
+      throw error;
+    }
+
+    STATE.clientGroupsAvailable = true;
+    const rows = (data || []).map(r => ({
+      id: r.id,
+      label: r.label || '',
+      keywords: Array.isArray(r.keywords) ? r.keywords.filter(Boolean) : [],
+      clients:  Array.isArray(r.clients)  ? r.clients.filter(Boolean)  : [],
+      sort_order: Number(r.sort_order) || 0,
+    }));
+
+    STATE.clientGroups = rows.length
+      ? rows
+      : DEFAULT_CLIENT_GROUPS.map((g, i) => ({
+          id: null, label: g.label, keywords: [...g.keywords], clients: [], sort_order: i,
+        }));
+
+    console.log(`[groups] loaded ${rows.length} group(s)`);
+  } catch (err) {
+    console.error('[groups] load failed:', err);
+    STATE.clientGroups = DEFAULT_CLIENT_GROUPS.map((g, i) => ({
+      id: null, label: g.label, keywords: [...g.keywords], clients: [], sort_order: i,
+    }));
+  } finally {
+    STATE.clientGroupsLoaded = true;
+  }
+}
+
+// ============================================================
+// 🆕 COMPANY / AREA ACCESS CONTROL
+// ============================================================
+async function loadUserCompanyAccess() {
+  if (!STATE.client || !STATE.userId) return;
+  try {
+    const { data, error } = await STATE.client
+      .schema('sales')
+      .from('user_company')
+      .select('assigned_companies, assigned_areas')
+      .eq('user_id', STATE.userId)
+      .maybeSingle();
+    if (error) throw error;
+
+    STATE.myCompanies = (data?.assigned_companies || [])
+      .map(s => String(s).trim()).filter(Boolean);
+    STATE.myAreas = (data?.assigned_areas || [])
+      .map(s => String(s).trim()).filter(Boolean);
+    STATE.accessLoaded = true;
+
+    console.log('[access] companies:', STATE.myCompanies, '| areas:', STATE.myAreas);
+  } catch (err) {
+    console.warn('[access] user_company load failed:', err);
+    STATE.myCompanies = [];
+    STATE.myAreas = [];
+    STATE.accessLoaded = true;
+  }
+}
+
+function hasCompanyAccess() {
+  return STATE.myCompanies.length > 0 || STATE.myAreas.length > 0;
+}
+
+// Central access filter — ilalapat sa lahat ng sales query
+function applyAccessFilter(q) {
+  if (STATE.isAdmin) return q;                 // admin → bukas lahat
+
+  if (hasCompanyAccess()) {
+    if (STATE.myCompanies.length) q = q.in('company', STATE.myCompanies);
+    if (STATE.myAreas.length)     q = q.in('area',    STATE.myAreas);
+    return q;
+  }
+
+  // fallback: lumang SR-code behavior
+  const codes = getActiveSrCodes();
+  if (codes && codes.length) q = q.in('sr_code', codes);
+  return q;
+}
+
+// ============================================================
+// TARGET HELPERS
+// ============================================================
+function targetKey(year, dim, name, ptype, pidx) {
+  return `${year}\u0001${dim}\u0001${name}\u0001${ptype}\u0001${pidx}`;
+}
+
+function getTargetCell(year, dim, name, ptype, pidx) {
+  if (!dim || !name) return 0;
+  const k = targetKey(year, dim, name, ptype, pidx);
+  const row = STATE.targets.get(k);
+  return row ? (Number(row.target_amount) || 0) : 0;
+}
+
+function computeRowTarget(year, dim, name, ptype, salesArr) {
+  const labelsLen = PERIOD_LABELS[ptype].length;
+  let target = 0, coverage = 0, achieved = 0;
+  for (let i = 0; i < labelsLen; i++) {
+    const t = getTargetCell(year, dim, name, ptype, i);
+    if (t > 0) {
+      target += t;
+      coverage += 1;
+      if (salesArr && salesArr[i] != null) achieved += salesArr[i];
+    }
+  }
+  return { target, coverage, achieved, maxPeriods: labelsLen };
+}
+
+function countAnyTargets(year, dim) {
+  let n = 0;
+  for (const [, row] of STATE.targets) {
+    if (row.year === year && row.dimension === dim && Number(row.target_amount) > 0) n++;
+  }
+  return n;
+}
+
+function hasAnyTargetsForScope(year, dim) {
+  return countAnyTargets(year, dim) > 0;
+}
+
+async function loadTargetsFromDB() {
+  if (!STATE.client) return;
+  try {
+    const { data, error } = await STATE.client
+      .from('sales_targets')
+      .select('id, year, dimension, name, period_type, period_index, target_amount');
+    if (error) {
+      const msg = String(error.message || '');
+      if (error.code === '42P01' || msg.toLowerCase().includes('does not exist')) {
+        console.warn('[targets] table sales.sales_targets not found.');
+        STATE.targetsAvailable = false;
+        STATE.targets.clear();
+        return;
+      }
+      throw error;
+    }
+    STATE.targetsAvailable = true;
+    STATE.targets.clear();
+    (data || []).forEach(t => {
+      const k = targetKey(t.year, t.dimension, t.name, t.period_type, t.period_index);
+      STATE.targets.set(k, t);
+    });
+    console.log(`[targets] loaded ${data?.length || 0} rows`);
+  } catch (err) {
+    console.error('[targets] load failed:', err);
+    STATE.targetsAvailable = false;
+  }
+}
+
+// ============================================================
+// MISC HELPERS
+// ============================================================
+function getMonthIndex(dateVal) {
+  if (dateVal == null) return null;
+  if (dateVal instanceof Date) {
+    if (isNaN(dateVal.getTime())) return null;
+    return dateVal.getMonth();
+  }
+  const s = String(dateVal).trim();
+  if (!s) return null;
+  let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if (m) {
+    const mo = parseInt(m[2], 10) - 1;
+    if (mo >= 0 && mo <= 11) return mo;
+  }
+  m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+  if (m) {
+    const a = parseInt(m[1], 10);
+    const b = parseInt(m[2], 10);
+    const mo = a > 12 ? b - 1 : a - 1;
+    if (mo >= 0 && mo <= 11) return mo;
+  }
+  const monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const lower = s.toLowerCase();
+  for (let i = 0; i < 12; i++) {
+    if (lower.includes(monthNames[i])) return i;
+  }
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return d.getMonth();
+  return null;
+}
+
+function periodIndex(dateVal, ptype) {
+  const m = getMonthIndex(dateVal);
+  if (m === null) return 0;
+  switch (ptype) {
+    case 'Monthly':     return m;
+    case 'Quarterly':   return Math.floor(m / 3);
+    case 'Semi-Annual': return m < 6 ? 0 : 1;
+    default:            return 0;
+  }
+}
+
+function setLoadProgress(loaded, total) {
+  const wrap = $('#loader-progress');
+  const fill = $('#loader-progress-fill');
+  const text = $('#loader-progress-text');
+  if (!wrap || !fill || !text) return;
+  if (!total) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+  const pct = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+  fill.style.width = pct + '%';
+  text.textContent = `${INT.format(loaded)} / ${INT.format(total)} rows (${pct}%)`;
+}
+
+function setCompareProgress(loaded, total) {
+  const wrap = $('#chart-cmp-progress');
+  const fill = $('#cmp-progress-fill');
+  const text = $('#cmp-progress-text');
+  if (!wrap || !fill || !text) return;
+  if (!total) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+  const pct = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+  fill.style.width = pct + '%';
+  text.textContent = `Loading all years… ${INT.format(loaded)} / ${INT.format(total)} (${pct}%)`;
+}
+
+function clearAggCache() { STATE.aggCache.clear(); }
+
+function filterSignature() {
+  const f1dim = STATE.filterDimension || '';
+  const f1vals = [...STATE.selectedFilters].sort().join('\u0001');
+  const f2dim = STATE.secondaryDimension || '';
+  const f2vals = [...STATE.secondarySelectedFilters].sort().join('\u0001');
+  const f3dim = STATE.tertiaryDimension || '';
+  const f3vals = [...STATE.tertiarySelectedFilters].sort().join('\u0001');
+  // 🆕 include excludeHardware in signature
+  return `${STATE.groupClients ? 1 : 0}\u0004${STATE.excludeHardware ? 1 : 0}\u0006${f1dim}\u0002${f1vals}\u0003${f2dim}\u0002${f2vals}\u0005${f3dim}\u0002${f3vals}`;
+}
+
+function scheduleDashboardRender() {
+  if (STATE.pendingRender) return;
+  STATE.pendingRender = requestAnimationFrame(() => {
+    STATE.pendingRender = null;
+    renderKPIs();
+    renderChart();
+  });
+}
+
+// ---------- AUTH ----------
+function readSession() {
+  try {
+    const raw = sessionStorage.getItem('ldi_session') || localStorage.getItem('ldi_session');
+    if (raw) {
+      const u = JSON.parse(raw);
+      if (u && u.id != null) return u;
+    }
+  } catch (_) {}
+  try {
+    const qs = new URLSearchParams(location.search).get('uid');
+    if (qs) return { id: Number(qs) };
+  } catch (_) {}
+  return null;
+}
+
+function forceLogin(reason) {
+  setStatus('Sign-in required', 'err');
+  setHeroSub('Sign-in required');
+  $('#loader').hidden = true;
+  const empty = $('#empty');
+  empty.hidden = false;
+  empty.innerHTML =
+    '<div style="font-size:40px;margin-bottom:8px">🔒</div>' +
+    '<div style="font-weight:700;color:var(--text);font-size:16px;margin-bottom:6px">You need to sign in</div>' +
+    '<div>' + escapeHtml(reason || 'No session found.') + '</div>';
+  const actions = el('div', { class: 'empty-actions' });
+  actions.append(el('a', { href: 'index.html', class: 'btn btn-primary', textContent: 'Go to sign-in' }));
+  empty.append(actions);
+}
+
+function roleIsAdmin(role) {
+  const r = String(role || '').toLowerCase();
+  return r === 'admin' || r === 'superadmin';
+}
+
+async function loadCurrentUser(id) {
+  const { data, error } = await STATE.client
+    .schema('public')
+    .from('users')
+    .select('id, username, full_name, role, status, assigned_sales_rep_codes, approver')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  if (!data) throw new Error('User account not found.');
+  return data;
+}
+
+async function loadAllUsers() {
+  const { data, error } = await STATE.client
+    .schema('public')
+    .from('users')
+    .select('id, username, full_name, role, status, assigned_sales_rep_codes, approver');
+  if (error) throw error;
+  return data || [];
+}
+
+function findMyPersonnel(myUser, allUsers) {
+  const myId = Number(myUser.id);
+  const myUsername = String(myUser.username || '').toLowerCase().trim();
+  const myFullName = String(myUser.full_name || '').toLowerCase().trim();
+  const myNameParts = new Set([myUsername, myFullName].filter(Boolean));
+  const idSet = new Set();
+
+  allUsers.forEach(u => {
+    if (Number(u.id) === myId) return;
+    const arr = Array.isArray(u.approver) ? u.approver : [];
+    const hasMe = arr.some(raw => {
+      const s = String(raw).toLowerCase().trim();
+      if (!s) return false;
+      const n = Number(raw);
+      if (n && n === myId) return true;
+      return myNameParts.has(s);
+    });
+    if (hasMe) idSet.add(Number(u.id));
+  });
+
+  const personnel = [];
+  idSet.forEach(id => {
+    const u = allUsers.find(x => Number(x.id) === id);
+    if (!u) return;
+    const codes = Array.isArray(u.assigned_sales_rep_codes)
+      ? u.assigned_sales_rep_codes.map(String).map(s => s.trim()).filter(Boolean)
+      : [];
+    personnel.push({
+      id: u.id,
+      full_name: u.full_name || u.username || `User #${u.id}`,
+      username: u.username,
+      role: u.role,
+      sr_codes: codes,
+      is_me: false,
+    });
+  });
+  personnel.sort((a, b) => a.full_name.localeCompare(b.full_name));
+  return personnel;
+}
+
+function buildSrCodeToPersonnel() {
+  const map = new Map();
+  const selfEntry = {
+    id: STATE.user.id,
+    full_name: STATE.user.full_name || STATE.user.username || `User #${STATE.user.id}`,
+    username: STATE.user.username,
+    sr_codes: [...STATE.mySrCodes],
+    is_me: true,
+  };
+  selfEntry.sr_codes.forEach(code => map.set(code, selfEntry));
+  STATE.myPersonnel.forEach(p => {
+    p.sr_codes.forEach(code => {
+      if (!map.has(code)) map.set(code, p);
+    });
+  });
+  return map;
+}
+
+function getActiveSrCodes() {
+  if (STATE.isAdmin) return null;
+  if (STATE.groupBy === 'My Personnel') {
+    return [...new Set([...STATE.mySrCodes, ...STATE.teamSrCodes])];
+  }
+  if (STATE.viewScope === 'team') {
+    return [...new Set([...STATE.mySrCodes, ...STATE.teamSrCodes])];
+  }
+  return STATE.mySrCodes;
+}
+
+// ============================================================
+// FILTER-DIMENSION SYNC
+// ============================================================
+function deriveFilterDimension() {
+  return STATE.groupBy === 'My Personnel' ? 'Client' : STATE.groupBy;
+}
+
+function updateFilterDimLabel() {
+  const lbl = $('#filter-dim-label');
+  if (!lbl) return;
+  const grouped = (STATE.filterDimension === 'Client' && STATE.groupClients) ? ' (grouped)' : '';
+  const hwTxt = STATE.excludeHardware ? ' · 🚫 HW excluded' : '';
+  lbl.textContent = 'by ' + STATE.filterDimension + grouped + hwTxt;
+  lbl.title = `Filter list follows "Group By" in the toolbar — currently ${dimLabel(STATE.filterDimension)}${grouped}.${hwTxt}`;
+}
+
+function pickDifferentDimension(used) {
+  const usedSet = new Set(used.filter(Boolean));
+  return ALL_DIMENSIONS.find(d => !usedSet.has(d)) || 'Item';
+}
+
+function ensureSecondaryDiffersFromPrimary() {
+  if (!STATE.secondaryDimension) return;
+  if (STATE.secondaryDimension === STATE.filterDimension) {
+    const alt = STATE.filterDimension === 'Item' ? 'Client' : 'Item';
+    STATE.secondaryDimension = alt;
+    STATE.secondarySelectedFilters.clear();
+    const sel = $('#sel-filter2-dim');
+    if (sel) sel.value = alt;
+  }
+  rebuildSecondaryList();
+  ensureTertiaryDiffersFromOthers();
+}
+
+function ensureTertiaryDiffersFromOthers() {
+  if (!STATE.tertiaryDimension) return;
+  if (STATE.tertiaryDimension === STATE.filterDimension ||
+      STATE.tertiaryDimension === STATE.secondaryDimension) {
+    const alt = pickDifferentDimension([STATE.filterDimension, STATE.secondaryDimension]);
+    STATE.tertiaryDimension = alt;
+    STATE.tertiarySelectedFilters.clear();
+    const sel = $('#sel-filter3-dim');
+    if (sel) sel.value = alt;
+  }
+  rebuildTertiaryList();
+}
+
+function syncFilterDimensionToGroupBy() {
+  const dim = deriveFilterDimension();
+  if (STATE.filterDimension !== dim) {
+    STATE.filterDimension = dim;
+    STATE.selectedFilters.clear();
+  }
+  updateFilterDimLabel();
+}
+
+// ---------- SORTING ----------
+function compareRows(a, b, groups) {
+  const field = STATE.sortField;
+  const dir = STATE.sortDir;
+  let va, vb;
+  switch (field) {
+    case 'name': return dir === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
+    case 'totalSales':
+      va = groups[a].totalSales || 0; vb = groups[b].totalSales || 0; break;
+    case 'totalSkus':
+      va = groups[a].totalSkus || 0; vb = groups[b].totalSkus || 0; break;
+    case 'target': {
+      const sA = groups[a].sales, sB = groups[b].sales;
+      va = computeRowTarget(STATE.year, STATE.groupBy, a, STATE.period, sA).target;
+      vb = computeRowTarget(STATE.year, STATE.groupBy, b, STATE.period, sB).target;
+      break;
+    }
+    case 'coverage': {
+      const sA = groups[a].sales, sB = groups[b].sales;
+      va = computeRowTarget(STATE.year, STATE.groupBy, a, STATE.period, sA).coverage;
+      vb = computeRowTarget(STATE.year, STATE.groupBy, b, STATE.period, sB).coverage;
+      break;
+    }
+    case 'pctTarget': {
+      const sA = groups[a].sales, sB = groups[b].sales;
+      const rA = computeRowTarget(STATE.year, STATE.groupBy, a, STATE.period, sA);
+      const rB = computeRowTarget(STATE.year, STATE.groupBy, b, STATE.period, sB);
+      va = rA.target > 0 ? (rA.achieved / rA.target) : -1;
+      vb = rB.target > 0 ? (rB.achieved / rB.target) : -1;
+      break;
+    }
+    case 'monthSales':
+      va = (groups[a].sales[STATE.sortMonthIdx] || 0);
+      vb = (groups[b].sales[STATE.sortMonthIdx] || 0); break;
+    case 'monthSkus':
+      va = (groups[a].skus[STATE.sortMonthIdx] || 0);
+      vb = (groups[b].skus[STATE.sortMonthIdx] || 0); break;
+    default: return 0;
+  }
+  if (va === vb) return a.localeCompare(b);
+  return dir === 'asc' ? va - vb : vb - va;
+}
+
+function makeSortableTh(th, cfg) {
+  th.classList.add('sortable');
+  const isActive = STATE.sortField === cfg.field &&
+    (cfg.field !== 'monthSales' && cfg.field !== 'monthSkus' ? true : STATE.sortMonthIdx === cfg.monthIdx);
+  const ind = el('span', { className: 'sort-ind' });
+  if (isActive) {
+    th.classList.add('sort-active');
+    ind.textContent = STATE.sortDir === 'asc' ? '▲' : '▼';
+  } else {
+    ind.textContent = '⇅';
+  }
+  th.appendChild(ind);
+  th.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isActive) STATE.sortDir = STATE.sortDir === 'asc' ? 'desc' : 'asc';
+    else {
+      STATE.sortField = cfg.field;
+      STATE.sortMonthIdx = cfg.monthIdx ?? null;
+      STATE.sortDir = cfg.field === 'name' ? 'asc' : 'desc';
+    }
+    render();
+  });
+}
+
+function ensureSortFieldValidForView() {
+  const combined  = STATE.view === 'Sales + SKU';
+  const showSales = STATE.view === 'Sales' || combined;
+  const showSkus  = STATE.view === 'SKU'   || combined;
+  if (STATE.sortField === 'totalSales' && !showSales) STATE.sortField = 'totalSkus';
+  if (STATE.sortField === 'totalSkus'  && !showSkus)  STATE.sortField = 'totalSales';
+  if (STATE.sortField === 'monthSales' && !showSales) STATE.sortField = 'monthSkus';
+  if (STATE.sortField === 'monthSkus'  && !showSkus)  STATE.sortField = 'monthSales';
+  if ((STATE.sortField === 'target' || STATE.sortField === 'coverage' || STATE.sortField === 'pctTarget') && !showSales) {
+    STATE.sortField = 'totalSkus';
+  }
+}
+
+function setActiveView(view) {
+  STATE.activeView = view;
+  document.querySelectorAll('#hero-actions .hero-btn[data-view]').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === view);
+  });
+  $('#hero-title').textContent = view === 'dashboard' ? 'Dashboard' : 'Sales Performance';
+  $('#view-performance').hidden = view !== 'performance';
+  $('#view-dashboard').hidden  = view !== 'dashboard';
+
+  $('#field-search').hidden = view === 'dashboard';
+
+  const viewSel = $('#sel-view');
+  const optPlus = [...viewSel.options].find(o => o.value === 'Sales + SKU');
+  if (optPlus) optPlus.disabled = view === 'dashboard';
+  if (view === 'dashboard' && STATE.view === 'Sales + SKU') {
+    STATE.view = 'Sales';
+    viewSel.value = 'Sales';
+    ensureSortFieldValidForView();
+  }
+
+  if (view === 'dashboard') {
+    syncFilterDimensionToGroupBy();
+    rebuildFilterList();
+    scheduleDashboardRender();
+  } else {
+    render();
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  try {
+    setStatus('Connecting to Supabase…');
+    setHeroSub('Connecting…');
+
+    let host = null;
+    if (window.readyHost) {
+      try { host = await window.readyHost; } catch (e) { console.warn(e); }
+    }
+    if (!host) host = window.HOSTNAME || (Array.isArray(window.HOSTS) && window.HOSTS[0]) || null;
+    if (!host) throw new Error('No Supabase host. Is ../connect.js loaded?');
+    if (!window.ANON_KEY) throw new Error('ANON_KEY missing from connect.js.');
+    if (typeof window.supabase === 'undefined') throw new Error('supabase-js CDN failed to load.');
+    if (typeof window.Chart === 'undefined') throw new Error('Chart.js CDN failed to load.');
+
+    STATE.hostLabel = host.replace(/^https?:\/\//, '');
+    STATE.client = window.supabase.createClient(host, window.ANON_KEY, {
+      db: { schema: 'sales' },
+      auth: { persistSession: false },
+    });
+    setStatus(`Connected · ${STATE.hostLabel}`, 'ok');
+
+    const session = readSession();
+    if (!session) { forceLogin('Your session has expired or you are not signed in.'); return; }
+    STATE.userId = session.id;
+
+    await loadTargetsFromDB();
+    await loadClientGroupsFromDB();
+
+    STATE.user = await loadCurrentUser(STATE.userId);
+    STATE.isAdmin = roleIsAdmin(STATE.user.role);
+
+    // 🆕 Load company/area access right after we know who we are
+    await loadUserCompanyAccess();
+
+    STATE.mySrCodes = Array.isArray(STATE.user.assigned_sales_rep_codes)
+      ? STATE.user.assigned_sales_rep_codes.map(String).map(s => s.trim()).filter(Boolean)
+      : [];
+
+    if (!STATE.isAdmin) {
+      try {
+        const allUsers = await loadAllUsers();
+        STATE.myPersonnel = findMyPersonnel(STATE.user, allUsers);
+        STATE.teamSrCodes = [...new Set(STATE.myPersonnel.flatMap(p => p.sr_codes))];
+      } catch (e) {
+        console.warn('[dashboard] personnel lookup failed:', e);
+        STATE.myPersonnel = [];
+        STATE.teamSrCodes = [];
+      }
+    }
+
+    STATE.srCodeToPersonnel = buildSrCodeToPersonnel();
+
+    // Scope selector only makes sense in the SR-code world.
+    if (!STATE.isAdmin && !hasCompanyAccess() && STATE.myPersonnel.length > 0) {
+      $('#field-scope').hidden = false;
+      const selGroup = $('#sel-group');
+      const opt = el('option', { value: 'My Personnel', textContent: '👥 My Personnel' });
+      const salesRepOpt = [...selGroup.options].find(o => o.value === 'Sales Rep');
+      if (salesRepOpt) salesRepOpt.after(opt);
+      else selGroup.append(opt);
+    }
+
+    const who = STATE.user.full_name || STATE.user.username || `User #${STATE.user.id}`;
+    if (STATE.isAdmin) {
+      setHeroSub(`${who} · ${STATE.user.role} (full access)`);
+    } else if (hasCompanyAccess()) {
+      const bits = [who];
+      if (STATE.myCompanies.length) bits.push(`🏢 ${STATE.myCompanies.join(', ')}`);
+      if (STATE.myAreas.length)     bits.push(`📍 ${STATE.myAreas.join(', ')}`);
+      setHeroSub(bits.join(' · '));
+    } else {
+      const bits = [who];
+      bits.push(STATE.mySrCodes.length
+        ? `${STATE.mySrCodes.length} SR code${STATE.mySrCodes.length === 1 ? '' : 's'}`
+        : 'no SR codes');
+      if (STATE.myPersonnel.length) bits.push(`${STATE.myPersonnel.length} personnel`);
+      setHeroSub(bits.join(' · '));
+    }
+
+    STATE.groupBy = $('#sel-group').value || 'Client';
+    STATE.filterDimension = deriveFilterDimension();
+
+    const gcb = $('#btn-group-clients');
+    if (gcb) gcb.classList.toggle('active', STATE.groupClients);
+
+    // 🆕 Initialize Exclude HW button state
+    const hwBtn = $('#btn-exclude-hw');
+    if (hwBtn) {
+      hwBtn.classList.toggle('active', STATE.excludeHardware);
+      hwBtn.title = STATE.excludeHardware
+        ? 'Hardware / HW division is excluded — click to include again'
+        : 'Exclude Hardware / HW division from the table and graph';
+    }
+
+    await loadAvailableYears();
+    await loadYearData();
+    wireControls();
+    updateFilterDimLabel();
+
+  } catch (err) {
+    console.error('[dashboard] init failed:', err);
+    setStatus('Error: ' + err.message, 'err');
+    setHeroSub('Unable to load dashboard');
+    $('#loader').hidden = true;
+    const empty = $('#empty');
+    empty.hidden = false;
+    empty.textContent = err.message;
+  }
+}
+
+// ============================================================
+// LOAD AVAILABLE YEARS
+// ============================================================
+async function loadAvailableYears() {
+  const activeCodes = getActiveSrCodes();
+  const noAccess = !STATE.isAdmin && !hasCompanyAccess() && (!activeCodes || !activeCodes.length);
+
+  if (noAccess) {
+    STATE.availableYears = [];
+    STATE.year = new Date().getFullYear();
+    const sel = $('#sel-year');
+    sel.innerHTML = '';
+    sel.append(el('option', { value: STATE.year, textContent: STATE.year }));
+    return;
+  }
+
+  console.log('[dashboard] loadAvailableYears: fetching min/max year…');
+  const t0 = performance.now();
+
+  const minQ = applyAccessFilter(
+    STATE.client.from('sales').select('year').order('year', { ascending: true }).limit(1)
+  );
+  const maxQ = applyAccessFilter(
+    STATE.client.from('sales').select('year').order('year', { ascending: false }).limit(1)
+  );
+
+  const [minRes, maxRes] = await Promise.all([minQ, maxQ]);
+
+  if (minRes.error) throw minRes.error;
+  if (maxRes.error) throw maxRes.error;
+
+  const minYear = Number(minRes.data?.[0]?.year) || null;
+  const maxYear = Number(maxRes.data?.[0]?.year) || null;
+
+  let years = [];
+  if (minYear && maxYear && maxYear >= minYear) {
+    for (let y = maxYear; y >= minYear; y--) years.push(y);
+  }
+
+  STATE.availableYears = years.length ? years : [new Date().getFullYear()];
+  STATE.year = STATE.availableYears[0];
+
+  const sel = $('#sel-year');
+  sel.innerHTML = '';
+  STATE.availableYears.forEach(y => sel.append(el('option', { value: y, textContent: y })));
+  sel.value = STATE.year;
+
+  STATE.compareYears = new Set(STATE.availableYears);
+
+  console.log(`[dashboard] ✅ years loaded in ${Math.round(performance.now() - t0)}ms: ${years.join(', ') || 'none'}`);
+}
+
+// ============================================================
+// LOAD YEAR DATA
+// ============================================================
+async function loadYearData() {
+  $('#loader').hidden = false;
+  $('#loader-text').textContent = 'Loading data…';
+  $('#loader-progress').hidden = true;
+  $('#table-wrap').hidden = true;
+  $('#empty').hidden = true;
+  $('#table-hint').hidden = true;
+  $('#chart-loader').hidden = false;
+  $('#chart-wrap').hidden = true;
+  $('#chart-empty').hidden = true;
+  $('#kpi-grid').hidden = true;
+
+  clearAggCache();
+
+  const activeCodes = getActiveSrCodes();
+  const noAccess = !STATE.isAdmin && !hasCompanyAccess() && (!activeCodes || !activeCodes.length);
+
+  if (noAccess) {
+    STATE.allRows = [];
+    $('#loader').hidden = true;
+    $('#chart-loader').hidden = true;
+    const msg = STATE.groupBy === 'My Personnel' || STATE.viewScope === 'team'
+      ? 'Wala pang SR code na naka-assign sa kahit sinong personnel mo.'
+      : 'Walang company/area o SR code na naka-assign sa account mo. Kontakin ang administrator.';
+    $('#empty').hidden = false;
+    $('#empty').textContent = msg;
+    $('#chart-empty').hidden = false;
+    $('#chart-empty').textContent = msg;
+    return;
+  }
+
+  const t0 = performance.now();
+
+  try {
+    const countQ = applyAccessFilter(
+      STATE.client.from('sales')
+        .select('id', { count: 'exact', head: true })
+        .eq('year', STATE.year)
+    );
+    const countRes = await countQ;
+    if (countRes.error) throw countRes.error;
+    const total = countRes.count || 0;
+
+    if (!total) {
+      STATE.allRows = [];
+      $('#loader').hidden = true;
+      $('#chart-loader').hidden = true;
+      $('#empty').hidden = false;
+      $('#empty').textContent = 'No data found for the current filters.';
+      $('#chart-empty').hidden = false;
+      $('#chart-empty').textContent = 'No data found for the current filters.';
+      return;
+    }
+
+    const makeQuery = (from, to) => {
+      let q = STATE.client
+        .from('sales')
+        .select('id, date, year, company, division, area, area2, sr_code, client, items, sku, sales')
+        .eq('year', STATE.year)
+        .order('id', { ascending: true })
+        .range(from, to);
+      return applyAccessFilter(q);
+    };
+
+    const rows = await fetchAllRowsPaged(makeQuery, total, setLoadProgress);
+
+    STATE.allRows = rows;
+    console.log(
+      `[dashboard] ✅ loaded ${rows.length} / ${total} rows in ` +
+      `${Math.round(performance.now() - t0)}ms`
+    );
+
+    rebuildFilterList();
+
+    $('#loader').hidden = true;
+    $('#chart-loader').hidden = true;
+
+    if (STATE.activeView === 'dashboard') scheduleDashboardRender();
+    else render();
+  } catch (err) {
+    $('#loader').hidden = true;
+    $('#chart-loader').hidden = true;
+    throw err;
+  }
+}
+
+// ============================================================
+// LOAD ALL YEARS (Compare mode)
+// ============================================================
+async function loadAllYearsData() {
+  if (STATE.compareLoaded || STATE.compareLoading) return;
+  STATE.compareLoading = true;
+
+  $('#chart-loader').hidden = true;
+  $('#chart-wrap').hidden = true;
+  $('#chart-cmp-progress').hidden = false;
+
+  const t0 = performance.now();
+
+  try {
+    const countQ = applyAccessFilter(
+      STATE.client.from('sales').select('id', { count: 'exact', head: true })
+    );
+    const countRes = await countQ;
+    if (countRes.error) throw countRes.error;
+    const total = countRes.count || 0;
+
+    const makeQuery = (from, to) => {
+      let q = STATE.client
+        .from('sales')
+        .select('id, date, year, company, division, area, area2, sr_code, client, items, sku, sales')
+        .order('id', { ascending: true })
+        .range(from, to);
+      return applyAccessFilter(q);
+    };
+
+    const rows = await fetchAllRowsPaged(makeQuery, total, setCompareProgress);
+
+    STATE.compareRows = rows;
+    STATE.compareLoaded = true;
+    console.log(`[dashboard] ✅ loaded ALL ${rows.length} rows in ${Math.round(performance.now() - t0)}ms`);
+
+    $('#chart-cmp-progress').hidden = true;
+    rebuildFilterList();
+    renderKPIs();
+    renderChart();
+  } catch (err) {
+    $('#chart-cmp-progress').hidden = true;
+    $('#chart-loader').hidden = true;
+    console.error('[dashboard] loadAllYearsData failed:', err);
+    alert('Hindi ma-load ang comparison data: ' + err.message);
+    STATE.compareMode = false;
+    $('#btn-compare').classList.remove('active');
+    $('#years-multi').hidden = true;
+    renderChart();
+  } finally {
+    STATE.compareLoading = false;
+  }
+}
+
+// ============================================================
+// TABLE VIEW
+// ============================================================
+function aggregate(rows) {
+  // 🆕 include excludeHardware in cache key
+  const key = `table|${STATE.period}|${STATE.groupBy}|${STATE.groupClients ? 1 : 0}|${STATE.excludeHardware ? 1 : 0}`;
+  if (STATE.aggCache.has(key)) return STATE.aggCache.get(key);
+
+  const labels = PERIOD_LABELS[STATE.period];
+  const groups = {};
+  let skippedDates = 0;
+
+  rows.forEach(r => {
+    let keyVal;
+    if (STATE.groupBy === 'My Personnel') {
+      const code = String(r.sr_code || '').trim();
+      const p = STATE.srCodeToPersonnel.get(code);
+      if (!p) return;
+      keyVal = p.full_name;
+    } else {
+      keyVal = resolveGroupKey(STATE.groupBy, r[GROUP_FIELD[STATE.groupBy]]);
+    }
+    if (!keyVal) return;
+
+    const m = getMonthIndex(r.date);
+    if (m === null) { skippedDates++; return; }
+
+    let idx;
+    switch (STATE.period) {
+      case 'Monthly':     idx = m; break;
+      case 'Quarterly':   idx = Math.floor(m / 3); break;
+      case 'Semi-Annual': idx = m < 6 ? 0 : 1; break;
+      default:            idx = 0;
+    }
+
+    if (!groups[keyVal]) {
+      groups[keyVal] = {
+        sales: new Array(labels.length).fill(0),
+        skus:  new Array(labels.length).fill(0),
+        totalSales: 0,
+        totalSkus: 0,
+      };
+    }
+    const amt = Math.abs(Number(r.sales) || 0);
+    const qty = Number(r.sku) || 0;
+    groups[keyVal].sales[idx] += amt;
+    groups[keyVal].totalSales += amt;
+    groups[keyVal].skus[idx]  += qty;
+    groups[keyVal].totalSkus  += qty;
+  });
+
+  if (skippedDates > 0) console.warn(`[dashboard] ${skippedDates} row(s) skipped.`);
+  const result = { labels, groups };
+  STATE.aggCache.set(key, result);
+  return result;
+}
+
+function render() {
+  // 🆕 Apply hardware exclusion here
+  const rows = getAllVisibleRows();
+  const { labels, groups } = aggregate(rows);
+  const allKeys = Object.keys(groups);
+
+  const query = (STATE.searchQuery || '').trim().toLowerCase();
+  const keys = query
+    ? allKeys.filter(k => k.toLowerCase().includes(query))
+    : allKeys;
+
+  const table = $('#grid');
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+  const tfoot = table.querySelector('tfoot');
+  thead.innerHTML = ''; tbody.innerHTML = ''; tfoot.innerHTML = '';
+
+  if (!keys.length) {
+    $('#table-wrap').hidden = true;
+    $('#empty').hidden = false;
+    $('#table-hint').hidden = true;
+    $('#empty').textContent = allKeys.length
+      ? `No matches for "${STATE.searchQuery.trim()}".`
+      : 'No data found for the current filters.';
+    return;
+  }
+  $('#empty').hidden = true;
+  $('#table-wrap').hidden = false;
+  $('#table-hint').hidden = false;
+
+  const showSales = STATE.view === 'Sales' || STATE.view === 'Sales + SKU';
+  const combined  = STATE.view === 'Sales + SKU';
+  const groupLabel = STATE.groupBy === 'My Personnel' ? 'Personnel' : STATE.groupBy;
+  const selfName = STATE.user.full_name || STATE.user.username || `User #${STATE.user.id}`;
+  const targetDim = STATE.groupBy !== 'My Personnel' ? STATE.groupBy : null;
+  const showTargets = !!(targetDim && showSales && hasAnyTargetsForScope(STATE.year, targetDim));
+
+  keys.sort((a, b) => {
+    if (STATE.groupBy === 'My Personnel') {
+      if (a === selfName && b !== selfName) return -1;
+      if (b === selfName && a !== selfName) return 1;
+    }
+    return compareRows(a, b, groups);
+  });
+
+  const headRow = document.createElement('tr');
+  const thGroup = el('th', { textContent: groupLabel });
+  headRow.appendChild(thGroup);
+
+  labels.forEach((l, i) => {
+    if (combined) {
+      const thS = el('th', { textContent: `${l} Sales` });
+      const thK = el('th', { textContent: `${l} SKU` });
+      headRow.append(thS, thK);
+      thS.__sortCfg = { field: 'monthSales', monthIdx: i };
+      thK.__sortCfg = { field: 'monthSkus',  monthIdx: i };
+    } else if (showSales) {
+      const th = el('th', { textContent: l });
+      headRow.appendChild(th);
+      th.__sortCfg = { field: 'monthSales', monthIdx: i };
+    } else {
+      const th = el('th', { textContent: l });
+      headRow.appendChild(th);
+      th.__sortCfg = { field: 'monthSkus', monthIdx: i };
+    }
+  });
+
+  if (combined) {
+    const thTS = el('th', { textContent: 'Total Sales' });
+    const thTK = el('th', { textContent: 'Total SKU' });
+    thTS.__sortCfg = { field: 'totalSales' };
+    thTK.__sortCfg = { field: 'totalSkus' };
+    headRow.append(thTS, thTK);
+  } else if (showSales) {
+    const th = el('th', { textContent: 'Total' });
+    th.__sortCfg = { field: 'totalSales' };
+    headRow.appendChild(th);
+  } else {
+    const th = el('th', { textContent: 'Total' });
+    th.__sortCfg = { field: 'totalSkus' };
+    headRow.appendChild(th);
+  }
+
+  if (showTargets) {
+    const thT = el('th', { textContent: 'Target', className: 'target-head' });
+    thT.__sortCfg = { field: 'target' };
+    const thC = el('th', { textContent: 'Set', className: 'target-head' });
+    thC.__sortCfg = { field: 'coverage' };
+    const thP = el('th', { textContent: '% Achieved', className: 'target-head' });
+    thP.__sortCfg = { field: 'pctTarget' };
+    headRow.append(thT, thC, thP);
+  }
+
+  thead.append(headRow);
+  makeSortableTh(thGroup, { field: 'name' });
+  [...headRow.children].forEach(th => {
+    if (th === thGroup) return;
+    if (th.__sortCfg) makeSortableTh(th, th.__sortCfg);
+  });
+
+  const grandSales = new Array(labels.length).fill(0);
+  const grandSkus  = new Array(labels.length).fill(0);
+  let grandTotalSales = 0, grandTotalSkus = 0;
+  let grandTarget = 0, grandAchieved = 0, grandCoverage = 0;
+  const fmtS = v => '₱' + PHP.format(v);
+  const fmtK = v => INT.format(v);
+
+  keys.forEach(k => {
+    const d = groups[k];
+    const tr = document.createElement('tr');
+    tr.addEventListener('click', () => openDrillFor(k));
+
+    const firstCell = document.createElement('td');
+    firstCell.appendChild(chevronSvg(10, '#1b1bb3'));
+    firstCell.appendChild(document.createTextNode(k));
+    if (STATE.groupBy === 'My Personnel' && k === selfName) {
+      const badge = document.createElement('span');
+      badge.style.cssText = 'font-size:10.5px;color:var(--amber);font-weight:700;margin-left:6px';
+      badge.textContent = '(you)';
+      firstCell.appendChild(badge);
+    }
+    tr.appendChild(firstCell);
+
+    if (combined) {
+      d.sales.forEach((v, i) => {
+        tr.append(el('td', { className: 'sales-col', textContent: fmtS(v) }));
+        tr.append(el('td', { className: 'sku-col',   textContent: fmtK(d.skus[i]) }));
+        grandSales[i] += v; grandSkus[i] += d.skus[i];
+      });
+      tr.append(el('td', { className: 'sales-col', textContent: fmtS(d.totalSales) }));
+      tr.append(el('td', { className: 'sku-col',   textContent: fmtK(d.totalSkus) }));
+      grandTotalSales += d.totalSales;
+      grandTotalSkus  += d.totalSkus;
+    } else if (showSales) {
+      d.sales.forEach((v, i) => { tr.append(el('td', { textContent: fmtS(v) })); grandSales[i] += v; });
+      tr.append(el('td', { textContent: fmtS(d.totalSales) }));
+      grandTotalSales += d.totalSales;
+    } else {
+      d.skus.forEach((v, i) => { tr.append(el('td', { textContent: fmtK(v) })); grandSkus[i] += v; });
+      tr.append(el('td', { textContent: fmtK(d.totalSkus) }));
+      grandTotalSkus += d.totalSkus;
+    }
+
+    if (showTargets) {
+      const { target, coverage, achieved, maxPeriods } = computeRowTarget(
+        STATE.year, targetDim, k, STATE.period, d.sales
+      );
+      const pct = target > 0 ? (achieved / target) * 100 : null;
+      const cls = pct == null ? '' : (pct >= 100 ? 'good' : (pct >= 75 ? 'mid' : 'bad'));
+      const covCls = coverage === 0 ? 'empty' : (coverage === maxPeriods ? 'complete' : 'partial');
+      tr.append(el('td', { className: 'target-col', textContent: target > 0 ? fmtS(target) : '—' }));
+      const covTd = document.createElement('td');
+      covTd.append(el('span', {
+        className: 'coverage-pill ' + covCls,
+        textContent: `${coverage}/${maxPeriods}`,
+      }));
+      tr.append(covTd);
+      tr.append(el('td', { className: 'pct-col ' + cls, textContent: pct == null ? '—' : pct.toFixed(1) + '%' }));
+
+      grandTarget += target;
+      grandAchieved += achieved;
+      grandCoverage += coverage;
+    }
+
+    tbody.append(tr);
+  });
+
+  // ---- FOOTER ----
+  const footRow = document.createElement('tr');
+  footRow.append(el('td', { textContent: 'TOTAL' }));
+
+  if (combined) {
+    grandSales.forEach((v, i) => {
+      footRow.append(el('td', { textContent: fmtS(v) }));
+      footRow.append(el('td', { textContent: fmtK(grandSkus[i]) }));
+    });
+    footRow.append(el('td', { textContent: fmtS(grandTotalSales) }));
+    footRow.append(el('td', { textContent: fmtK(grandTotalSkus) }));
+  } else if (showSales) {
+    grandSales.forEach(v => footRow.append(el('td', { textContent: fmtS(v) })));
+    footRow.append(el('td', { textContent: fmtS(grandTotalSales) }));
+  } else {
+    grandSkus.forEach(v => footRow.append(el('td', { textContent: fmtK(v) })));
+    footRow.append(el('td', { textContent: fmtK(grandTotalSkus) }));
+  }
+
+  if (showTargets) {
+    const pct = grandTarget > 0 ? (grandAchieved / grandTarget) * 100 : null;
+    const cls = pct == null ? '' : (pct >= 100 ? 'good' : (pct >= 75 ? 'mid' : 'bad'));
+    footRow.append(el('td', { textContent: grandTarget > 0 ? fmtS(grandTarget) : '—' }));
+    const totalPeriods = PERIOD_LABELS[STATE.period].length * keys.length;
+    const covCls = grandCoverage === 0 ? 'empty' : (grandCoverage === totalPeriods ? 'complete' : 'partial');
+    const covTd = document.createElement('td');
+    covTd.append(el('span', {
+      className: 'coverage-pill ' + covCls,
+      textContent: `${grandCoverage}/${totalPeriods}`,
+    }));
+    footRow.append(covTd);
+    footRow.append(el('td', { className: 'pct-col ' + cls, textContent: pct == null ? '—' : pct.toFixed(1) + '%' }));
+  }
+
+  tfoot.append(footRow);
+
+  const hint = $('#table-hint');
+  const groupTxt = STATE.groupClients && STATE.groupBy === 'Client'
+    ? ' · Client keyword grouping is <strong>ON</strong>.'
+    : (STATE.groupBy === 'Client' ? ' · Client keyword grouping is <strong>OFF</strong>.' : '');
+  const hwTxt = STATE.excludeHardware
+    ? ' · 🚫 <strong>Hardware / HW division excluded</strong>.'
+    : '';
+  if (query) {
+    const totalCount = INT.format(allKeys.length);
+    const shownCount = INT.format(keys.length);
+    const safeQuery = escapeHtml(STATE.searchQuery.trim());
+    hint.innerHTML =
+      `Showing <strong>${shownCount}</strong> of <strong>${totalCount}</strong> rows matching <em>${safeQuery}</em> · Click any row to drill down.${groupTxt}${hwTxt}`;
+  } else {
+    hint.innerHTML =
+      'Click any row to drill down. Click any <strong>header</strong> to sort by that column.' +
+      groupTxt + hwTxt +
+      (showTargets ? ` · Targets shown for <strong>${STATE.period}</strong>.` : '');
+  }
+}
+
+// ============================================================
+// DASHBOARD helpers
+// ============================================================
+function getChartRows() {
+  // 🆕 Start from visible (excluded) rows
+  let rows = STATE.compareMode ? getVisibleCompareRows() : getAllVisibleRows();
+
+  const f1 = GROUP_FIELD[STATE.filterDimension];
+  if (f1 && STATE.selectedFilters.size) {
+    rows = rows.filter(r => {
+      const k = resolveGroupKey(STATE.filterDimension, r[f1]);
+      return k && STATE.selectedFilters.has(k);
+    });
+  }
+  const f2 = GROUP_FIELD[STATE.secondaryDimension];
+  if (f2 && STATE.secondarySelectedFilters.size) {
+    rows = rows.filter(r => {
+      const k = resolveGroupKey(STATE.secondaryDimension, r[f2]);
+      return k && STATE.secondarySelectedFilters.has(k);
+    });
+  }
+  const f3 = GROUP_FIELD[STATE.tertiaryDimension];
+  if (f3 && STATE.tertiarySelectedFilters.size) {
+    rows = rows.filter(r => {
+      const k = resolveGroupKey(STATE.tertiaryDimension, r[f3]);
+      return k && STATE.tertiarySelectedFilters.has(k);
+    });
+  }
+  return rows;
+}
+
+function getRowsForYear(year) {
+  return getChartRows().filter(r => r.year === year);
+}
+
+function dimLabel(dim) {
+  switch (dim) {
+    case 'Sales Rep': return 'Sales Reps';
+    case 'Client':    return 'Clients';
+    case 'Item':      return 'Items';
+    case 'Area':      return 'Areas';
+    case 'Area2':     return 'Area2';
+    case 'Company':   return 'Companies';
+    case 'Division':  return 'Divisions';
+  }
+  return dim || '';
+}
+
+// ---------- PRIMARY filter ----------
+function rebuildFilterList() {
+  // 🆕 Respect hardware exclusion
+  const source = STATE.compareMode ? getVisibleCompareRows() : getAllVisibleRows();
+  const field = GROUP_FIELD[STATE.filterDimension];
+  if (!field) {
+    STATE.availableFilterItems = [];
+    STATE.selectedFilters.clear();
+    renderFilterList();
+    updateFilterTrigger();
+    return;
+  }
+
+  const map = new Map();
+  source.forEach(r => {
+    const k = resolveGroupKey(STATE.filterDimension, r[field]);
+    if (!k) return;
+    map.set(k, (map.get(k) || 0) + Math.abs(Number(r.sales) || 0));
+  });
+  STATE.availableFilterItems = [...map.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, value]) => ({ name, value }));
+
+  const exists = new Set(STATE.availableFilterItems.map(x => x.name));
+  [...STATE.selectedFilters].forEach(c => {
+    if (!exists.has(c)) STATE.selectedFilters.delete(c);
+  });
+
+  renderFilterList();
+  updateFilterTrigger();
+
+  if (STATE.secondaryDimension) rebuildSecondaryList();
+  if (STATE.tertiaryDimension) rebuildTertiaryList();
+}
+
+function renderFilterList() {
+  const list = $('#filter-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  const q = STATE.filterSearch.toLowerCase().trim();
+  const items = STATE.availableFilterItems.filter(c => !q || c.name.toLowerCase().includes(q));
+
+  if (!items.length) {
+    list.append(el('div', { className: 'multi-empty', textContent: 'No items match.' }));
+    return;
+  }
+  items.slice(0, CLIENT_RENDER_LIMIT).forEach(c => {
+    const label = el('label', { className: 'multi-item' });
+    const cb = el('input', { type: 'checkbox' });
+    cb.checked = STATE.selectedFilters.has(c.name);
+    cb.addEventListener('change', () => {
+      if (cb.checked) STATE.selectedFilters.add(c.name);
+      else STATE.selectedFilters.delete(c.name);
+      updateFilterTrigger();
+      clearAggCache();
+      if (STATE.secondaryDimension) rebuildSecondaryList();
+      if (STATE.tertiaryDimension) rebuildTertiaryList();
+      scheduleDashboardRender();
+    });
+    label.append(
+      cb,
+      el('span', { className: 'multi-name', textContent: c.name, title: c.name }),
+      el('span', { className: 'multi-val', textContent: '₱' + PHP.format(c.value) })
+    );
+    list.append(label);
+  });
+}
+
+function updateFilterTrigger() {
+  const label = $('#filter-label');
+  const badge = $('#filter-badge');
+  const n = STATE.selectedFilters.size;
+  const total = STATE.availableFilterItems.length;
+  const plural = dimLabel(STATE.filterDimension);
+
+  if (!n) {
+    label.textContent = total ? `All ${plural} (${total})` : `All ${plural}`;
+    badge.hidden = true;
+  } else if (n === 1) {
+    const one = [...STATE.selectedFilters][0];
+    label.textContent = one.length > 30 ? one.slice(0, 28) + '…' : one;
+    badge.hidden = true;
+  } else {
+    label.textContent = `${n} ${plural.toLowerCase()} selected`;
+    badge.hidden = false;
+    badge.textContent = String(n);
+  }
+}
+
+function toggleFilterPanel(open) {
+  const panel = $('#filter-panel');
+  const trigger = $('#filter-trigger');
+  const willOpen = open == null ? panel.hidden : open;
+  panel.hidden = !willOpen;
+  trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  if (willOpen) {
+    $('#filter-search').value = '';
+    STATE.filterSearch = '';
+    renderFilterList();
+    setTimeout(() => $('#filter-search').focus(), 50);
+  }
+}
+
+// ---------- SECONDARY filter ----------
+function rebuildSecondaryList() {
+  if (!STATE.secondaryDimension) return;
+  const field = GROUP_FIELD[STATE.secondaryDimension];
+  if (!field) return;
+
+  // 🆕 Respect hardware exclusion
+  let source = STATE.compareMode ? getVisibleCompareRows() : getAllVisibleRows();
+  const f1 = GROUP_FIELD[STATE.filterDimension];
+  if (f1 && STATE.selectedFilters.size) {
+    source = source.filter(r => {
+      const k = resolveGroupKey(STATE.filterDimension, r[f1]);
+      return k && STATE.selectedFilters.has(k);
+    });
+  }
+
+  const map = new Map();
+  source.forEach(r => {
+    const k = resolveGroupKey(STATE.secondaryDimension, r[field]);
+    if (!k) return;
+    map.set(k, (map.get(k) || 0) + Math.abs(Number(r.sales) || 0));
+  });
+  STATE.secondaryAvailableItems = [...map.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, value]) => ({ name, value }));
+
+  const exists = new Set(STATE.secondaryAvailableItems.map(x => x.name));
+  [...STATE.secondarySelectedFilters].forEach(c => {
+    if (!exists.has(c)) STATE.secondarySelectedFilters.delete(c);
+  });
+
+  renderSecondaryList();
+  updateSecondaryTrigger();
+
+  if (STATE.tertiaryDimension) rebuildTertiaryList();
+}
+
+function renderSecondaryList() {
+  const list = $('#filter2-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  const q = STATE.secondarySearch.toLowerCase().trim();
+  const items = STATE.secondaryAvailableItems.filter(c => !q || c.name.toLowerCase().includes(q));
+  if (!items.length) {
+    list.append(el('div', { className: 'multi-empty', textContent: 'No items match.' }));
+    return;
+  }
+  items.slice(0, CLIENT_RENDER_LIMIT).forEach(c => {
+    const label = el('label', { className: 'multi-item' });
+    const cb = el('input', { type: 'checkbox' });
+    cb.checked = STATE.secondarySelectedFilters.has(c.name);
+    cb.addEventListener('change', () => {
+      if (cb.checked) STATE.secondarySelectedFilters.add(c.name);
+      else STATE.secondarySelectedFilters.delete(c.name);
+      updateSecondaryTrigger();
+      clearAggCache();
+      if (STATE.tertiaryDimension) rebuildTertiaryList();
+      scheduleDashboardRender();
+    });
+    label.append(
+      cb,
+      el('span', { className: 'multi-name', textContent: c.name, title: c.name }),
+      el('span', { className: 'multi-val', textContent: '₱' + PHP.format(c.value) })
+    );
+    list.append(label);
+  });
+}
+
+function updateSecondaryTrigger() {
+  const label = $('#filter2-label');
+  const badge = $('#filter2-badge');
+  const n = STATE.secondarySelectedFilters.size;
+  const total = STATE.secondaryAvailableItems.length;
+  const plural = dimLabel(STATE.secondaryDimension);
+  if (!n) {
+    label.textContent = total ? `All ${plural} (${total})` : `All ${plural}`;
+    badge.hidden = true;
+  } else if (n === 1) {
+    const one = [...STATE.secondarySelectedFilters][0];
+    label.textContent = one.length > 30 ? one.slice(0, 28) + '…' : one;
+    badge.hidden = true;
+  } else {
+    label.textContent = `${n} ${plural.toLowerCase()} selected`;
+    badge.hidden = false;
+    badge.textContent = String(n);
+  }
+}
+
+function toggleSecondaryPanel(open) {
+  const panel = $('#filter2-panel');
+  const trigger = $('#filter2-trigger');
+  const willOpen = open == null ? panel.hidden : open;
+  panel.hidden = !willOpen;
+  trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  if (willOpen) {
+    $('#filter2-search').value = '';
+    STATE.secondarySearch = '';
+    renderSecondaryList();
+    setTimeout(() => $('#filter2-search').focus(), 50);
+  }
+}
+
+function showSecondaryFilter(dim) {
+  STATE.secondaryDimension = dim;
+  STATE.secondarySelectedFilters.clear();
+  $('#filter2-and').hidden = false;
+  $('#filter2-dim-wrap').hidden = false;
+  $('#filter2-multi').hidden = false;
+  $('#btn-remove-filter2').hidden = false;
+  $('#btn-add-filter2').hidden = true;
+  $('#btn-add-filter3').hidden = false;
+  if (dim) $('#sel-filter2-dim').value = dim;
+  rebuildSecondaryList();
+  clearAggCache();
+  scheduleDashboardRender();
+}
+
+function hideSecondaryFilter() {
+  STATE.secondaryDimension = null;
+  STATE.secondarySelectedFilters.clear();
+  $('#filter2-and').hidden = true;
+  $('#filter2-dim-wrap').hidden = true;
+  $('#filter2-multi').hidden = true;
+  $('#btn-remove-filter2').hidden = true;
+  $('#btn-add-filter2').hidden = false;
+  $('#btn-add-filter3').hidden = true;
+
+  STATE.tertiaryDimension = null;
+  STATE.tertiarySelectedFilters.clear();
+  $('#filter3-and').hidden = true;
+  $('#filter3-dim-wrap').hidden = true;
+  $('#filter3-multi').hidden = true;
+  $('#btn-remove-filter3').hidden = true;
+
+  clearAggCache();
+  scheduleDashboardRender();
+}
+
+// ---------- TERTIARY filter ----------
+function rebuildTertiaryList() {
+  if (!STATE.tertiaryDimension) return;
+  const field = GROUP_FIELD[STATE.tertiaryDimension];
+  if (!field) return;
+
+  // 🆕 Respect hardware exclusion
+  let source = STATE.compareMode ? getVisibleCompareRows() : getAllVisibleRows();
+
+  const f1 = GROUP_FIELD[STATE.filterDimension];
+  if (f1 && STATE.selectedFilters.size) {
+    source = source.filter(r => {
+      const k = resolveGroupKey(STATE.filterDimension, r[f1]);
+      return k && STATE.selectedFilters.has(k);
+    });
+  }
+  const f2 = GROUP_FIELD[STATE.secondaryDimension];
+  if (f2 && STATE.secondarySelectedFilters.size) {
+    source = source.filter(r => {
+      const k = resolveGroupKey(STATE.secondaryDimension, r[f2]);
+      return k && STATE.secondarySelectedFilters.has(k);
+    });
+  }
+
+  const map = new Map();
+  source.forEach(r => {
+    const k = resolveGroupKey(STATE.tertiaryDimension, r[field]);
+    if (!k) return;
+    map.set(k, (map.get(k) || 0) + Math.abs(Number(r.sales) || 0));
+  });
+  STATE.tertiaryAvailableItems = [...map.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, value]) => ({ name, value }));
+
+  const exists = new Set(STATE.tertiaryAvailableItems.map(x => x.name));
+  [...STATE.tertiarySelectedFilters].forEach(c => {
+    if (!exists.has(c)) STATE.tertiarySelectedFilters.delete(c);
+  });
+
+  renderTertiaryList();
+  updateTertiaryTrigger();
+}
+
+function renderTertiaryList() {
+  const list = $('#filter3-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  const q = STATE.tertiarySearch.toLowerCase().trim();
+  const items = STATE.tertiaryAvailableItems.filter(c => !q || c.name.toLowerCase().includes(q));
+  if (!items.length) {
+    list.append(el('div', { className: 'multi-empty', textContent: 'No items match.' }));
+    return;
+  }
+  items.slice(0, CLIENT_RENDER_LIMIT).forEach(c => {
+    const label = el('label', { className: 'multi-item' });
+    const cb = el('input', { type: 'checkbox' });
+    cb.checked = STATE.tertiarySelectedFilters.has(c.name);
+    cb.addEventListener('change', () => {
+      if (cb.checked) STATE.tertiarySelectedFilters.add(c.name);
+      else STATE.tertiarySelectedFilters.delete(c.name);
+      updateTertiaryTrigger();
+      clearAggCache();
+      scheduleDashboardRender();
+    });
+    label.append(
+      cb,
+      el('span', { className: 'multi-name', textContent: c.name, title: c.name }),
+      el('span', { className: 'multi-val', textContent: '₱' + PHP.format(c.value) })
+    );
+    list.append(label);
+  });
+}
+
+function updateTertiaryTrigger() {
+  const label = $('#filter3-label');
+  const badge = $('#filter3-badge');
+  const n = STATE.tertiarySelectedFilters.size;
+  const total = STATE.tertiaryAvailableItems.length;
+  const plural = dimLabel(STATE.tertiaryDimension);
+  if (!n) {
+    label.textContent = total ? `All ${plural} (${total})` : `All ${plural}`;
+    badge.hidden = true;
+  } else if (n === 1) {
+    const one = [...STATE.tertiarySelectedFilters][0];
+    label.textContent = one.length > 30 ? one.slice(0, 28) + '…' : one;
+    badge.hidden = true;
+  } else {
+    label.textContent = `${n} ${plural.toLowerCase()} selected`;
+    badge.hidden = false;
+    badge.textContent = String(n);
+  }
+}
+
+function toggleTertiaryPanel(open) {
+  const panel = $('#filter3-panel');
+  const trigger = $('#filter3-trigger');
+  const willOpen = open == null ? panel.hidden : open;
+  panel.hidden = !willOpen;
+  trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  if (willOpen) {
+    $('#filter3-search').value = '';
+    STATE.tertiarySearch = '';
+    renderTertiaryList();
+    setTimeout(() => $('#filter3-search').focus(), 50);
+  }
+}
+
+function showTertiaryFilter(dim) {
+  STATE.tertiaryDimension = dim;
+  STATE.tertiarySelectedFilters.clear();
+  $('#filter3-and').hidden = false;
+  $('#filter3-dim-wrap').hidden = false;
+  $('#filter3-multi').hidden = false;
+  $('#btn-remove-filter3').hidden = false;
+  $('#btn-add-filter3').hidden = true;
+  if (dim) $('#sel-filter3-dim').value = dim;
+  rebuildTertiaryList();
+  clearAggCache();
+  scheduleDashboardRender();
+}
+
+function hideTertiaryFilter() {
+  STATE.tertiaryDimension = null;
+  STATE.tertiarySelectedFilters.clear();
+  $('#filter3-and').hidden = true;
+  $('#filter3-dim-wrap').hidden = true;
+  $('#filter3-multi').hidden = true;
+  $('#btn-remove-filter3').hidden = true;
+  if (STATE.secondaryDimension) {
+    $('#btn-add-filter3').hidden = false;
+  }
+  clearAggCache();
+  scheduleDashboardRender();
+}
+
+// ---------- Years multi-select ----------
+function renderYearsList() {
+  const list = $('#years-list');
+  if (!list) return;
+  list.innerHTML = '';
+  STATE.availableYears.forEach(y => {
+    const label = el('label', { className: 'multi-item' });
+    const cb = el('input', { type: 'checkbox' });
+    cb.checked = STATE.compareYears.has(y);
+    cb.addEventListener('change', () => {
+      if (cb.checked) STATE.compareYears.add(y);
+      else STATE.compareYears.delete(y);
+      updateYearsTrigger();
+      renderChart();
+    });
+    label.append(cb, el('span', { className: 'multi-name', textContent: String(y) }));
+    list.append(label);
+  });
+}
+
+function updateYearsTrigger() {
+  const label = $('#years-label');
+  const badge = $('#years-badge');
+  const n = STATE.compareYears.size;
+  if (n === STATE.availableYears.length) {
+    label.textContent = `All Years (${n})`;
+    badge.hidden = true;
+  } else if (n === 1) {
+    label.textContent = String([...STATE.compareYears][0]);
+    badge.hidden = true;
+  } else {
+    label.textContent = `${n} years selected`;
+    badge.hidden = false;
+    badge.textContent = String(n);
+  }
+}
+
+function toggleYearsPanel(open) {
+  const panel = $('#years-panel');
+  const trigger = $('#years-trigger');
+  const willOpen = open == null ? panel.hidden : open;
+  panel.hidden = !willOpen;
+  trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  if (willOpen) renderYearsList();
+}
+
+// ---------- KPI ----------
+function renderKPIs() {
+  const rows = getChartRows();
+  const grid = $('#kpi-grid');
+  if (!rows.length) { grid.hidden = true; return; }
+  grid.hidden = false;
+
+  const totalSales = rows.reduce((s, r) => s + Math.abs(Number(r.sales) || 0), 0);
+  const totalSku   = rows.reduce((s, r) => s + (Number(r.sku) || 0), 0);
+  const txCount    = rows.length;
+
+  const topBy = GROUP_FIELD[STATE.groupBy] ? STATE.groupBy : 'Client';
+  const savedField = STATE.sortField;
+  const savedDir = STATE.sortDir;
+  STATE.sortField = 'totalSales';
+  STATE.sortDir = 'desc';
+  const agg = aggregateByGroup(rows, topBy);
+  STATE.sortField = savedField;
+  STATE.sortDir = savedDir;
+
+  $('#kpi-sales').textContent = fmtSales(totalSales);
+  $('#kpi-sales-sub').textContent = STATE.compareMode
+    ? `All selected years · ${STATE.period}`
+    : `${STATE.year} · ${STATE.period}`;
+
+  $('#kpi-sku').textContent = fmtSku(totalSku);
+  $('#kpi-sku-sub').textContent = `units sold`;
+
+  $('#kpi-tx').textContent = INT.format(txCount);
+  $('#kpi-tx-sub').textContent = `line items`;
+
+  const ptype = STATE.period;
+  const targetDim = STATE.groupBy === 'My Personnel' ? null : STATE.groupBy;
+  let kpiTarget = 0, kpiAchieved = 0, kpiPeriods = 0;
+
+  if (targetDim) {
+    const seenTargets = new Set();
+    const salesByKey = new Map();
+    rows.forEach(r => {
+      const name = resolveGroupKey(targetDim, r[GROUP_FIELD[targetDim]]);
+      if (!name) return;
+      const pidx = periodIndex(r.date, ptype);
+      const t = getTargetCell(r.year, targetDim, name, ptype, pidx);
+      if (t > 0) {
+        const k = `${r.year}\u0001${name}\u0001${pidx}`;
+        if (!seenTargets.has(k)) {
+          seenTargets.add(k);
+          kpiTarget += t;
+          kpiPeriods += 1;
+        }
+        salesByKey.set(k, (salesByKey.get(k) || 0) + Math.abs(Number(r.sales) || 0));
+      }
+    });
+    for (const [, v] of salesByKey) kpiAchieved += v;
+  }
+
+  const kpiTargetEl = $('#kpi-target');
+  if (kpiTarget > 0) {
+    const pct = (kpiAchieved / kpiTarget) * 100;
+    kpiTargetEl.textContent = fmtSales(kpiTarget);
+    $('#kpi-target-sub').textContent =
+      `${pct.toFixed(1)}% achieved · ${kpiPeriods} period${kpiPeriods === 1 ? '' : 's'} set`;
+    kpiTargetEl.style.color = pct >= 100 ? 'var(--green)' : (pct >= 75 ? 'var(--amber)' : 'var(--red)');
+  } else {
+    kpiTargetEl.textContent = '—';
+    kpiTargetEl.style.color = '';
+    $('#kpi-target-sub').textContent = 'No targets set';
+  }
+
+  if (agg.labels.length) {
+    const topName = agg.labels[0];
+    $('#kpi-top').textContent = topName;
+    $('#kpi-top').title = topName;
+    const share = totalSales > 0
+      ? ((agg.values[0] / totalSales) * 100).toFixed(1) + '%'
+      : fmtSales(agg.values[0]);
+    $('#kpi-top-sub').textContent = `${topBy} · ${share}`;
+  } else {
+    $('#kpi-top').textContent = '—';
+    $('#kpi-top-sub').textContent = '—';
+  }
+}
+
+// ---------- Aggregations ----------
+function rowValue(r) {
+  return STATE.view === 'SKU'
+    ? (Number(r.sku) || 0)
+    : Math.abs(Number(r.sales) || 0);
+}
+
+function aggregateByPeriod(rows, period) {
+  const labels = PERIOD_LABELS[period];
+  const values = new Array(labels.length).fill(0);
+  rows.forEach(r => { values[periodIndex(r.date, period)] += rowValue(r); });
+  return { labels, values };
+}
+
+function dashboardSortMode() {
+  if (STATE.sortField === 'name') return STATE.sortDir === 'asc' ? 'name-asc' : 'name-desc';
+  if (STATE.sortField === 'totalSales' || STATE.sortField === 'totalSkus') {
+    return STATE.sortDir === 'asc' ? 'total-asc' : 'total-desc';
+  }
+  return 'total-desc';
+}
+
+function aggregateByGroup(rows, groupBy) {
+  // 🆕 include excludeHardware in key
+  const key =
+    `group|${groupBy}|${STATE.view}|${STATE.sortField}|${STATE.sortDir}|` +
+    `${STATE.compareMode}|${STATE.groupClients ? 1 : 0}|${STATE.excludeHardware ? 1 : 0}|${filterSignature()}`;
+  if (STATE.aggCache.has(key)) return STATE.aggCache.get(key);
+
+  const field = GROUP_FIELD[groupBy];
+  if (!field) return { labels: [], values: [] };
+  const map = new Map();
+  rows.forEach(r => {
+    const k = resolveGroupKey(groupBy, r[field]);
+    if (!k) return;
+    map.set(k, (map.get(k) || 0) + rowValue(r));
+  });
+  const entries = [...map.entries()].map(([label, value]) => ({ label, value }));
+  const mode = dashboardSortMode();
+  const cmp = (a, b) => {
+    switch (mode) {
+      case 'name-asc':   return a.label.localeCompare(b.label);
+      case 'name-desc':  return b.label.localeCompare(a.label);
+      case 'total-desc': return b.value - a.value;
+      case 'total-asc':  return a.value - b.value;
+    }
+    return 0;
+  };
+  entries.sort(cmp);
+  const result = { labels: entries.map(e => e.label), values: entries.map(e => e.value) };
+  STATE.aggCache.set(key, result);
+  return result;
+}
+
+function aggregateByGroupDesc(rows, groupBy) {
+  const savedField = STATE.sortField;
+  const savedDir   = STATE.sortDir;
+  STATE.sortField  = 'totalSales';
+  STATE.sortDir    = 'desc';
+  const agg = aggregateByGroup(rows, groupBy);
+  STATE.sortField  = savedField;
+  STATE.sortDir    = savedDir;
+  return agg;
+}
+
+// ---------- Chart ----------
+function destroyChart() {
+  if (STATE.chart) { STATE.chart.destroy(); STATE.chart = null; }
+}
+
+function filterSummaryText() {
+  const parts = [];
+  if (STATE.selectedFilters.size) {
+    parts.push(`${STATE.filterDimension}: ${STATE.selectedFilters.size === 1
+      ? [...STATE.selectedFilters][0].slice(0, 20)
+      : STATE.selectedFilters.size + ' selected'}`);
+  }
+  if (STATE.secondaryDimension && STATE.secondarySelectedFilters.size) {
+    parts.push(`${STATE.secondaryDimension}: ${STATE.secondarySelectedFilters.size === 1
+      ? [...STATE.secondarySelectedFilters][0].slice(0, 20)
+      : STATE.secondarySelectedFilters.size + ' selected'}`);
+  }
+  if (STATE.tertiaryDimension && STATE.tertiarySelectedFilters.size) {
+    parts.push(`${STATE.tertiaryDimension}: ${STATE.tertiarySelectedFilters.size === 1
+      ? [...STATE.tertiarySelectedFilters][0].slice(0, 20)
+      : STATE.tertiarySelectedFilters.size + ' selected'}`);
+  }
+  if (STATE.excludeHardware) parts.push('🚫 HW excluded');
+  return parts.join(' · ');
+}
+
+function renderChart() {
+  const canvas = $('#chart');
+  if (!canvas) return;
+  destroyChart();
+
+  const isCompare = STATE.compareMode;
+  const isLine = STATE.chartType === 'line';
+  $('#series-wrap').hidden = isCompare || !isLine;
+
+  const rows = getChartRows();
+  if (!rows.length) {
+    $('#chart-wrap').hidden = true;
+    $('#chart-empty').hidden = false;
+    $('#chart-empty').textContent = 'No data found for the current filters.';
+    return;
+  }
+  $('#chart-empty').hidden = true;
+  $('#chart-wrap').hidden = false;
+
+  const yFmt = v => STATE.view === 'SKU' ? fmtSku(v) : fmtSales(v);
+  const filterTxt = filterSummaryText();
+
+  if (isCompare) {
+    const years = [...STATE.compareYears].sort((a, b) => a - b);
+    if (!years.length) {
+      $('#chart-wrap').hidden = true;
+      $('#chart-empty').hidden = false;
+      $('#chart-empty').textContent = 'No years selected.';
+      return;
+    }
+    const labels = PERIOD_LABELS[STATE.period];
+
+    const datasets = years.map((year, i) => {
+      const yearRows = getRowsForYear(year);
+      const { values } = aggregateByPeriod(yearRows, STATE.period);
+      const color = PALETTE[i % PALETTE.length];
+      return {
+        label: String(year),
+        data: values,
+        borderColor: color,
+        backgroundColor: color + '20',
+        borderWidth: 3,
+        tension: 0.35,
+        fill: false,
+        pointBackgroundColor: color,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      };
+    });
+
+    $('#chart-title').textContent =
+      STATE.view === 'SKU' ? 'SKU — Year-over-Year' : 'Sales — Year-over-Year';
+    $('#chart-sub').textContent =
+      `${STATE.period} · ${years.length} year${years.length === 1 ? '' : 's'}` +
+      (filterTxt ? ` · ${filterTxt}` : '');
+
+    STATE.chart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: chartOptions({ yFmt, showLegend: true }),
+    });
+    return;
+  }
+
+  if (isLine && STATE.seriesBy !== 'None') {
+    const field = GROUP_FIELD[STATE.seriesBy];
+    const map = new Map();
+    rows.forEach(r => {
+      const k = resolveGroupKey(STATE.seriesBy, r[field]);
+      if (!k) return;
+      map.set(k, (map.get(k) || 0) + rowValue(r));
+    });
+    const ranked = [...map.entries()].sort((a, b) => b[1] - a[1]);
+    const top = ranked.slice(0, SERIES_TOP_N);
+    const rest = ranked.slice(SERIES_TOP_N);
+
+    const labels = PERIOD_LABELS[STATE.period];
+    const datasets = top.map(([value], i) => {
+      const subset = rows.filter(r => resolveGroupKey(STATE.seriesBy, r[field]) === value);
+      const { values } = aggregateByPeriod(subset, STATE.period);
+      const color = PALETTE[i % PALETTE.length];
+      return {
+        label: value,
+        data: values,
+        borderColor: color,
+        backgroundColor: color + '20',
+        borderWidth: 3,
+        tension: 0.35,
+        fill: false,
+        pointBackgroundColor: color,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      };
+    });
+
+    if (rest.length) {
+      const restSet = new Set(rest.map(x => x[0]));
+      const subset = rows.filter(r => restSet.has(resolveGroupKey(STATE.seriesBy, r[field])));
+      const { values } = aggregateByPeriod(subset, STATE.period);
+      datasets.push({
+        label: `Others (${rest.length})`,
+        data: values,
+        borderColor: '#94a3b8',
+        backgroundColor: 'rgba(148,163,184,.15)',
+        borderWidth: 2,
+        borderDash: [5, 4],
+        tension: 0.35,
+        fill: false,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+      });
+    }
+
+    $('#chart-title').textContent =
+      `${STATE.view === 'SKU' ? 'SKU' : 'Sales'} — by ${STATE.seriesBy}`;
+    $('#chart-sub').textContent =
+      `${STATE.year} · ${STATE.period} · Top ${top.length} of ${ranked.length}` +
+      (rest.length ? ` + Others` : '') +
+      (filterTxt ? ` · ${filterTxt}` : '');
+
+    STATE.chart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: chartOptions({ yFmt, showLegend: true }),
+    });
+    return;
+  }
+
+  if (isLine) {
+    const { labels, values } = aggregateByPeriod(rows, STATE.period);
+    $('#chart-title').textContent = STATE.view === 'SKU' ? 'SKU Trend' : 'Sales Trend';
+    $('#chart-sub').textContent = `${STATE.year} · ${STATE.period}` +
+      (filterTxt ? ` · ${filterTxt}` : '');
+
+    STATE.chart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: STATE.view === 'SKU' ? 'SKU (units)' : 'Sales (₱)',
+          data: values,
+          borderColor: '#1b1bb3',
+          backgroundColor: 'rgba(27,27,179,.12)',
+          borderWidth: 3,
+          tension: 0.35,
+          fill: true,
+          pointBackgroundColor: '#1b1bb3',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }]
+      },
+      options: chartOptions({ yFmt }),
+    });
+    return;
+  }
+
+  if (STATE.chartType === 'bar') {
+    const agg = aggregateByGroupDesc(rows, STATE.groupBy);
+    const total = agg.labels.length;
+
+    let labels, values, colors;
+    if (total > CHART_TOP_N) {
+      const topLabels = agg.labels.slice(0, CHART_TOP_N);
+      const topValues = agg.values.slice(0, CHART_TOP_N);
+      const otherSum  = agg.values.slice(CHART_TOP_N).reduce((s, v) => s + v, 0);
+      labels = [...topLabels, 'Others'];
+      values = [...topValues, otherSum];
+      colors = labels.map((l, i) =>
+        l === 'Others' ? '#94a3b8' : PALETTE[i % PALETTE.length]
+      );
+    } else {
+      labels = agg.labels;
+      values = agg.values;
+      colors = labels.map((_, i) => PALETTE[i % PALETTE.length]);
+    }
+
+    $('#chart-title').textContent =
+      `${STATE.view === 'SKU' ? 'SKU' : 'Sales'} by ${STATE.groupBy}`;
+    $('#chart-sub').textContent =
+      (total > CHART_TOP_N ? `Top ${CHART_TOP_N} of ${total} + Others` : `All ${total}`) +
+      ` · high → low · ${STATE.year}` +
+      (filterTxt ? ` · ${filterTxt}` : '');
+
+    STATE.chart = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: STATE.view === 'SKU' ? 'SKU (units)' : 'Sales (₱)',
+          data: values,
+          backgroundColor: colors,
+          borderRadius: 6,
+          borderSkipped: false,
+          maxBarThickness: 48,
+        }]
+      },
+      options: chartOptions({ yFmt, rotateX: labels.length > 6 }),
+    });
+    return;
+  }
+
+  if (STATE.chartType === 'pie') {
+    const agg = aggregateByGroupDesc(rows, STATE.groupBy);
+    const total = agg.labels.length;
+
+    let labels, values;
+    if (total > CHART_TOP_N) {
+      const topLabels = agg.labels.slice(0, CHART_TOP_N);
+      const topValues = agg.values.slice(0, CHART_TOP_N);
+      const otherSum  = agg.values.slice(CHART_TOP_N).reduce((s, v) => s + v, 0);
+      labels = [...topLabels, 'Others'];
+      values = [...topValues, otherSum];
+    } else {
+      labels = agg.labels;
+      values = agg.values;
+    }
+
+    $('#chart-title').textContent =
+      `${STATE.view === 'SKU' ? 'SKU' : 'Sales'} share by ${STATE.groupBy}`;
+    $('#chart-sub').textContent =
+      (total > CHART_TOP_N ? `Top ${CHART_TOP_N} of ${total} + Others` : `All ${total}`) +
+      ` · high → low · ${STATE.year}` +
+      (filterTxt ? ` · ${filterTxt}` : '');
+
+    const colors = labels.map((l, i) =>
+      l === 'Others' ? '#94a3b8' : PALETTE[i % PALETTE.length]
+    );
+
+    STATE.chart = new Chart(canvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderColor: '#fff',
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 11 } },
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const total = ctx.dataset.data.reduce((s, v) => s + v, 0);
+                const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : '0';
+                return ` ${ctx.label}: ${yFmt(ctx.parsed)} (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+function chartOptions({ yFmt, rotateX = false, showLegend = false } = {}) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: showLegend ? {
+        display: true,
+        position: 'top',
+        align: 'end',
+        labels: {
+          boxWidth: 12, boxHeight: 12, padding: 14,
+          font: { size: 12, weight: '600' },
+          usePointStyle: true,
+          pointStyle: 'line',
+        },
+      } : { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const v = ctx.parsed.y != null ? ctx.parsed.y : ctx.parsed;
+            const prefix = showLegend ? `${ctx.dataset.label}: ` : '';
+            return ` ${prefix}${yFmt(v)}`.trim();
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (v) => {
+            if (STATE.view !== 'SKU') {
+              if (v >= 1e6) return '₱' + (v / 1e6).toFixed(1) + 'M';
+              if (v >= 1e3) return '₱' + (v / 1e3).toFixed(0) + 'k';
+              return '₱' + v;
+            }
+            if (v >= 1e3) return (v / 1e3).toFixed(1) + 'k';
+            return v;
+          },
+          font: { size: 11 },
+          color: '#4a5572',
+        },
+        grid: { color: '#e3e7f2' },
+      },
+      x: {
+        ticks: {
+          font: { size: 11 },
+          color: '#4a5572',
+          maxRotation: rotateX ? 45 : 0,
+          minRotation: rotateX ? 45 : 0,
+          autoSkip: false,
+        },
+        grid: { display: false },
+      }
+    }
+  };
+}
+
+// ============================================================
+// DRILL-DOWN
+// ============================================================
+function getRowsAtDrillLevel() {
+  // 🆕 Respect hardware exclusion
+  const rows = getAllVisibleRows();
+  const stack = STATE.drillStack;
+  if (!stack.length) return rows;
+  return rows.filter(r => {
+    return stack.every(step => {
+      if (Array.isArray(step.codes)) {
+        const code = String(r.sr_code || '').trim();
+        return step.codes.includes(code);
+      }
+      if (Array.isArray(step.values)) {
+        const raw = String(r[step.field] || '').trim();
+        return step.values.includes(raw);
+      }
+      if (step.field) {
+        return String(r[step.field] || '').trim() === step.value;
+      }
+      return true;
+    });
+  });
+}
+
+function pivotAggregate(rows, rowField, period) {
+  const labels = PERIOD_LABELS[period];
+  const groups = {};
+  rows.forEach(r => {
+    const field = GROUP_FIELD[rowField];
+    const key = resolveGroupKey(rowField, field ? r[field] : null);
+    if (!key) return;
+    const m = getMonthIndex(r.date);
+    if (m === null) return;
+    let idx;
+    switch (period) {
+      case 'Monthly':     idx = m; break;
+      case 'Quarterly':   idx = Math.floor(m / 3); break;
+      case 'Semi-Annual': idx = m < 6 ? 0 : 1; break;
+      default:            idx = 0;
+    }
+    if (!groups[key]) {
+      groups[key] = {
+        values: new Array(labels.length).fill(0),
+        skus:   new Array(labels.length).fill(0),
+        total: 0,
+        totalSku: 0,
+        count: 0,
+      };
+    }
+    const amt = Math.abs(Number(r.sales) || 0);
+    const qty = Number(r.sku) || 0;
+    groups[key].values[idx] += amt;
+    groups[key].skus[idx]   += qty;
+    groups[key].total       += amt;
+    groups[key].totalSku    += qty;
+    groups[key].count       += 1;
+  });
+  return { labels, groups };
+}
+
+function openDrillFor(rowKey) {
+  if (STATE.groupBy === 'My Personnel') {
+    const selfName = STATE.user.full_name || STATE.user.username || `User #${STATE.user.id}`;
+    let codes = [];
+    if (rowKey === selfName) {
+      codes = [...STATE.mySrCodes];
+    } else {
+      const p = STATE.myPersonnel.find(x => x.full_name === rowKey);
+      if (!p) return;
+      codes = [...p.sr_codes];
+    }
+    if (!codes.length) {
+      alert('Walang SR code na naka-assign kay ' + rowKey + '.');
+      return;
+    }
+    STATE.drillStack = [{ codes, value: rowKey, label: 'Personnel', groupBy: 'Personnel' }];
+    const next = 'Client';
+    STATE.drillGroupBy = next;
+    STATE.drillPeriod  = STATE.period;
+    STATE.drillView    = STATE.view === 'Sales + SKU' ? 'Sales' : STATE.view;
+    $('#drill-group').value = next;
+    $('#drill-period').value = STATE.drillPeriod;
+    document.querySelectorAll('#drill-view button').forEach(b =>
+      b.classList.toggle('active', b.dataset.mode === STATE.drillView)
+    );
+    openDrill();
+    return;
+  }
+
+  const field = GROUP_FIELD[STATE.groupBy];
+  if (!field) return;
+  const value = String(rowKey).trim();
+  if (!value) return;
+
+  const members = resolveGroupMembers(STATE.groupBy, value);
+  const step = { field, value, label: STATE.groupBy, groupBy: STATE.groupBy };
+  if (members) step.values = members;
+
+  STATE.drillStack = [step];
+  const next = NEXT_DIM[STATE.groupBy] || 'Client';
+  STATE.drillGroupBy = next;
+  STATE.drillPeriod  = STATE.period;
+  STATE.drillView    = STATE.view === 'Sales + SKU' ? 'Sales' : STATE.view;
+  $('#drill-group').value = next;
+  $('#drill-period').value = STATE.drillPeriod;
+  document.querySelectorAll('#drill-view button').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === STATE.drillView)
+  );
+  openDrill();
+}
+
+function openDrill() {
+  const overlay = $('#drill-overlay');
+  overlay.hidden = false;
+  requestAnimationFrame(() => overlay.classList.add('active'));
+  document.body.style.overflow = 'hidden';
+  renderDrill();
+}
+
+function closeDrill() {
+  const overlay = $('#drill-overlay');
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+  setTimeout(() => {
+    overlay.hidden = true;
+    STATE.drillStack = [];
+    STATE.drillGroupBy = null;
+  }, 240);
+}
+
+function renderDrill() {
+  const stack = STATE.drillStack;
+  if (!stack.length) { closeDrill(); return; }
+
+  const baseRows = getRowsAtDrillLevel();
+  const currentGroupBy = STATE.drillGroupBy || 'Client';
+  const currentPeriod  = STATE.drillPeriod || 'Monthly';
+
+  const titleParts = stack.map(s => s.value);
+  $('#drill-title').textContent = titleParts.join(' → ');
+
+  const totalSales = baseRows.reduce((s, r) => s + Math.abs(Number(r.sales) || 0), 0);
+  const totalSkus  = baseRows.reduce((s, r) => s + (Number(r.sku) || 0), 0);
+  $('#drill-meta').textContent =
+    `${baseRows.length} transaction${baseRows.length === 1 ? '' : 's'} · ` +
+    `₱${PHP.format(totalSales)} · ${INT.format(totalSkus)} SKU`;
+
+  const crumbs = $('#drill-crumbs');
+  crumbs.innerHTML = '';
+  stack.forEach((step, i) => {
+    const isCurrent = i === stack.length - 1;
+    const c = el('span', { className: 'drill-crumb' + (isCurrent ? ' crumb-current' : '') });
+    c.append(el('span', { className: 'crumb-field', textContent: step.label }));
+    c.append(document.createTextNode(step.value));
+    crumbs.append(c);
+    if (i < stack.length - 1) {
+      crumbs.append(el('span', { className: 'drill-crumb-sep', textContent: '→' }));
+    }
+  });
+
+  $('#drill-back').disabled = stack.length <= 1;
+
+  const { labels, groups } = pivotAggregate(baseRows, currentGroupBy, currentPeriod);
+  const keys = Object.keys(groups).sort((a, b) => groups[b].total - groups[a].total);
+
+  const body = $('#drill-body');
+  body.innerHTML = '';
+
+  if (!keys.length) {
+    body.innerHTML = '<div class="drill-empty"><strong>No data</strong> at this level.</div>';
+    return;
+  }
+
+  const showSales = STATE.drillView === 'Sales' || STATE.drillView === 'Sales + SKU';
+  const combined  = STATE.drillView === 'Sales + SKU';
+  const fmtS = v => '₱' + PHP.format(v);
+  const fmtK = v => INT.format(v);
+
+  const table = document.createElement('table');
+  const thead = document.createElement('thead');
+  const tbody = document.createElement('tbody');
+  const tfoot = document.createElement('tfoot');
+
+  const hr = document.createElement('tr');
+  hr.append(el('th', { textContent: currentGroupBy }));
+  labels.forEach(l => hr.append(el('th', { textContent: l })));
+  hr.append(el('th', { textContent: 'Total' }));
+  thead.append(hr);
+
+  const grandSales = new Array(labels.length).fill(0);
+  const grandSkus  = new Array(labels.length).fill(0);
+  let grandTotalSales = 0, grandTotalSkus = 0;
+  const drillField = GROUP_FIELD[currentGroupBy];
+
+  keys.forEach(k => {
+    const d = groups[k];
+    const tr = document.createElement('tr');
+    const firstCell = document.createElement('td');
+    if (drillField) firstCell.appendChild(chevronSvg(9, '#1b1bb3'));
+    firstCell.appendChild(document.createTextNode(k));
+    firstCell.title = k;
+    tr.appendChild(firstCell);
+
+    d.values.forEach((v, i) => {
+      grandSales[i] += v;
+      grandSkus[i]  += d.skus[i];
+      let text;
+      if (combined) text = `${fmtS(v)} · ${fmtK(d.skus[i])}`;
+      else if (showSales) text = fmtS(v);
+      else text = fmtK(d.skus[i]);
+      tr.append(el('td', { textContent: text }));
+    });
+
+    let totalText;
+    if (combined) totalText = `${fmtS(d.total)} · ${fmtK(d.totalSku)}`;
+    else if (showSales) totalText = fmtS(d.total);
+    else totalText = fmtK(d.totalSku);
+    tr.append(el('td', {
+      textContent: totalText,
+      style: { fontWeight: 700, color: 'var(--royal-deep)' }
+    }));
+
+    grandTotalSales += d.total;
+    grandTotalSkus  += d.totalSku;
+
+    if (drillField) {
+      tr.addEventListener('click', () => {
+        const step = {
+          field: drillField,
+          value: k,
+          label: currentGroupBy,
+          groupBy: currentGroupBy,
+        };
+        const members = resolveGroupMembers(currentGroupBy, k);
+        if (members) step.values = members;
+        STATE.drillStack.push(step);
+        const next = NEXT_DIM[currentGroupBy] || 'Client';
+        STATE.drillGroupBy = next;
+        $('#drill-group').value = next;
+        renderDrill();
+      });
+    } else {
+      tr.style.cursor = 'default';
+    }
+    tbody.append(tr);
+  });
+
+  const fr = document.createElement('tr');
+  fr.append(el('td', { textContent: 'TOTAL' }));
+  grandSales.forEach((v, i) => {
+    let text;
+    if (combined) text = `${fmtS(v)} · ${fmtK(grandSkus[i])}`;
+    else if (showSales) text = fmtS(v);
+    else text = fmtK(grandSkus[i]);
+    fr.append(el('td', { textContent: text }));
+  });
+  let totalText;
+  if (combined) totalText = `${fmtS(grandTotalSales)} · ${fmtK(grandTotalSkus)}`;
+  else if (showSales) totalText = fmtS(grandTotalSales);
+  else totalText = fmtK(grandTotalSkus);
+  fr.append(el('td', { textContent: totalText }));
+  tfoot.append(fr);
+
+  table.append(thead, tbody, tfoot);
+  body.append(table);
+
+  $('#drill-hint').innerHTML = drillField
+    ? 'I-click ang row para mag-drill pa sa <strong>' + escapeHtml(currentGroupBy) +
+      '</strong>. <strong>Back</strong> para bumalik, <strong>×</strong> para isara.'
+    : 'Hindi na ma-drill pa ang dimension na ito. Gamitin ang <strong>Back</strong> o <strong>×</strong>.';
+}
+
+// ============================================================
+// CSV EXPORTS
+// ============================================================
+function exportCSV() {
+  const rows = [];
+  $('#grid').querySelectorAll('tr').forEach(tr => {
+    const cells = [...tr.children].map(td => {
+      let v = td.textContent.replace(/[₱,⇅▲▼]/g, '').trim();
+      if (v.includes('"')) v = v.replace(/"/g, '""');
+      return `"${v}"`;
+    });
+    rows.push(cells.join(','));
+  });
+  const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const scope = STATE.isAdmin
+    ? 'admin'
+    : (hasCompanyAccess() ? 'company' : (STATE.viewScope === 'team' ? 'team' : 'me'));
+  const grouped = (STATE.groupBy === 'Client' && STATE.groupClients) ? '_grouped' : '';
+  const hw = STATE.excludeHardware ? '_noHW' : '';
+  a.href = url;
+  a.download = `sales_performance_${STATE.year}_${scope}_${STATE.view.replace(/\s+/g, '_')}_${STATE.period}_by_${STATE.groupBy.replace(/\s+/g, '')}${grouped}${hw}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportDrillCSV() {
+  const table = $('#drill-body table');
+  if (!table) {
+    alert('Walang laman ang drill view. Mag-drill muna bago mag-export.');
+    return;
+  }
+  const rows = [];
+  table.querySelectorAll('tr').forEach(tr => {
+    const cells = [...tr.children].map(td => {
+      let v = td.textContent.replace(/[₱,]/g, '').replace(/\s*·\s*/g, ' | ').trim();
+      if (v.includes('"')) v = v.replace(/"/g, '""');
+      return `"${v}"`;
+    });
+    rows.push(cells.join(','));
+  });
+  const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const crumbPath = STATE.drillStack
+    .map(s => String(s.value).replace(/[^a-z0-9]+/gi, '_'))
+    .join('-') || 'root';
+  const hw = STATE.excludeHardware ? '_noHW' : '';
+  a.href = url;
+  a.download = `drill_${STATE.year}_${crumbPath}_by_${(STATE.drillGroupBy || 'Client').replace(/\s+/g, '')}_${STATE.drillPeriod}${hw}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// WIRE CONTROLS
+// ============================================================
+function wireControls() {
+  $('#hero-actions').addEventListener('click', (e) => {
+    const btn = e.target.closest('.hero-btn[data-view]');
+    if (!btn) return;
+    if (btn.classList.contains('active')) return;
+    setActiveView(btn.dataset.view);
+  });
+
+  $('#sel-scope').addEventListener('change', async (e) => {
+    STATE.viewScope = e.target.value || 'me';
+    STATE.compareLoaded = false;
+    STATE.compareRows = [];
+    try { await loadAvailableYears(); await loadYearData(); }
+    catch (err) { console.error(err); setStatus('Load error: ' + err.message, 'err'); }
+  });
+
+  $('#sel-year').addEventListener('change', async (e) => {
+    STATE.year = parseInt(e.target.value, 10);
+    try { await loadYearData(); }
+    catch (err) { console.error(err); setStatus('Load error: ' + err.message, 'err'); }
+  });
+
+  $('#sel-view').addEventListener('change', e => {
+    STATE.view = e.target.value;
+    ensureSortFieldValidForView();
+    clearAggCache();
+    if (STATE.activeView === 'dashboard') scheduleDashboardRender();
+    else render();
+  });
+
+  $('#sel-period').addEventListener('change', e => {
+    STATE.period = e.target.value;
+    if (STATE.sortField === 'monthSales' || STATE.sortField === 'monthSkus') {
+      STATE.sortField = 'name';
+      STATE.sortDir = 'asc';
+      STATE.sortMonthIdx = null;
+    }
+    clearAggCache();
+    if (STATE.activeView === 'dashboard') scheduleDashboardRender();
+    else render();
+  });
+
+  $('#sel-group').addEventListener('change', async (e) => {
+    const prev = STATE.groupBy;
+    STATE.groupBy = e.target.value;
+
+    syncFilterDimensionToGroupBy();
+    ensureSecondaryDiffersFromPrimary();
+    ensureTertiaryDiffersFromOthers();
+
+    const wasPersonnel = prev === 'My Personnel';
+    const nowPersonnel = STATE.groupBy === 'My Personnel';
+
+    if (wasPersonnel !== nowPersonnel) {
+      STATE.compareLoaded = false;
+      STATE.compareRows = [];
+      try { await loadAvailableYears(); await loadYearData(); }
+      catch (err) { console.error(err); setStatus('Load error: ' + err.message, 'err'); }
+    } else {
+      clearAggCache();
+      if (STATE.activeView === 'dashboard') {
+        rebuildFilterList();
+        rebuildSecondaryList();
+        rebuildTertiaryList();
+        scheduleDashboardRender();
+      } else {
+        render();
+      }
+    }
+  });
+
+  // ===== 🆕 EXCLUDE HARDWARE / HW TOGGLE =====
+  $('#btn-exclude-hw').addEventListener('click', () => {
+    STATE.excludeHardware = !STATE.excludeHardware;
+    const btn = $('#btn-exclude-hw');
+    btn.classList.toggle('active', STATE.excludeHardware);
+    btn.title = STATE.excludeHardware
+      ? 'Hardware / HW division is excluded — click to include again'
+      : 'Exclude Hardware / HW division from the table and graph';
+
+    clearAggCache();
+    updateFilterDimLabel();
+    rebuildFilterList();
+    if (STATE.activeView === 'dashboard') scheduleDashboardRender();
+    else render();
+  });
+
+  // ===== GROUP CLIENTS TOGGLE =====
+  $('#btn-group-clients').addEventListener('click', () => {
+    STATE.groupClients = !STATE.groupClients;
+    const btn = $('#btn-group-clients');
+    btn.classList.toggle('active', STATE.groupClients);
+    btn.title = STATE.groupClients
+      ? 'Client keyword grouping is ON — click to show raw client names'
+      : 'Client keyword grouping is OFF — click to fold clients into groups';
+
+    clearAggCache();
+    updateFilterDimLabel();
+    rebuildFilterList();
+    if (STATE.activeView === 'dashboard') scheduleDashboardRender();
+    else render();
+  });
+
+  // ===== SEARCH =====
+  $('#search-input').addEventListener('input', (e) => {
+    STATE.searchQuery = e.target.value || '';
+    $('#search-clear').hidden = !STATE.searchQuery;
+    if (STATE.activeView === 'performance') render();
+  });
+  $('#search-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      STATE.searchQuery = '';
+      e.target.value = '';
+      $('#search-clear').hidden = true;
+      if (STATE.activeView === 'performance') render();
+    }
+  });
+  $('#search-clear').addEventListener('click', () => {
+    STATE.searchQuery = '';
+    $('#search-input').value = '';
+    $('#search-clear').hidden = true;
+    if (STATE.activeView === 'performance') render();
+    $('#search-input').focus();
+  });
+
+  $('#btn-export').addEventListener('click', exportCSV);
+
+  $('#chart-tabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-chart]');
+    if (!btn) return;
+    if (STATE.compareMode && btn.dataset.chart !== 'line') {
+      alert('Sa Compare Years mode, Line chart lang ang available.');
+      return;
+    }
+    STATE.chartType = btn.dataset.chart;
+    document.querySelectorAll('#chart-tabs button').forEach(b =>
+      b.classList.toggle('active', b === btn)
+    );
+    renderChart();
+  });
+
+  $('#btn-compare').addEventListener('click', async () => {
+    const turningOn = !STATE.compareMode;
+    STATE.compareMode = turningOn;
+    $('#btn-compare').classList.toggle('active', turningOn);
+
+    if (turningOn) {
+      $('#years-multi').hidden = false;
+      updateYearsTrigger();
+      STATE.chartType = 'line';
+      document.querySelectorAll('#chart-tabs button').forEach(b =>
+        b.classList.toggle('active', b.dataset.chart === 'line')
+      );
+      STATE.seriesBy = 'None';
+      $('#sel-series-dim').value = 'None';
+      $('#series-wrap').hidden = true;
+
+      if (!STATE.compareLoaded) {
+        await loadAllYearsData();
+      } else {
+        rebuildFilterList();
+        scheduleDashboardRender();
+      }
+    } else {
+      $('#years-multi').hidden = true;
+      $('#chart-cmp-progress').hidden = true;
+      rebuildFilterList();
+      scheduleDashboardRender();
+    }
+  });
+
+  $('#years-trigger').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleYearsPanel();
+  });
+  $('#years-panel').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'all') {
+      STATE.compareYears = new Set(STATE.availableYears);
+      renderYearsList(); updateYearsTrigger(); renderChart();
+    } else if (action === 'none') {
+      STATE.compareYears.clear();
+      renderYearsList(); updateYearsTrigger(); renderChart();
+    } else if (action === 'close') {
+      toggleYearsPanel(false);
+    }
+  });
+
+  $('#sel-series-dim').addEventListener('change', (e) => {
+    STATE.seriesBy = e.target.value;
+    clearAggCache();
+    if (STATE.activeView === 'dashboard') scheduleDashboardRender();
+  });
+
+  // ---- PRIMARY filter UI ----
+  $('#filter-trigger').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleFilterPanel();
+  });
+  $('#filter-search').addEventListener('input', (e) => {
+    STATE.filterSearch = e.target.value || '';
+    renderFilterList();
+  });
+  $('#filter-panel').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'all') {
+      STATE.availableFilterItems.forEach(c => STATE.selectedFilters.add(c.name));
+      renderFilterList(); updateFilterTrigger();
+      if (STATE.secondaryDimension) rebuildSecondaryList();
+      if (STATE.tertiaryDimension) rebuildTertiaryList();
+      clearAggCache(); scheduleDashboardRender();
+    } else if (action === 'none') {
+      STATE.selectedFilters.clear();
+      renderFilterList(); updateFilterTrigger();
+      if (STATE.secondaryDimension) rebuildSecondaryList();
+      if (STATE.tertiaryDimension) rebuildTertiaryList();
+      clearAggCache(); scheduleDashboardRender();
+    } else if (action === 'close') {
+      toggleFilterPanel(false);
+    }
+  });
+
+  // ---- SECONDARY filter UI ----
+  $('#btn-add-filter2').addEventListener('click', () => {
+    const defaultDim = pickDifferentDimension([STATE.filterDimension]);
+    showSecondaryFilter(defaultDim);
+  });
+  $('#btn-remove-filter2').addEventListener('click', hideSecondaryFilter);
+
+  $('#sel-filter2-dim').addEventListener('change', (e) => {
+    STATE.secondaryDimension = e.target.value;
+    STATE.secondarySelectedFilters.clear();
+    rebuildSecondaryList();
+    ensureTertiaryDiffersFromOthers();
+    clearAggCache();
+    scheduleDashboardRender();
+  });
+
+  $('#filter2-trigger').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleSecondaryPanel();
+  });
+  $('#filter2-search').addEventListener('input', (e) => {
+    STATE.secondarySearch = e.target.value || '';
+    renderSecondaryList();
+  });
+  $('#filter2-panel').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'all') {
+      STATE.secondaryAvailableItems.forEach(c => STATE.secondarySelectedFilters.add(c.name));
+      renderSecondaryList(); updateSecondaryTrigger();
+      if (STATE.tertiaryDimension) rebuildTertiaryList();
+      clearAggCache(); scheduleDashboardRender();
+    } else if (action === 'none') {
+      STATE.secondarySelectedFilters.clear();
+      renderSecondaryList(); updateSecondaryTrigger();
+      if (STATE.tertiaryDimension) rebuildTertiaryList();
+      clearAggCache(); scheduleDashboardRender();
+    } else if (action === 'close') {
+      toggleSecondaryPanel(false);
+    }
+  });
+
+  // ---- TERTIARY filter UI ----
+  $('#btn-add-filter3').addEventListener('click', () => {
+    const defaultDim = pickDifferentDimension([STATE.filterDimension, STATE.secondaryDimension]);
+    showTertiaryFilter(defaultDim);
+  });
+  $('#btn-remove-filter3').addEventListener('click', hideTertiaryFilter);
+
+  $('#sel-filter3-dim').addEventListener('change', (e) => {
+    STATE.tertiaryDimension = e.target.value;
+    STATE.tertiarySelectedFilters.clear();
+    rebuildTertiaryList();
+    clearAggCache();
+    scheduleDashboardRender();
+  });
+
+  $('#filter3-trigger').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleTertiaryPanel();
+  });
+  $('#filter3-search').addEventListener('input', (e) => {
+    STATE.tertiarySearch = e.target.value || '';
+    renderTertiaryList();
+  });
+  $('#filter3-panel').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'all') {
+      STATE.tertiaryAvailableItems.forEach(c => STATE.tertiarySelectedFilters.add(c.name));
+      renderTertiaryList(); updateTertiaryTrigger();
+      clearAggCache(); scheduleDashboardRender();
+    } else if (action === 'none') {
+      STATE.tertiarySelectedFilters.clear();
+      renderTertiaryList(); updateTertiaryTrigger();
+      clearAggCache(); scheduleDashboardRender();
+    } else if (action === 'close') {
+      toggleTertiaryPanel(false);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!$('#filter-panel').hidden && !$('#filter-multi').contains(e.target)) toggleFilterPanel(false);
+    if (!$('#filter2-panel').hidden && !$('#filter2-multi').contains(e.target)) toggleSecondaryPanel(false);
+    if (!$('#filter3-panel').hidden && !$('#filter3-multi').contains(e.target)) toggleTertiaryPanel(false);
+    if (!$('#years-panel').hidden && !$('#years-multi').contains(e.target)) toggleYearsPanel(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!$('#filter-panel').hidden) toggleFilterPanel(false);
+      if (!$('#filter2-panel').hidden) toggleSecondaryPanel(false);
+      if (!$('#filter3-panel').hidden) toggleTertiaryPanel(false);
+      if (!$('#years-panel').hidden) toggleYearsPanel(false);
+    }
+  });
+
+  // ---- DRILL-DOWN ----
+  $('#drill-close').addEventListener('click', closeDrill);
+  $('#drill-export').addEventListener('click', exportDrillCSV);
+  $('#drill-back').addEventListener('click', () => {
+    STATE.drillStack.pop();
+    if (!STATE.drillStack.length) { closeDrill(); return; }
+    renderDrill();
+  });
+  $('#drill-group').addEventListener('change', (e) => {
+    STATE.drillGroupBy = e.target.value;
+    renderDrill();
+  });
+  $('#drill-period').addEventListener('change', (e) => {
+    STATE.drillPeriod = e.target.value;
+    renderDrill();
+  });
+  $('#drill-view').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-mode]');
+    if (!btn) return;
+    STATE.drillView = btn.dataset.mode;
+    document.querySelectorAll('#drill-view button').forEach(b =>
+      b.classList.toggle('active', b === btn)
+    );
+    renderDrill();
+  });
+  $('#drill-overlay').addEventListener('click', (e) => {
+    if (e.target === $('#drill-overlay')) closeDrill();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!$('#drill-overlay').hidden) closeDrill();
+    }
+  });
+
+  document.querySelectorAll('#drill-view button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === STATE.drillView);
+  });
+
+  window.addEventListener('resize', () => {
+    if (STATE.chart) STATE.chart.resize();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
