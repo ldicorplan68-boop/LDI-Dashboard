@@ -1375,7 +1375,7 @@
 
 <script>
 // ============================================================
-// UNIFIED SALES DASHBOARD — 3-level cascade filters + HW exclusion
+// UNIFIED SALES DASHBOARD — Company/Area access + 3-level filters + HW exclusion
 // ============================================================
 
 const DEFAULT_CLIENT_GROUPS = [
@@ -1394,6 +1394,12 @@ const STATE = {
   teamSrCodes: [],
   srCodeToPersonnel: new Map(),
   viewScope: 'me',
+
+  // 🆕 Company / Area based access control
+  myCompanies: [],
+  myAreas: [],
+  accessLoaded: false,
+
   allRows: [],
   availableYears: [],
   year: null,
@@ -1731,6 +1737,55 @@ async function loadClientGroupsFromDB() {
   } finally {
     STATE.clientGroupsLoaded = true;
   }
+}
+
+// ============================================================
+// 🆕 COMPANY / AREA ACCESS CONTROL
+// ============================================================
+async function loadUserCompanyAccess() {
+  if (!STATE.client || !STATE.userId) return;
+  try {
+    const { data, error } = await STATE.client
+      .schema('sales')
+      .from('user_company')
+      .select('assigned_companies, assigned_areas')
+      .eq('user_id', STATE.userId)
+      .maybeSingle();
+    if (error) throw error;
+
+    STATE.myCompanies = (data?.assigned_companies || [])
+      .map(s => String(s).trim()).filter(Boolean);
+    STATE.myAreas = (data?.assigned_areas || [])
+      .map(s => String(s).trim()).filter(Boolean);
+    STATE.accessLoaded = true;
+
+    console.log('[access] companies:', STATE.myCompanies, '| areas:', STATE.myAreas);
+  } catch (err) {
+    console.warn('[access] user_company load failed:', err);
+    STATE.myCompanies = [];
+    STATE.myAreas = [];
+    STATE.accessLoaded = true;
+  }
+}
+
+function hasCompanyAccess() {
+  return STATE.myCompanies.length > 0 || STATE.myAreas.length > 0;
+}
+
+// Central access filter — ilalapat sa lahat ng sales query
+function applyAccessFilter(q) {
+  if (STATE.isAdmin) return q;                 // admin → bukas lahat
+
+  if (hasCompanyAccess()) {
+    if (STATE.myCompanies.length) q = q.in('company', STATE.myCompanies);
+    if (STATE.myAreas.length)     q = q.in('area',    STATE.myAreas);
+    return q;
+  }
+
+  // fallback: lumang SR-code behavior
+  const codes = getActiveSrCodes();
+  if (codes && codes.length) q = q.in('sr_code', codes);
+  return q;
 }
 
 // ============================================================
@@ -2218,6 +2273,9 @@ async function init() {
     STATE.user = await loadCurrentUser(STATE.userId);
     STATE.isAdmin = roleIsAdmin(STATE.user.role);
 
+    // 🆕 Load company/area access right after we know who we are
+    await loadUserCompanyAccess();
+
     STATE.mySrCodes = Array.isArray(STATE.user.assigned_sales_rep_codes)
       ? STATE.user.assigned_sales_rep_codes.map(String).map(s => s.trim()).filter(Boolean)
       : [];
@@ -2236,7 +2294,8 @@ async function init() {
 
     STATE.srCodeToPersonnel = buildSrCodeToPersonnel();
 
-    if (!STATE.isAdmin && STATE.myPersonnel.length > 0) {
+    // Scope selector only makes sense in the SR-code world.
+    if (!STATE.isAdmin && !hasCompanyAccess() && STATE.myPersonnel.length > 0) {
       $('#field-scope').hidden = false;
       const selGroup = $('#sel-group');
       const opt = el('option', { value: 'My Personnel', textContent: '👥 My Personnel' });
@@ -2248,6 +2307,11 @@ async function init() {
     const who = STATE.user.full_name || STATE.user.username || `User #${STATE.user.id}`;
     if (STATE.isAdmin) {
       setHeroSub(`${who} · ${STATE.user.role} (full access)`);
+    } else if (hasCompanyAccess()) {
+      const bits = [who];
+      if (STATE.myCompanies.length) bits.push(`🏢 ${STATE.myCompanies.join(', ')}`);
+      if (STATE.myAreas.length)     bits.push(`📍 ${STATE.myAreas.join(', ')}`);
+      setHeroSub(bits.join(' · '));
     } else {
       const bits = [who];
       bits.push(STATE.mySrCodes.length
@@ -2293,8 +2357,9 @@ async function init() {
 // ============================================================
 async function loadAvailableYears() {
   const activeCodes = getActiveSrCodes();
+  const noAccess = !STATE.isAdmin && !hasCompanyAccess() && (!activeCodes || !activeCodes.length);
 
-  if (!STATE.isAdmin && (!activeCodes || !activeCodes.length)) {
+  if (noAccess) {
     STATE.availableYears = [];
     STATE.year = new Date().getFullYear();
     const sel = $('#sel-year');
@@ -2306,19 +2371,14 @@ async function loadAvailableYears() {
   console.log('[dashboard] loadAvailableYears: fetching min/max year…');
   const t0 = performance.now();
 
-  const minQ = STATE.client.from('sales')
-    .select('year')
-    .order('year', { ascending: true })
-    .limit(1);
-  const maxQ = STATE.client.from('sales')
-    .select('year')
-    .order('year', { ascending: false })
-    .limit(1);
+  const minQ = applyAccessFilter(
+    STATE.client.from('sales').select('year').order('year', { ascending: true }).limit(1)
+  );
+  const maxQ = applyAccessFilter(
+    STATE.client.from('sales').select('year').order('year', { ascending: false }).limit(1)
+  );
 
-  const [minRes, maxRes] = await Promise.all([
-    activeCodes?.length ? minQ.in('sr_code', activeCodes) : minQ,
-    activeCodes?.length ? maxQ.in('sr_code', activeCodes) : maxQ,
-  ]);
+  const [minRes, maxRes] = await Promise.all([minQ, maxQ]);
 
   if (minRes.error) throw minRes.error;
   if (maxRes.error) throw maxRes.error;
@@ -2362,14 +2422,15 @@ async function loadYearData() {
   clearAggCache();
 
   const activeCodes = getActiveSrCodes();
+  const noAccess = !STATE.isAdmin && !hasCompanyAccess() && (!activeCodes || !activeCodes.length);
 
-  if (!STATE.isAdmin && (!activeCodes || !activeCodes.length)) {
+  if (noAccess) {
     STATE.allRows = [];
     $('#loader').hidden = true;
     $('#chart-loader').hidden = true;
     const msg = STATE.groupBy === 'My Personnel' || STATE.viewScope === 'team'
       ? 'Wala pang SR code na naka-assign sa kahit sinong personnel mo.'
-      : 'Walang SR code na naka-assign sa account mo. Kontakin ang administrator.';
+      : 'Walang company/area o SR code na naka-assign sa account mo. Kontakin ang administrator.';
     $('#empty').hidden = false;
     $('#empty').textContent = msg;
     $('#chart-empty').hidden = false;
@@ -2380,11 +2441,11 @@ async function loadYearData() {
   const t0 = performance.now();
 
   try {
-    let countQ = STATE.client
-      .from('sales')
-      .select('id', { count: 'exact', head: true })
-      .eq('year', STATE.year);
-    if (activeCodes?.length) countQ = countQ.in('sr_code', activeCodes);
+    const countQ = applyAccessFilter(
+      STATE.client.from('sales')
+        .select('id', { count: 'exact', head: true })
+        .eq('year', STATE.year)
+    );
     const countRes = await countQ;
     if (countRes.error) throw countRes.error;
     const total = countRes.count || 0;
@@ -2407,8 +2468,7 @@ async function loadYearData() {
         .eq('year', STATE.year)
         .order('id', { ascending: true })
         .range(from, to);
-      if (activeCodes?.length) q = q.in('sr_code', activeCodes);
-      return q;
+      return applyAccessFilter(q);
     };
 
     const rows = await fetchAllRowsPaged(makeQuery, total, setLoadProgress);
@@ -2440,8 +2500,6 @@ async function loadAllYearsData() {
   if (STATE.compareLoaded || STATE.compareLoading) return;
   STATE.compareLoading = true;
 
-  const activeCodes = getActiveSrCodes();
-
   $('#chart-loader').hidden = true;
   $('#chart-wrap').hidden = true;
   $('#chart-cmp-progress').hidden = false;
@@ -2449,10 +2507,9 @@ async function loadAllYearsData() {
   const t0 = performance.now();
 
   try {
-    let countQ = STATE.client
-      .from('sales')
-      .select('id', { count: 'exact', head: true });
-    if (activeCodes?.length) countQ = countQ.in('sr_code', activeCodes);
+    const countQ = applyAccessFilter(
+      STATE.client.from('sales').select('id', { count: 'exact', head: true })
+    );
     const countRes = await countQ;
     if (countRes.error) throw countRes.error;
     const total = countRes.count || 0;
@@ -2463,8 +2520,7 @@ async function loadAllYearsData() {
         .select('id, date, year, company, division, area, area2, sr_code, client, items, sku, sales')
         .order('id', { ascending: true })
         .range(from, to);
-      if (activeCodes?.length) q = q.in('sr_code', activeCodes);
-      return q;
+      return applyAccessFilter(q);
     };
 
     const rows = await fetchAllRowsPaged(makeQuery, total, setCompareProgress);
@@ -4036,7 +4092,9 @@ function exportCSV() {
   const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const scope = STATE.isAdmin ? 'admin' : (STATE.viewScope === 'team' ? 'team' : 'me');
+  const scope = STATE.isAdmin
+    ? 'admin'
+    : (hasCompanyAccess() ? 'company' : (STATE.viewScope === 'team' ? 'team' : 'me'));
   const grouped = (STATE.groupBy === 'Client' && STATE.groupClients) ? '_grouped' : '';
   const hw = STATE.excludeHardware ? '_noHW' : '';
   a.href = url;
