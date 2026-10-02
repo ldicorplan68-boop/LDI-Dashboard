@@ -5,10 +5,10 @@
 // ============================================================================
 
 const HOSTS = [
-// 'http://192.168.0.5:8000',                                         // 1. local
- 'https://trainers-police-rome-amplifier.trycloudflare.com',      // 2. cloudflare (fallback)
- 'https://scam-retouch-hull.ngrok-free.dev'                          // 3. ngrok 
-'http://127.0.0.1:54321'
+//'http://192.168.0.5:8000',                                         // 1. local
+'https://trainers-police-rome-amplifier.trycloudflare.com',      // 2. cloudflare (fallback)
+'https://scam-retouch-hull.ngrok-free.dev'                          // 3. ngrok 
+//'http://127.0.0.1:54321'
 ];
 
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
