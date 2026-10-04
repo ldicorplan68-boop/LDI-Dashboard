@@ -2669,7 +2669,7 @@
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), PING_TIMEOUT);
       try {
-        const res = await fetch(SUPABASE_URL + '/rest/v1/', {
+        const res = await fetch(SUPABASE_URL + '/auth/v1/health', {
           method: 'GET',
           headers: {
             apikey: SUPABASE_ANON_KEY,
@@ -2679,7 +2679,7 @@
           signal: ctrl.signal, cache: 'no-store'
         });
         clearTimeout(timer);
-        return res.status < 500;
+        return res.ok;
       } catch (e) { clearTimeout(timer); return false; }
     }
     async function check(manual) {
