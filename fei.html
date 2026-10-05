@@ -32,6 +32,12 @@
       --topbar-h: 68px;
       --content-max: 1440px;
       --inner-max: 1180px;
+
+      /* ⬇ Dynamic asset URLs — populated by JS from connect.js HOSTNAME.
+         Fallbacks below keep the page from breaking before JS runs. */
+      --bg-image: none;
+      --sidebar-bg-image: none;
+      --topbar-bg-image: none;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -49,7 +55,8 @@
       font-size: clamp(13px, .35vw + 12px, 15px);
       color: var(--text);
       background: var(--royal-deep);
-      background-image: linear-gradient(180deg, rgba(27,27,179,.42) 0%, rgba(13,13,122,.72) 100%), url(https://municipal-rebates-prayer-shoes.trycloudflare.com/storage/v1/object/public/image/background.png');
+      /* ⬇ Host comes from connect.js via --bg-image CSS variable */
+      background-image: linear-gradient(180deg, rgba(27,27,179,.42) 0%, rgba(13,13,122,.72) 100%), var(--bg-image);
       background-size: cover, cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -156,7 +163,8 @@
 
     .topbar {
       position: sticky; top: 0; z-index: 50;
-      background-image: linear-gradient(90deg, rgba(13,13,122,.88) 0%, rgba(27,27,179,.78) 45%, rgba(13,13,122,.88) 100%), url('https://municipal-rebates-prayer-shoes.trycloudflare.com/storage/v1/object/public/image/ldi1.png');
+      /* ⬇ Host comes from connect.js via --topbar-bg-image CSS variable */
+      background-image: linear-gradient(90deg, rgba(13,13,122,.88) 0%, rgba(27,27,179,.78) 45%, rgba(13,13,122,.88) 100%), var(--topbar-bg-image);
       background-size: cover; background-position: center;
       border-bottom: 3px solid var(--amber);
       box-shadow: 0 4px 18px rgba(13,13,122,.45);
@@ -218,7 +226,8 @@
       width: var(--sidebar-w);
       flex: 0 0 var(--sidebar-w);
       background: var(--royal-deep);
-      background-image: linear-gradient(180deg, rgba(27,27,179,.55) 0%, rgba(13,13,122,.8) 100%), url('https://municipal-rebates-prayer-shoes.trycloudflare.com/storage/v1/object/public/image/background.png');
+      /* ⬇ Host comes from connect.js via --sidebar-bg-image CSS variable */
+      background-image: linear-gradient(180deg, rgba(27,27,179,.55) 0%, rgba(13,13,122,.8) 100%), var(--sidebar-bg-image);
       background-size: cover; background-position: center; background-repeat: no-repeat;
       border-right: 3px solid var(--amber);
       box-shadow: 4px 0 18px rgba(13,13,122,.25);
@@ -1781,8 +1790,8 @@
 
   <header class="topbar">
     <div class="brand">
-      <img src="https://municipal-rebates-prayer-shoes.trycloudflare.com/storage/v1/object/public/image/logo.gif"
-           alt="LDI" class="nav-logo" id="nav-logo">
+      <!-- ⬇ src is set dynamically by JS using HOSTNAME from connect.js -->
+      <img src="" alt="LDI" class="nav-logo" id="nav-logo">
       <div><strong id="topbar-title">ART</strong><small>Lakpue Drug Inc</small></div>
     </div>
     <div class="topbar-right">
@@ -2190,6 +2199,69 @@
 </div>
 
 <script src="connect.js"></script>
+<script>
+/* ============================================================================
+   APPLY HOST-BASED ASSETS FROM connect.js
+   ----------------------------------------------------------------------------
+   Pulls the current host (from connect.js) and injects the correct Cloudflare /
+   LAN URLs into the CSS variables used by body / topbar / sidebar, plus the
+   logo <img>. Reacts to `host-ready` events so it stays in sync when
+   connect.js fails over between hosts.
+   ============================================================================ */
+(function(){
+  'use strict';
+
+  // Paths are relative to the storage bucket root. Adjust if your layout differs.
+  const ASSET_PATHS = {
+    bg:      'image/background.png',
+    topbar:  'image/ldi1.png',
+    logo:    'image/logo.gif'
+  };
+
+  function buildAssetUrl(host, path) {
+    if (!host) return '';
+    const base = String(host).replace(/\/+$/, '');
+    return base + '/storage/v1/object/public/' + path.replace(/^\/+/, '');
+  }
+
+  function applyHostAssets(host) {
+    if (!host) return;
+    const root = document.documentElement;
+
+    const bgUrl     = buildAssetUrl(host, ASSET_PATHS.bg);
+    const topbarUrl = buildAssetUrl(host, ASSET_PATHS.topbar);
+    const logoUrl   = buildAssetUrl(host, ASSET_PATHS.logo);
+
+    // CSS variables — used by body, .topbar, and .sidebar
+    root.style.setProperty('--bg-image',         'url("' + bgUrl + '")');
+    root.style.setProperty('--sidebar-bg-image', 'url("' + bgUrl + '")');
+    root.style.setProperty('--topbar-bg-image',  'url("' + topbarUrl + '")');
+
+    // Logo <img>
+    const logo = document.getElementById('nav-logo');
+    if (logo) logo.src = logoUrl;
+  }
+
+  // Expose for debugging / external callers
+  window.applyHostAssets = applyHostAssets;
+
+  // 1) Immediate: connect.js already sets window.HOSTNAME synchronously
+  //    (defaultHost) before this script runs.
+  if (window.HOSTNAME) applyHostAssets(window.HOSTNAME);
+
+  // 2) Reactive: whenever connect.js finishes boot or fails over.
+  window.addEventListener('host-ready', function(e){
+    const host = e && e.detail && e.detail.host;
+    if (host) applyHostAssets(host);
+  });
+
+  // 3) Safety net: if HOSTNAME wasn't ready yet, wait for the readyHost promise.
+  if (!window.HOSTNAME && window.readyHost && typeof window.readyHost.then === 'function') {
+    window.readyHost.then(function(host){ if (host) applyHostAssets(host); });
+  }
+})();
+</script>
+
 <script>
 /* ============================================================================
    INLINE SUPABASE CLIENT + AUTH GUARD
@@ -5169,7 +5241,9 @@
       if (storageLimit === null) storageLimit = await fetchFolderLimit();
       if (storageLimit === null) { storageUsed = 0; return; }
       try { storageUsed = await computeFolderUsage(); } catch (err) { storageUsed = 0; }
-    } finally { storageLoading = false; }
+    } finally {
+      storageLoading = false;
+    }
   }
 
   async function checkUploadFits(entries) {
