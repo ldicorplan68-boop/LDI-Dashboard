@@ -21,6 +21,8 @@
       --r-sm: 8px; --r-md: 12px; --r-lg: 18px;
       --fast: 150ms ease;
       --content-max: 1680px;
+      --bg-image: none;
+      --hero-bg-image: none;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     [hidden] { display: none !important; }
@@ -28,7 +30,7 @@
       font-family: 'DM Sans', system-ui, sans-serif; font-size: 15px;
       color: var(--text); background: var(--royal-deep);
       background-image: linear-gradient(180deg, rgba(27,27,179,.42) 0%, rgba(13,13,122,.72) 100%),
-        url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/background.png');
+        var(--bg-image);
       background-size: cover, cover; background-attachment: fixed, fixed;
       min-height: 100dvh;
     }
@@ -43,7 +45,7 @@
       padding: clamp(18px, 2.4vh, 26px) clamp(18px, 2.2vw, 32px);
       border-radius: var(--r-lg); margin-bottom: 16px;
       background-image: linear-gradient(115deg, rgba(13,13,122,.95) 0%, rgba(27,27,179,.86) 48%, rgba(227,30,36,.60) 100%),
-        url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/ldi1.png');
+        var(--hero-bg-image);
       background-size: cover; background-position: center;
       border-bottom: 3px solid var(--amber);
       border-left: 3px solid var(--amber);
@@ -391,9 +393,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ============================================================
-       MODALS (Client Groups + Targets + Picker)
-       ============================================================ */
     .drill-overlay {
       position: fixed; inset: 0;
       background: rgba(13,13,122,.55);
@@ -493,20 +492,8 @@
       background: #fff; color: var(--red); border-color: var(--red);
     }
     .drill-bar .drill-back.drill-danger:hover { background: #fef3f3; }
-
-    .drill-bar .mode-pill {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; border-radius: 999px;
-      background: #eef2ff; border: 1px solid #dbe4ff;
-      color: var(--royal); font-size: 11.5px; font-weight: 700;
-      letter-spacing: .04em; text-transform: none;
-    }
-    .drill-bar .mode-pill.raw {
-      background: #fff7ed; border-color: #fed7aa; color: #9a3412;
-    }
-    .drill-bar .mode-pill .mode-pill-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: currentColor;
+    .drill-bar .drill-back.toggle-active {
+      background: var(--royal); color: #fff; border-color: var(--royal);
     }
 
     .drill-body {
@@ -564,26 +551,26 @@
     .drill-body .drill-empty strong { color: var(--text); }
 
     .drill-hint {
-      padding: 10px 22px;
+      padding: 7px 18px;
       background: var(--surface-2);
       border-top: 1px solid var(--border);
-      font-size: 11.5px; color: var(--text-2);
-      display: flex; align-items: center; gap: 8px;
+      font-size: 10.5px; color: var(--muted);
+      line-height: 1.5;
+      display: flex; align-items: center; gap: 6px;
       flex-wrap: wrap;
     }
-    .drill-hint strong { color: var(--royal); }
+    .drill-hint strong { color: var(--text-2); font-weight: 700; }
     .drill-hint code {
       font-family: ui-monospace, monospace;
       background: var(--surface);
-      padding: 1px 6px;
-      border-radius: 4px;
+      padding: 0px 5px;
+      border-radius: 3px;
       border: 1px solid var(--border);
-      font-size: 11px;
+      font-size: 10px;
     }
 
-    /* Target editor inputs */
     .target-input {
-      width: 110px;
+      width: 130px;
       padding: 5px 8px;
       border: 1px solid var(--border-strong);
       border-radius: 6px;
@@ -597,6 +584,10 @@
       outline: none;
       border-color: var(--royal);
       box-shadow: 0 0 0 3px rgba(27,27,179,.14);
+    }
+    .target-input.dirty {
+      border-color: var(--amber);
+      background: #fffbef;
     }
     .coverage-pill {
       display: inline-block;
@@ -612,7 +603,6 @@
     .coverage-pill.partial  { background: #fef3c7; color: #92400e; }
     .coverage-pill.empty    { background: #f1f5f9; color: var(--muted); }
 
-    /* Group manager */
     .group-card {
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -652,7 +642,6 @@
       display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
     }
 
-    /* Client picker inside groups modal */
     .picker-list { padding: 6px 8px; }
     .picker-item {
       display: flex; align-items: center; gap: 8px;
@@ -670,30 +659,206 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
 
+    .csr-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+    .csr-table th {
+      padding: 9px 12px;
+      background: linear-gradient(180deg, #eef2fb 0%, #e6ecf8 100%);
+      border-bottom: 2px solid var(--border-strong);
+      position: sticky; top: 0; z-index: 2;
+      text-align: left; text-transform: uppercase;
+      font-size: 10px; letter-spacing: .06em; color: var(--text-2);
+    }
+    .csr-table td { padding: 6px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .csr-table tr:hover td { background: #f7f9ff; }
+    .csr-check { width: 15px; height: 15px; accent-color: var(--royal); cursor: pointer; }
+
+    .assignee-pill {
+      display: inline-block;
+      padding: 2px 9px;
+      margin: 1px 3px 1px 0;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #eef2ff;
+      color: var(--royal);
+      white-space: nowrap;
+      border: 1px solid #dbe4ff;
+    }
+    .assignee-pill.me {
+      background: #fff8e6;
+      color: #8a5a00;
+      border-color: #f5d68a;
+    }
+    .assignee-pill.was {
+      background: #f3f4f6;
+      color: var(--muted);
+      border-color: #e5e7eb;
+      text-decoration: line-through;
+    }
+    .assignee-none {
+      color: var(--muted);
+      font-style: italic;
+      font-size: 11.5px;
+    }
+    .assignee-was {
+      margin-top: 3px;
+      font-size: 10.5px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .assignee-was .lbl {
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      font-weight: 700;
+      font-size: 9.5px;
+    }
+    .csr-dirty-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--amber);
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .csr-loader-spinner {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 2px solid var(--border);
+      border-top-color: var(--royal);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      vertical-align: -2px;
+      margin-right: 6px;
+    }
+
     @media (max-width: 900px) {
       :root { --content-max: 100%; }
-      .main-col { padding: 20px 16px 32px; }
-      .hero { padding: 16px; }
+      input, select, textarea,
+      .h-search, .cell-input, .target-input,
+      .group-field input,
+      #picker-search, #clientsr-search {
+        font-size: 16px !important;
+      }
+      .main-col { padding: 16px 12px 32px; }
+      .hero { padding: 14px 16px; border-radius: 14px; margin-bottom: 12px; }
+      .hero-title { font-size: 18px; letter-spacing: -.4px; }
+      .hero-sub { font-size: 12px; margin-top: 4px; }
+      .hero-eyebrow { font-size: 10.5px; letter-spacing: 1.4px; margin-bottom: 4px; }
+      .hero-top { gap: 10px; margin-bottom: 12px; }
+      .hero-text { flex: 1 1 200px; }
+      .status-pill { padding: 5px 10px; font-size: 10.5px; }
+      .status-pill .dot { width: 6px; height: 6px; }
+      .hero-section { padding: 10px 0; }
+      .hero-section-label { font-size: 9.5px; letter-spacing: 1px; margin-bottom: 8px; }
+      .hero-section-label .badge-num { width: 18px; height: 18px; font-size: 10px; }
       .field-row { gap: 8px; }
       .h-field { flex: 1 1 100%; }
-      .h-field input[type="file"] { width: 100%; min-width: 0; }
+      .h-field input[type="file"] { width: 100%; min-width: 0; font-size: 12px; padding: 6px 10px; }
+      .h-field input[type="file"]::file-selector-button { font-size: 11.5px; padding: 4px 9px; }
+      .h-field > span { font-size: 9px; }
+      .h-btn { padding: 7px 12px; font-size: 11.5px; min-height: 34px; }
       .h-spacer { display: none; }
-      .h-btn { flex: 1 1 auto; }
-      th, td { padding: 8px 10px; }
-      .cell-input { min-width: 130px; }
-      .drill-overlay { padding: 8px; }
-      .drill-panel { max-height: calc(100dvh - 16px); border-radius: var(--r-md); }
-      .drill-head { padding: 10px 14px 8px; gap: 8px; border-bottom-width: 2px; }
+      .h-search { flex: 1 1 100%; padding: 8px 12px; }
+      .h-search::placeholder { font-size: 13px; }
+      .h-badge { padding: 5px 10px; font-size: 10.5px; }
+      .h-badge::before { width: 5px; height: 5px; }
+      .h-alert { padding: 8px 12px; font-size: 11.5px; margin-top: 8px; }
+      .h-alert pre { font-size: 10px; padding: 5px 7px; }
+      .h-period-chip { font-size: 10.5px; padding: 3px 8px; }
+      #table-wrap {
+        max-height: calc(100dvh - 260px) !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+      }
+      #grid { min-width: 1050px; }
+      table { font-size: 12px; }
+      thead th { padding: 6px 8px; font-size: 9.5px; letter-spacing: .04em; }
+      tbody td { padding: 5px 8px; }
+      .badge { font-size: 9px; padding: 2px 7px; letter-spacing: .2px; }
+      .cell-input { min-width: 130px; padding: 5px 8px; height: auto; }
+      .cell-status { right: 18px; }
+      .ms-trigger { min-width: 110px; height: auto; padding: 5px 8px; font-size: 12px; }
+      .ms-menu { min-width: 140px; }
+      .ms-menu label { font-size: 12.5px; padding: 6px 9px; }
+      .ms-menu input[type="checkbox"] { width: 15px; height: 15px; }
+      .card { margin-bottom: 12px; border-radius: 10px; }
+      .warn-banner { padding: 10px 14px; font-size: 12px; margin-bottom: 12px; }
+      .loader, .empty { padding: 50px 20px; font-size: 13px; }
+      .drill-overlay { padding: 10px; }
+      .drill-panel { max-height: calc(100dvh - 20px); border-radius: 12px; }
+      .drill-head { padding: 10px 14px 9px; gap: 8px; border-bottom-width: 2px; }
+      .drill-eyebrow { font-size: 9px; letter-spacing: 1.3px; margin-bottom: 2px; }
       .drill-title { font-size: 14px; }
-      .drill-bar { padding: 8px 14px; gap: 6px; }
-      .drill-bar label { font-size: 10.5px; }
-      .drill-bar select { padding: 4px 22px 4px 8px; font-size: 11px; }
-      .drill-bar .drill-back { padding: 4px 9px; font-size: 11px; }
-      .target-input { width: 88px; padding: 4px 6px; font-size: 11px; }
+      .drill-meta { font-size: 10.5px; margin-top: 2px; }
+      .drill-close { width: 28px; height: 28px; font-size: 17px; }
+      .drill-bar { padding: 8px 12px; gap: 6px; }
+      .drill-bar label { font-size: 9.5px; gap: 5px; }
+      .drill-bar select { padding: 4px 22px 4px 8px; font-size: 12px; }
+      .drill-bar .drill-back { padding: 5px 9px; font-size: 11px; min-height: 30px; }
+      .drill-body table { font-size: 11.5px; }
+      .drill-body thead th { padding: 6px 8px; font-size: 9px; letter-spacing: .05em; }
+      .drill-body thead th:first-child { min-width: 150px; max-width: 200px; }
+      .drill-body tbody td { padding: 6px 8px; }
+      .drill-body tbody td:first-child { min-width: 150px; max-width: 200px; }
+      .drill-body tfoot td { padding: 8px; }
+      .drill-body .drill-empty { padding: 40px 18px; font-size: 12px; }
+      .target-input { width: 110px; padding: 5px 6px; font-size: 14px; }
+      .coverage-pill { font-size: 9.5px; padding: 1px 6px; }
+      .drill-hint { padding: 6px 12px; font-size: 9.5px; gap: 5px; line-height: 1.4; }
+      .drill-hint code { font-size: 9px; padding: 0px 4px; }
+      .group-card { padding: 10px 12px; margin-bottom: 10px; border-radius: 10px; }
+      .group-card-head { gap: 8px; margin-bottom: 10px; }
+      .group-field { flex: 1 1 100%; min-width: 0; }
+      .group-field-label { font-size: 9px; }
+      .group-field input { padding: 5px 8px; }
+      .picker-list { padding: 4px 6px; }
+      .picker-item { padding: 7px 10px; font-size: 12.5px; }
+      .picker-item input[type="checkbox"] { width: 16px; height: 16px; }
+      .csr-table { font-size: 11.5px; }
+      .csr-table th { padding: 6px 8px; font-size: 9px; letter-spacing: .05em; }
+      .csr-table td { padding: 5px 8px; }
+      .csr-check { width: 15px; height: 15px; }
+      .assignee-pill { font-size: 10px; padding: 1px 7px; margin: 1px 2px 1px 0; }
+      .assignee-none { font-size: 10.5px; }
+      .assignee-was { font-size: 9.5px; margin-top: 2px; }
+      .assignee-was .lbl { font-size: 8.5px; }
+      .csr-dirty-dot { width: 5px; height: 5px; margin-left: 5px; }
     }
+
     @media (max-width: 480px) {
-      body { font-size: 14px; }
-      .hero-title { font-size: 19px; }
+      .main-col { padding: 12px 10px 26px; }
+      .hero { padding: 12px 12px; }
+      .hero-title { font-size: 16px; }
+      .hero-sub { font-size: 11px; }
+      .drill-head { padding: 9px 12px 8px; }
+      .drill-title { font-size: 13px; }
+      .drill-meta { font-size: 10px; }
+      .drill-bar { padding: 7px 10px; }
+      .drill-bar .drill-back { padding: 4px 8px; font-size: 10.5px; }
+      .drill-bar label { font-size: 9px; }
+      .drill-bar select { font-size: 11.5px; padding: 4px 20px 4px 7px; }
+      .drill-body thead th { font-size: 8.5px; padding: 5px 6px; }
+      .drill-body tbody td { font-size: 11px; padding: 5px 6px; }
+      .drill-body thead th:first-child,
+      .drill-body tbody td:first-child { min-width: 130px; max-width: 170px; }
+      .target-input { width: 95px; font-size: 13px; padding: 3px 5px; }
+      #grid thead th { font-size: 9px; padding: 5px 6px; }
+      #grid tbody td { font-size: 11px; padding: 5px 6px; }
+      .cell-input { min-width: 115px; padding: 4px 7px; }
+      .ms-trigger { min-width: 95px; padding: 4px 7px; }
+      .assignee-pill { font-size: 9.5px; padding: 1px 6px; }
+      .assignee-was { font-size: 9px; }
+      .drill-hint { padding: 5px 10px; font-size: 9px; }
+      .drill-hint code { font-size: 8.5px; }
+      .badge { font-size: 8.5px; padding: 1px 6px; }
+      .h-btn { padding: 6px 10px; font-size: 11px; }
+      .h-alert { padding: 7px 10px; font-size: 11px; }
+      .h-alert pre { font-size: 9.5px; }
+      .loader, .empty { padding: 40px 16px; font-size: 12px; }
     }
   </style>
 </head>
@@ -755,12 +920,15 @@
           <button id="btn-manage-groups" class="h-btn ghost" title="Group clients by keyword or by picking specific names">
             ⚙️ Manage Client Groups <span class="h-badge count" id="groups-count-badge" style="margin-left:6px">—</span>
           </button>
-          <button id="btn-manage-targets" class="h-btn ghost" title="Set annual / monthly sales targets per dimension">
+          <button id="btn-manage-targets" class="h-btn ghost" title="Set sales targets per dimension (per company)">
             🎯 Manage Sales Targets <span class="h-badge count" id="targets-count-badge" style="margin-left:6px">—</span>
+          </button>
+          <button id="btn-manage-client-sr" class="h-btn ghost" title="Assign one or more SR codes to clients (per company)">
+            🔗 Manage Client SR Codes <span class="h-badge count" id="clientsr-count-badge" style="margin-left:6px">—</span>
           </button>
         </div>
         <div style="margin-top:8px; font-size:11.5px; opacity:.75">
-          Client groups control how client names are folded together (e.g. <em>Pacifica Group</em>). Sales targets power the <strong>% Achieved</strong> columns in the dashboard.
+          Client groups control how client names are folded together (e.g. <em>Pacifica Group</em>). Sales targets and Client SR Codes are <strong>per company</strong>.
         </div>
       </div>
     </section>
@@ -816,9 +984,7 @@
       </div>
 
       <div class="drill-hint">
-        <strong>Keywords</strong> match any client whose name <em>contains</em> the text (case-insensitive).
-        <strong>Specific clients</strong> match the exact client name only.
-        If a client matches more than one group, the topmost group wins.
+        <strong>Keywords</strong> = substring match · <strong>Specific clients</strong> = exact match · topmost group wins kapag multiple matches.
       </div>
     </div>
   </div>
@@ -854,13 +1020,18 @@
         <div class="drill-head-text">
           <p class="drill-eyebrow">SALES TARGETS</p>
           <div class="drill-title" id="target-title">Manage Sales Targets</div>
-          <div class="drill-meta" id="target-meta">Targets are saved to the database (sales.sales_targets).</div>
+          <div class="drill-meta" id="target-meta">
+            Isang value lang bawat period type (Monthly / Quarterly / Semi-Annual / Annual) — awtomatikong ia-apply sa lahat ng period.
+          </div>
         </div>
         <button class="drill-close" id="target-close" aria-label="Close">×</button>
       </div>
 
       <div class="drill-bar">
         <label>Year <select id="target-year"></select></label>
+        <label id="target-company-wrap">Company
+          <select id="target-company" title="Per-company ang Client/SR/Item/Area targets"></select>
+        </label>
         <label>Dimension
           <select id="target-dim">
             <option value="Client">Client</option>
@@ -870,14 +1041,6 @@
             <option value="Area2">Area2</option>
             <option value="Company">Company</option>
             <option value="Division">Division</option>
-          </select>
-        </label>
-        <label>Period
-          <select id="target-period-type">
-            <option value="Monthly">Monthly</option>
-            <option value="Quarterly">Quarterly</option>
-            <option value="Semi-Annual">Semi-Annual</option>
-            <option value="Annual">Annual</option>
           </select>
         </label>
         <label id="target-group-mode-wrap" hidden
@@ -897,18 +1060,97 @@
       </div>
 
       <div class="drill-hint">
-        Fill in a value per period. <code>Enter</code> jumps to the next field. Blank = no target for that period.
-        The <strong>Set</strong> column shows how many periods have a target (e.g. <code>3/12</code>).
-        <span id="target-mode-hint">Client targets follow the <strong>Client Groups</strong> — enabling <em>Group Clients</em> in the dashboard will use the group labels.</span>
+        <code>Enter</code> = next field · blank = walang target ·
+        <strong>Isang value lang bawat period type</strong> (Monthly / Quarterly / Semi-Annual / Annual) ·
+        <span id="target-mode-hint">Client targets follow <strong>Client Groups</strong>.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CLIENT × SR CODES MODAL ========== -->
+  <div class="drill-overlay" id="clientsr-overlay" hidden>
+    <div class="drill-panel" style="max-width:1280px" role="dialog" aria-modal="true">
+      <div class="drill-head">
+        <div class="drill-head-text">
+          <p class="drill-eyebrow">CLIENT · SR CODES</p>
+          <div class="drill-title" id="clientsr-title">Assign SR Codes to Clients</div>
+          <div class="drill-meta" id="clientsr-meta">
+            Per-company ang SR codes. Pumili ng company bago mag-edit.
+          </div>
+        </div>
+        <button class="drill-close" id="clientsr-close" aria-label="Close">×</button>
+      </div>
+
+      <div class="drill-bar">
+        <label>Company
+          <select id="clientsr-company" title="Piliin ang company — per company ang SR codes"></select>
+        </label>
+        <input type="text" id="clientsr-search" placeholder="Search clients…"
+               style="flex:1 1 220px;height:32px;padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--r-sm);font:inherit;font-size:12.5px">
+        <button class="drill-back" id="clientsr-bulk" title="Bulk assign SR codes to checked clients">📋 Bulk assign</button>
+        <button class="drill-back drill-danger" id="clientsr-clear-sel" title="Clear SR codes on checked clients">🧹 Clear checked</button>
+        <button class="drill-back drill-save" id="clientsr-save" style="margin-left:auto">💾 Save all</button>
+      </div>
+
+      <div class="drill-body" id="clientsr-body">
+        <div class="drill-empty">Loading…</div>
+      </div>
+
+      <div class="drill-hint">
+        <strong>Per-company</strong> ang SR codes · <strong>Assigned To</strong> = sinong may hawak ·
+        <em>was</em> = dating naka-assign · non-admin = sa <strong>assigned companies</strong> lang.
       </div>
     </div>
   </div>
 
 <script>
+/* ============================================================================
+   APPLY HOST-BASED ASSETS FROM ../connect.js
+   ============================================================================ */
+(function(){
+  'use strict';
+
+  const ASSET_PATHS = {
+    bg:    'image/background.png',
+    hero:  'image/ldi1.png'
+  };
+
+  function buildAssetUrl(host, path) {
+    if (!host) return '';
+    const base = String(host).replace(/\/+$/, '');
+    return base + '/storage/v1/object/public/' + path.replace(/^\/+/, '');
+  }
+
+  function applyHostAssets(host) {
+    if (!host) return;
+    const root = document.documentElement;
+    const bgUrl   = buildAssetUrl(host, ASSET_PATHS.bg);
+    const heroUrl = buildAssetUrl(host, ASSET_PATHS.hero);
+    root.style.setProperty('--bg-image',      'url("' + bgUrl + '")');
+    root.style.setProperty('--hero-bg-image', 'url("' + heroUrl + '")');
+  }
+
+  window.applyHostAssets = applyHostAssets;
+
+  if (window.HOSTNAME) applyHostAssets(window.HOSTNAME);
+
+  window.addEventListener('host-ready', function(e){
+    const host = e && e.detail && e.detail.host;
+    if (host) applyHostAssets(host);
+  });
+
+  if (!window.HOSTNAME && window.readyHost && typeof window.readyHost.then === 'function') {
+    window.readyHost.then(function(host){ if (host) applyHostAssets(host); });
+  }
+})();
+</script>
+
+<script>
 // ============================================================
 // SETTINGS — CSV upload + User Assignments
 //          + Client Groups (DB)
-//          + Sales Targets (DB)
+//          + Sales Targets (DB, per-company, ONE value per period type)
+//          + Client SR Codes (DB, per-company)
 // ============================================================
 const COMPANY_OPTIONS = ['LDI', 'FEI', 'LCPI'];
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -923,11 +1165,19 @@ const DEFAULT_CLIENT_GROUPS = [
   { label: 'Greenline / Negros Jade',  keywords: ['greenline', 'negros jade', 'negros-jade'], clients: [] },
 ];
 
+// One input per period type — automatic replication sa lahat ng period_index
 const PERIOD_LABELS = {
   'Monthly':     ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
   'Quarterly':   ['Q1','Q2','Q3','Q4'],
   'Semi-Annual': ['H1','H2'],
   'Annual':      ['Annual'],
+};
+const PERIOD_TYPES = ['Monthly', 'Quarterly', 'Semi-Annual', 'Annual'];
+const PERIOD_TYPE_ICONS = {
+  'Monthly':     '📅 Monthly',
+  'Quarterly':   '📆 Quarterly',
+  'Semi-Annual': '🗓️ Semi-Annual',
+  'Annual':      '📊 Annual',
 };
 
 const GROUP_FIELD = {
@@ -961,12 +1211,26 @@ const STATE = {
   pickerSearch: '',
   allClientNames: null,
 
-  // Targets
+  // Targets (per-company, one value per period type)
   targets: new Map(),
   targetsAvailable: true,
-  targetDimCache: {},
   targetYearOptions: [],
-  targetGroupMode: 'grouped',   // 'grouped' | 'raw'
+  targetGroupMode: 'grouped',
+  targetCompany: '',
+
+  // Client × SR-code assignments (company-scoped)
+  clientSrAssignments: new Map(),   // key = company \u0001 client
+  clientSrAvailable: true,
+  clientSrError: '',
+  clientSrDraft: null,              // Map<client, string[]> para sa current company
+  clientSrSelected: new Set(),      // Set<client>
+  clientSrSearch: '',
+  clientSrCompany: '',
+  clientSrLoading: false,           // true habang kinukuha ang buong client list
+  clientsByCompany: {},             // cache: company -> sorted client names
+  knownSrCodes: [],
+  srCodeToUsers: new Map(),
+  rpcDistinctClientsAvailable: true, // false kapag hindi ma-call ang RPC (fallback sa cursor)
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -981,6 +1245,37 @@ const el = (tag, props = {}, children = []) => {
   children.forEach(c => n.append(c));
   return n;
 };
+
+// ============================================================
+// LOCALSTORAGE CACHE (24h TTL)
+// ============================================================
+const CACHE_VER = 'v3'; // bumped — invalidates stale v1/v2 client lists
+const CACHE_TTL = 24 * 60 * 60 * 1000;
+const CACHE_PREFIX = 'ldi_cache_' + CACHE_VER + '_';
+
+function cacheGet(key) {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj || (Date.now() - obj.t) > CACHE_TTL) return null;
+    return obj.v;
+  } catch (_) { return null; }
+}
+function cacheSet(key, val) {
+  try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ t: Date.now(), v: val })); } catch (_) {}
+}
+function cacheClear(prefix) {
+  try {
+    const full = CACHE_PREFIX + (prefix || '');
+    const kill = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(full)) kill.push(k);
+    }
+    kill.forEach(k => localStorage.removeItem(k));
+  } catch (_) {}
+}
 
 function setStatus(msg, cls = '') {
   const p = $('#conn-status');
@@ -1054,6 +1349,153 @@ async function restRequest(path, {
 }
 
 // ============================================================
+// POSTGREST FILTER HELPERS
+// ============================================================
+function pgQuoteList(arr) {
+  return (arr || [])
+    .map(v => String(v == null ? '' : v).trim())
+    .filter(Boolean)
+    .map(v => '"' + v.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"')
+    .join(',');
+}
+
+function encodeFilter(expr) {
+  return encodeURIComponent(expr);
+}
+
+// ============================================================
+// ID-CURSOR PAGINATION
+// Walks the whole table kahit may server-side row cap (db-max-rows).
+// Hindi nag-break sa rows.length < PAGE — cursor lang ang basehan.
+// ============================================================
+async function pageDistinct(field, { filter = '' } = {}) {
+  const set = new Set();
+  const PAGE = 1000;
+  let lastId = 0;
+  let guard = 0;
+
+  while (guard++ < 5000) {
+    const cursor = lastId > 0 ? `&id=gt.${lastId}` : '';
+    const rows = await restRequest(
+      `sales?select=id,${field}&${field}=not.is.null${filter}${cursor}` +
+      `&order=id.asc&limit=${PAGE}`
+    );
+    if (!rows || !rows.length) break;
+
+    let advanced = false;
+    rows.forEach(r => {
+      const s = String(r[field] || '').trim();
+      if (s) set.add(s);
+      const rid = Number(r.id);
+      if (!isNaN(rid) && rid > lastId) { lastId = rid; advanced = true; }
+    });
+
+    if (!advanced) break;
+  }
+  return [...set];
+}
+
+// ============================================================
+// FAST DISTINCT CLIENT FETCH
+//   Primary: sales.distinct_clients RPC (one round-trip)
+//   Fallback: cursor-by-client pagination (kung hindi pa naka-deploy ang RPC)
+//   Cache: localStorage (24h) + in-memory
+// ============================================================
+async function fetchDistinctClientsViaRpc(company) {
+  // PostgREST accepts POST body for RPC even though it's a read.
+  const rows = await restRequest('rpc/distinct_clients', {
+    method: 'POST',
+    body: { p_company: company },
+  });
+  if (!Array.isArray(rows)) return [];
+  // PostgREST returns either [{client: '...'}, ...] or ['...', ...]
+  const out = [];
+  for (const r of rows) {
+    if (r == null) continue;
+    if (typeof r === 'string') { out.push(r); continue; }
+    const c = r.client != null ? String(r.client) : '';
+    if (c) out.push(c);
+  }
+  return [...new Set(out)].sort((a, b) => a.localeCompare(b));
+}
+
+async function fetchDistinctClientsViaCursor(company, onProgress) {
+  const set = new Set();
+  let lastClient = null;
+  let guard = 0;
+  const PAGE = 1000;
+
+  while (guard++ < 5000) {
+    let cursor = '';
+    if (lastClient != null) {
+      const esc = String(lastClient).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      cursor = `&client=gt.${encodeURIComponent('"' + esc + '"')}`;
+    }
+    const rows = await restRequest(
+      `sales?select=client&client=not.is.null` +
+      `&company=eq.${encodeURIComponent(company)}` +
+      cursor +
+      `&order=client.asc&limit=${PAGE}`
+    );
+    if (!rows || !rows.length) break;
+    rows.forEach(r => { const c = String(r.client || '').trim(); if (c) set.add(c); });
+    if (typeof onProgress === 'function') { try { onProgress(set.size); } catch (_) {} }
+
+    const newLast = String(rows[rows.length - 1].client || '').trim();
+    if (!newLast || newLast === lastClient) break;
+    lastClient = newLast;
+  }
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+async function fetchDistinctClientsForCompany(company, onProgress) {
+  if (STATE.rpcDistinctClientsAvailable) {
+    try {
+      return await fetchDistinctClientsViaRpc(company);
+    } catch (err) {
+      const msg = String(err.message || '').toLowerCase();
+      if (msg.includes('could not find') || msg.includes('function') ||
+          msg.includes('404') || msg.includes('schema cache') ||
+          msg.includes('does not exist')) {
+        console.warn('[clientsr] distinct_clients RPC not found — falling back to cursor pagination');
+        STATE.rpcDistinctClientsAvailable = false;
+      } else {
+        console.warn('[clientsr] RPC failed, falling back to cursor:', err.message);
+      }
+    }
+  }
+  return fetchDistinctClientsViaCursor(company, onProgress);
+}
+
+async function fetchClientsForCompany(company) {
+  if (!company) return [];
+  if (STATE.clientsByCompany[company]) return STATE.clientsByCompany[company];
+
+  // 1) Disk cache → instant kung na-fetch na dati
+  const cached = cacheGet('clients_' + company);
+  if (Array.isArray(cached) && cached.length) {
+    STATE.clientsByCompany[company] = cached;
+    console.log(`[clientsr] ${company}: ${cached.length} client(s) from cache`);
+    return cached;
+  }
+
+  // 2) Fresh fetch
+  try {
+    const list = await fetchDistinctClientsForCompany(company, (n) => {
+      const meta = document.getElementById('clientsr-meta');
+      if (meta) meta.textContent = `[${company}] Loading clients… (${n} so far)`;
+    });
+    STATE.clientsByCompany[company] = list;
+    cacheSet('clients_' + company, list);
+    console.log(`[clientsr] ${company}: ${list.length} client(s) from server`);
+  } catch (err) {
+    console.error('[clientsr] client fetch failed:', err);
+    STATE.clientsByCompany[company] = [];
+  }
+  return STATE.clientsByCompany[company];
+}
+
+// ============================================================
 // INIT
 // ============================================================
 async function init() {
@@ -1087,8 +1529,17 @@ async function init() {
     await loadClientGroups();
     await loadTargets();
     await loadTargetYearOptions();
+    await loadClientSrAssignments();
+    await loadKnownSrCodes();
     updateGroupsBadge();
     updateTargetsBadge();
+    updateClientSrBadge();
+
+    // Warm the client cache for every company the user can see.
+    // Runs in the background so the modal opens instantly.
+    getAvailableCompanies().forEach(c => {
+      fetchClientsForCompany(c).catch(() => {});
+    });
 
     setHeroSub(
       `Signed in as ${me.full_name || me.username}` +
@@ -1157,8 +1608,39 @@ async function loadAll() {
     }
   }
 
+  rebuildSrCodeToUsersMap();
+
   render();
   $('#loader').hidden = true;
+}
+
+function rebuildSrCodeToUsersMap() {
+  const map = new Map();
+  STATE.users.forEach(u => {
+    (u.assigned_sales_rep_codes || []).forEach(code => {
+      const c = String(code || '').trim();
+      if (!c) return;
+      if (!map.has(c)) map.set(c, []);
+      map.get(c).push({
+        id: u.id,
+        name: u.full_name || u.username || `User #${u.id}`,
+      });
+    });
+  });
+  STATE.srCodeToUsers = map;
+}
+
+function usersForSrCodes(srCodes) {
+  const map = STATE.srCodeToUsers;
+  const seen = new Map();
+  (srCodes || []).forEach(code => {
+    const c = String(code || '').trim();
+    if (!c) return;
+    (map.get(c) || []).forEach(u => {
+      if (!seen.has(u.id)) seen.set(u.id, u);
+    });
+  });
+  return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // ============================================================
@@ -1359,6 +1841,7 @@ async function saveCompanies(userId, nextArray) {
   try {
     await upsertUserCompany(userId, { assigned_companies: nextArray });
     STATE.companyMap[userId] = nextArray;
+    if (userId === STATE.me.id) invalidateClientScopeCache();
     showStatus('saved');
     setTimeout(() => showStatus(null), 1400);
   } catch (err) {
@@ -1421,6 +1904,8 @@ function makeAutosaveCell(user, fieldName, fieldClass, placeholder, saveFn = nul
         });
       }
       user[fieldName] = newValue;
+      if (user.id === STATE.me.id) invalidateClientScopeCache();
+      if (fieldName === 'assigned_sales_rep_codes') rebuildSrCodeToUsersMap();
       input.value = newValue.join(', ');
       setInputState('saved');
       setTimeout(() => setInputState(null), 1400);
@@ -1773,10 +2258,10 @@ async function handleUpload() {
     hideUploadPreview();
     updateUploadButton();
 
-    // Client names may have changed → invalidate cache
+    // Invalidate cached client lists — sales data just changed
     STATE.allClientNames = null;
-    STATE.targetDimCache = {};
-
+    STATE.clientsByCompany = {};
+    cacheClear('clients_');
   } catch (err) {
     console.error('[upload] failed:', err);
     setUploadProgress('error', '✕ Upload failed', err.message || String(err), 100);
@@ -1795,9 +2280,7 @@ function setUploadProgress(state, title, detail, percent) {
 }
 
 // ============================================================
-// ============================================================
 // CLIENT GROUPS — DB-backed (admin)
-// ============================================================
 // ============================================================
 async function loadClientGroups() {
   try {
@@ -1828,8 +2311,6 @@ async function loadClientGroups() {
   }
 }
 
-// Match a raw client name to a group label, using STATE.clientGroups (config order).
-// Returns the label, or null if no group matches.
 function matchClientGroupLabel(rawName) {
   if (!rawName) return null;
   const lower = String(rawName).trim().toLowerCase();
@@ -1885,27 +2366,14 @@ function closeGroupManager() {
 
 async function ensureAllClientNames() {
   if (STATE.allClientNames) return STATE.allClientNames;
-  const set = new Set();
-  let from = 0;
-  const PAGE = 1000;
   try {
-    while (true) {
-      const rows = await restRequest(
-        `sales?select=client&client=not.is.null&order=client.asc&limit=${PAGE}&offset=${from}`
-      );
-      if (!rows || !rows.length) break;
-      rows.forEach(r => {
-        const s = String(r.client || '').trim();
-        if (s) set.add(s);
-      });
-      if (rows.length < PAGE) break;
-      from += PAGE;
-      if (from > 200000) break;
-    }
+    const list = await pageDistinct('client');
+    STATE.allClientNames = list.sort((a, b) => a.localeCompare(b));
+    console.log(`[groups] loaded ${STATE.allClientNames.length} unique client(s)`);
   } catch (err) {
     console.error('[groups] client name fetch failed:', err);
+    STATE.allClientNames = [];
   }
-  STATE.allClientNames = [...set].sort((a, b) => a.localeCompare(b));
   return STATE.allClientNames;
 }
 
@@ -2011,7 +2479,6 @@ function renderGroupManager() {
   body.append(list);
 }
 
-// ---------- nested client picker ----------
 async function openClientPicker(groupIdx) {
   STATE.pickerTargetGroupIdx = groupIdx;
   STATE.pickerSearch = '';
@@ -2136,31 +2603,26 @@ async function saveGroupsFromEditor() {
 }
 
 // ============================================================
-// SALES TARGETS — DB-backed (admin)
+// SALES TARGETS — per-company, ONE value per period type
+//   DB still stores per period_index, pero awtomatikong nire-replicate
+//   ang isang value sa lahat ng period_index ng type na iyon.
 // ============================================================
-function targetKey(year, dim, name, ptype, pidx) {
-  return `${year}\u0001${dim}\u0001${name}\u0001${ptype}\u0001${pidx}`;
-}
-
-function getTargetCell(year, dim, name, ptype, pidx) {
-  if (!dim || !name) return 0;
-  const k = targetKey(year, dim, name, ptype, pidx);
-  const row = STATE.targets.get(k);
-  return row ? (Number(row.target_amount) || 0) : 0;
+function targetKey(year, company, dim, name, ptype, pidx) {
+  return `${year}\u0001${company}\u0001${dim}\u0001${name}\u0001${ptype}\u0001${pidx}`;
 }
 
 async function loadTargets() {
   try {
     const rows = await restRequest(
-      'sales_targets?select=id,year,dimension,name,period_type,period_index,target_amount'
+      'sales_targets?select=id,year,company,dimension,name,period_type,period_index,target_amount'
     );
     STATE.targetsAvailable = true;
     STATE.targets.clear();
     (rows || []).forEach(t => {
-      const k = targetKey(t.year, t.dimension, t.name, t.period_type, t.period_index);
+      const k = targetKey(t.year, t.company, t.dimension, t.name, t.period_type, t.period_index);
       STATE.targets.set(k, t);
     });
-    console.log(`[targets] loaded ${rows?.length || 0} rows`);
+    console.log(`[targets] loaded ${rows?.length || 0} row(s)`);
   } catch (err) {
     const msg = String(err.message || '').toLowerCase();
     if (msg.includes('relation') || msg.includes('does not exist') || msg.includes('404')) {
@@ -2168,112 +2630,91 @@ async function loadTargets() {
       STATE.targets.clear();
       console.warn('[targets] sales.sales_targets not found.');
     } else {
-      console.error('[targets] load failed:', err);
       STATE.targetsAvailable = false;
+      STATE.targets.clear();
+      console.error('[targets] load failed:', err);
     }
   }
+}
+
+async function loadTargetYearOptions() {
+  const set = new Set();
+  try {
+    const rows = await restRequest('sales?select=year&order=year.desc&limit=10000');
+    (rows || []).forEach(r => {
+      const y = Number(r.year);
+      if (y) set.add(y);
+    });
+  } catch (err) {
+    console.warn('[targets] year fetch failed:', err);
+  }
+  for (const [, t] of STATE.targets) {
+    if (t.year) set.add(Number(t.year));
+  }
+  set.add(new Date().getFullYear());
+  STATE.targetYearOptions = [...set].sort((a, b) => b - a);
 }
 
 function updateTargetsBadge() {
   const b = $('#targets-count-badge');
   if (!b) return;
   const seen = new Set();
-  for (const [, row] of STATE.targets) {
-    if (Number(row.target_amount) > 0) {
-      seen.add(`${row.year}|${row.dimension}|${row.name}|${row.period_type}`);
+  for (const [, v] of STATE.targets) {
+    if (Number(v.target_amount) > 0) {
+      const key = `${v.year}|${v.company}|${v.dimension}|${v.name}|${v.period_type}`;
+      seen.add(key);
     }
   }
-  b.textContent = `${seen.size} row${seen.size === 1 ? '' : 's'}`;
+  b.textContent = `${seen.size} target${seen.size === 1 ? '' : 's'}`;
 }
 
-async function loadTargetYearOptions() {
-  const set = new Set();
-  let from = 0;
-  const PAGE = 1000;
-  try {
-    while (true) {
-      const rows = await restRequest(
-        `sales?select=year&order=year.desc&limit=${PAGE}&offset=${from}`
-      );
-      if (!rows || !rows.length) break;
-      rows.forEach(r => { if (r.year != null) set.add(Number(r.year)); });
-      if (rows.length < PAGE) break;
-      from += PAGE;
-      if (from > 200000) break;
-    }
-  } catch (err) {
-    console.warn('[targets] year list fetch failed:', err);
+function updateTargetGroupModeVisibility() {
+  const dim = $('#target-dim').value;
+  const wrap = $('#target-group-mode-wrap');
+  const hint = $('#target-mode-hint');
+  if (wrap) wrap.hidden = dim !== 'Client';
+  if (hint) {
+    hint.innerHTML = dim === 'Client'
+      ? (STATE.targetGroupMode === 'grouped'
+          ? 'Client targets follow <strong>Client Groups</strong>.'
+          : 'Client targets use <strong>raw client names</strong>.')
+      : 'Isang value lang bawat period type — awtomatikong ia-apply sa lahat ng period index.';
   }
-  const years = [...set].filter(y => Number.isFinite(y)).sort((a, b) => b - a);
-  STATE.targetYearOptions = years.length ? years : [new Date().getFullYear()];
 }
 
-// Fetch distinct values for a given field (e.g. 'client', 'items', 'sr_code') for one year.
-async function fetchDistinctFieldValues(field, year) {
-  const cacheKey = `${year}|${field}`;
-  if (STATE.targetDimCache[cacheKey]) return STATE.targetDimCache[cacheKey];
-  const set = new Set();
-  let from = 0;
-  const PAGE = 1000;
-  try {
-    while (true) {
-      const rows = await restRequest(
-        `sales?select=${field}&year=eq.${year}&${field}=not.is.null&order=${field}.asc&limit=${PAGE}&offset=${from}`
-      );
-      if (!rows || !rows.length) break;
-      rows.forEach(r => {
-        const s = String(r[field] || '').trim();
-        if (s) set.add(s);
-      });
-      if (rows.length < PAGE) break;
-      from += PAGE;
-      if (from > 200000) break;
-    }
-  } catch (err) {
-    console.error('[targets] distinct fetch failed:', err);
-  }
-  const list = [...set].sort((a, b) => a.localeCompare(b));
-  STATE.targetDimCache[cacheKey] = list;
-  return list;
-}
-
-// For Client dimension: returns either grouped labels (config order, then ungrouped raw names)
-// or the raw names, depending on `grouped`.
-async function fetchClientNamesForTargets(year, grouped) {
-  const raw = await fetchDistinctFieldValues('client', year);
-  if (!grouped) return raw;
-
-  const result = [];
-  const usedLabels = new Set();
-  // 1) All defined groups, in configured order.
-  for (const g of STATE.clientGroups) {
-    if (!g || !g.label) continue;
-    result.push(g.label);
-    usedLabels.add(g.label);
-  }
-  // 2) Raw client names that don't match any group.
-  for (const name of raw) {
-    const label = matchClientGroupLabel(name);
-    if (label && usedLabels.has(label)) continue;   // already covered
-    if (label) {                                    // group defined later? add it
-      if (!usedLabels.has(label)) { result.push(label); usedLabels.add(label); }
-      continue;
-    }
-    result.push(name);
-  }
-  return result;
-}
-
-function openTargetManager() {
-  if (!STATE.targetsAvailable) {
-    alert('The sales.sales_targets table is missing.\n\nRun the setup SQL in your Supabase SQL Editor, then reload.');
-    return;
-  }
+async function openTargetManager() {
   const overlay = $('#target-overlay');
   overlay.hidden = false;
   requestAnimationFrame(() => overlay.classList.add('active'));
   document.body.style.overflow = 'hidden';
-  renderTargetManager();
+
+  // Year dropdown
+  const yearSel = $('#target-year');
+  yearSel.innerHTML = '';
+  const years = STATE.targetYearOptions.length
+    ? STATE.targetYearOptions
+    : [new Date().getFullYear()];
+  years.forEach(y => yearSel.append(el('option', { value: y, textContent: y })));
+  if (!yearSel.value) yearSel.value = years[0];
+
+  // Company dropdown
+  const compWrap = $('#target-company-wrap');
+  const compSel = $('#target-company');
+  const companies = getAvailableCompanies();
+  compSel.innerHTML = '';
+  companies.forEach(c => compSel.append(el('option', { value: c, textContent: c })));
+  if (!companies.includes(STATE.targetCompany)) {
+    STATE.targetCompany = companies[0] || '';
+  }
+  compSel.value = STATE.targetCompany;
+  if (compWrap) compWrap.style.display = companies.length > 1 ? '' : 'none';
+
+  // Group-mode toggle
+  const gmSel = $('#target-group-mode');
+  if (gmSel) gmSel.value = STATE.targetGroupMode;
+  updateTargetGroupModeVisibility();
+
+  await renderTargetManager();
 }
 
 function closeTargetManager() {
@@ -2283,258 +2724,290 @@ function closeTargetManager() {
   setTimeout(() => { overlay.hidden = true; }, 240);
 }
 
+// Kunin ang target value para sa period type (period_index=0 lang ang gagamitin)
+function getTargetForPeriodType(year, company, dim, name, ptype) {
+  const k0 = targetKey(year, company, dim, name, ptype, 0);
+  const r0 = STATE.targets.get(k0);
+  if (r0 && Number(r0.target_amount) > 0) return Number(r0.target_amount);
+  // Fallback: hanapin sa kahit anong period_index
+  for (const [, r] of STATE.targets) {
+    if (Number(r.year) === Number(year) &&
+        r.company === company &&
+        r.dimension === dim &&
+        r.name === name &&
+        r.period_type === ptype &&
+        Number(r.target_amount) > 0) {
+      return Number(r.target_amount);
+    }
+  }
+  return 0;
+}
+
+function formatNumberWithCommas(n) {
+  const v = Number(n) || 0;
+  if (!v) return '';
+  return v.toLocaleString('en-PH', { maximumFractionDigits: 2 });
+}
+
+function parseTargetNumber(str) {
+  const cleaned = String(str || '').replace(/[₱,\s]/g, '');
+  const n = Number(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
 async function renderTargetManager() {
-  const yearSel = $('#target-year');
-  const dimSel = $('#target-dim');
-  const ptypeSel = $('#target-period-type');
-  const modeSel = $('#target-group-mode');
-  const modeWrap = $('#target-group-mode-wrap');
-  const modeHint = $('#target-mode-hint');
-
-  if (!yearSel.options.length) {
-    STATE.targetYearOptions.forEach(y => yearSel.append(el('option', { value: y, textContent: y })));
-    yearSel.value = STATE.targetYearOptions[0];
-  }
-
-  const year = parseInt(yearSel.value, 10);
-  const dim = dimSel.value;
-  const ptype = ptypeSel.value;
-  const labels = PERIOD_LABELS[ptype];
-  const maxPeriods = labels.length;
-
-  // Show the client-list mode selector only for Client.
-  const showMode = (dim === 'Client');
-  modeWrap.hidden = !showMode;
-
-  // Sync the select to STATE (so it survives re-renders).
-  if (showMode) {
-    modeSel.value = STATE.targetGroupMode;
-  }
-
-  // Update hint text.
-  if (showMode) {
-    modeHint.innerHTML = STATE.targetGroupMode === 'grouped'
-      ? 'Client targets follow the <strong>Client Groups</strong> — enabling <em>Group Clients</em> in the dashboard will use the group labels.'
-      : 'Ungrouped mode edits targets keyed by <strong>raw client names</strong>. In the dashboard, this applies when <em>Group Clients</em> is OFF.';
-  } else {
-    modeHint.innerHTML = 'Targets are keyed by the exact value shown in the <strong>' + escapeHtml(dim) + '</strong> column.';
-  }
-
-  const titleSuffix = (dim === 'Client')
-    ? (STATE.targetGroupMode === 'grouped' ? ' (Grouped)' : ' (Ungrouped)')
-    : '';
-  $('#target-title').textContent = `${dim}${titleSuffix} · ${ptype} targets — ${year}`;
-  $('#target-meta').textContent = `Targets are saved to the database (sales.sales_targets).`;
-
   const body = $('#target-body');
-  body.innerHTML = '<div class="drill-empty">Loading names…</div>';
+  if (!body) return;
+  body.innerHTML = '<div class="drill-empty">Loading…</div>';
 
-  const field = GROUP_FIELD[dim];
-  if (!field) { body.innerHTML = '<div class="drill-empty">Unsupported dimension.</div>'; return; }
+  const year = parseInt($('#target-year').value, 10);
+  const company = STATE.targetCompany;
+  const dim = $('#target-dim').value;
+  const groupMode = STATE.targetGroupMode;
 
-  let names;
-  if (dim === 'Client') {
-    names = await fetchClientNamesForTargets(year, STATE.targetGroupMode === 'grouped');
-  } else {
-    names = await fetchDistinctFieldValues(field, year);
+  if (!company) {
+    body.innerHTML = '<div class="drill-empty">Pumili ng company sa itaas.</div>';
+    return;
   }
 
-  if (!names.length) {
-    body.innerHTML = `<div class="drill-empty"><strong>No ${escapeHtml(dim)} values</strong> found for ${year} in the sales table.</div>`;
+  // Kunin ang listahan ng names para sa dimension
+  let names = [];
+  try {
+    if (dim === 'Client' && groupMode === 'grouped') {
+      names = (STATE.clientGroups || []).map(g => g.label).filter(Boolean);
+    } else if (dim === 'Client') {
+      names = await fetchClientsForCompany(company);
+    } else if (dim === 'Sales Rep') {
+      names = STATE.knownSrCodes.length
+        ? [...STATE.knownSrCodes]
+        : await pageDistinct('sr_code', {
+            filter: `&company=eq.${encodeURIComponent(company)}`,
+          });
+      names.sort((a, b) => a.localeCompare(b));
+    } else {
+      const field = GROUP_FIELD[dim];
+      const list = await pageDistinct(field, {
+        filter: `&company=eq.${encodeURIComponent(company)}`,
+      });
+      names = list.sort((a, b) => a.localeCompare(b));
+    }
+  } catch (err) {
+    console.error('[targets] name fetch failed:', err);
+    body.innerHTML = `<div class="drill-empty">Hindi ma-load ang ${escapeHtml(dim)} list: ${escapeHtml(err.message)}</div>`;
     return;
   }
 
   body.innerHTML = '';
 
+  if (!STATE.targetsAvailable) {
+    const w = el('div', {
+      className: 'drill-empty',
+      style: { padding: '16px 22px', textAlign: 'left', color: 'var(--text-2)', fontSize: '12.5px' },
+    });
+    w.innerHTML = '<strong>Note:</strong> <code>sales.sales_targets</code> table not found. ' +
+                  'Changes will apply for this session only.';
+    body.append(w);
+  }
+
+  if (!names.length) {
+    body.append(el('div', { className: 'drill-empty', textContent: `Walang ${dim} na nahanap para sa ${company}.` }));
+    return;
+  }
+
+  const wrap = el('div', { style: { padding: '14px 22px 20px' } });
+
+  const meta = el('div', {
+    style: {
+      marginBottom: '10px', fontSize: '12px', color: 'var(--text-2)',
+      display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center',
+    },
+  });
+  meta.append(el('span', {
+    textContent: `${names.length} ${dim.toLowerCase()}${names.length === 1 ? '' : 's'} · ${company} · ${year}`,
+    style: { fontWeight: '600' },
+  }));
+  meta.append(el('span', {
+    textContent: '💡 Isang value bawat period type — awtomatikong ia-apply sa lahat ng period index.',
+    style: { fontStyle: 'italic', color: 'var(--muted)' },
+  }));
+  wrap.append(meta);
+
+  // ---------- TABLE ----------
   const table = document.createElement('table');
+  table.style.cssText = 'width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px;';
+
   const thead = document.createElement('thead');
-  const tbody = document.createElement('tbody');
-
   const hr = document.createElement('tr');
-  hr.append(el('th', { textContent: dim + titleSuffix }));
-  labels.forEach(l => hr.append(el('th', { textContent: l })));
-  hr.append(el('th', { textContent: 'Set' }));
-  hr.append(el('th', { textContent: 'Year Total' }));
+
+  const thName = document.createElement('th');
+  thName.textContent = dim;
+  thName.style.cssText =
+    'position:sticky;top:0;z-index:2;text-align:left;' +
+    'background:linear-gradient(180deg,#eef2fb 0%,#e6ecf8 100%);' +
+    'padding:9px 12px;border-bottom:2px solid var(--border-strong);' +
+    'text-transform:uppercase;font-size:10px;letter-spacing:.06em;color:var(--text-2);' +
+    'min-width:200px;max-width:320px;';
+  hr.append(thName);
+
+  PERIOD_TYPES.forEach(pt => {
+    const th = document.createElement('th');
+    th.textContent = PERIOD_TYPE_ICONS[pt] || pt;
+    th.title = `${pt} target — isang value lang para sa lahat ng ${pt.toLowerCase()} period`;
+    th.style.cssText =
+      'position:sticky;top:0;z-index:2;text-align:right;' +
+      'background:linear-gradient(180deg,#eef2fb 0%,#e6ecf8 100%);' +
+      'padding:9px 12px;border-bottom:2px solid var(--border-strong);' +
+      'text-transform:uppercase;font-size:10px;letter-spacing:.06em;color:var(--text-2);' +
+      'min-width:130px;';
+    hr.append(th);
+  });
   thead.append(hr);
+  table.append(thead);
 
-  let grandTotal = 0;
-  const footerTotalCell = el('td', { textContent: '—' });
-
-  const updateGrandTotal = () => {
-    let sum = 0;
-    for (const inp of body.querySelectorAll('input.target-input')) {
-      const v = parseFloat(inp.value);
-      if (v > 0) sum += v;
-    }
-    footerTotalCell.textContent = sum > 0 ? '₱' + formatPHP(sum) : '—';
-  };
+  const tbody = document.createElement('tbody');
 
   names.forEach(name => {
     const tr = document.createElement('tr');
-    tr.style.cursor = 'default';
-    tr.append(el('td', { textContent: name, title: name }));
 
-    const inputs = [];
-    const coverCell = el('td');
-    const totalCell = el('td', { textContent: '—' });
+    const tdName = document.createElement('td');
+    tdName.textContent = name;
+    tdName.title = name;
+    tdName.style.cssText =
+      'padding:6px 12px;border-bottom:1px solid var(--border);' +
+      'font-weight:600;position:sticky;left:0;background:var(--surface);' +
+      'min-width:200px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    tr.append(tdName);
 
-    const updateRowIndicators = () => {
-      let sum = 0, cnt = 0;
-      for (const inp of inputs) {
-        const v = parseFloat(inp.value);
-        if (v > 0) { sum += v; cnt++; }
-      }
-      const covCls = cnt === 0 ? 'empty' : (cnt === maxPeriods ? 'complete' : 'partial');
-      coverCell.innerHTML = '';
-      coverCell.append(el('span', {
-        className: 'coverage-pill ' + covCls,
-        textContent: `${cnt}/${maxPeriods}`,
-      }));
-      totalCell.textContent = sum > 0 ? '₱' + formatPHP(sum) : '—';
-    };
-
-    labels.forEach((l, pidx) => {
+    PERIOD_TYPES.forEach(ptype => {
       const td = document.createElement('td');
+      td.style.cssText = 'padding:6px 12px;border-bottom:1px solid var(--border);text-align:right;';
+
       const inp = document.createElement('input');
-      inp.type = 'number';
-      inp.min = '0';
-      inp.step = '0.01';
+      inp.type = 'text';
       inp.className = 'target-input';
       inp.placeholder = '—';
-      const current = getTargetCell(year, dim, name, ptype, pidx);
-      inp.value = current > 0 ? String(current) : '';
+      inp.setAttribute('inputmode', 'decimal');
+      inp.dataset.year = year;
+      inp.dataset.company = company;
+      inp.dataset.dim = dim;
       inp.dataset.name = name;
-      inp.dataset.pidx = String(pidx);
+      inp.dataset.ptype = ptype;
+
+      const cur = getTargetForPeriodType(year, company, dim, name, ptype);
+      if (cur > 0) inp.value = formatNumberWithCommas(cur);
+
+      // Mark as dirty when changed
+      const originalVal = inp.value;
       inp.addEventListener('input', () => {
-        updateRowIndicators();
-        updateGrandTotal();
+        if (inp.value !== originalVal) inp.classList.add('dirty');
+        else inp.classList.remove('dirty');
       });
+
+      // Enter → next field
       inp.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          const all = [...body.querySelectorAll('input.target-input')];
-          const i = all.indexOf(inp);
-          if (i >= 0 && all[i + 1]) all[i + 1].focus();
-          else saveTargetsFromEditor(true);
+          const all = [...table.querySelectorAll('.target-input')];
+          const idx = all.indexOf(inp);
+          const next = all[idx + 1];
+          if (next) { next.focus(); next.select(); } else inp.blur();
         }
       });
-      inputs.push(inp);
+      // Focus select-all
+      inp.addEventListener('focus', () => { try { inp.select(); } catch (_) {} });
+
       td.append(inp);
       tr.append(td);
     });
 
-    tr.append(coverCell, totalCell);
     tbody.append(tr);
-
-    let initSum = 0;
-    for (let i = 0; i < maxPeriods; i++) {
-      const v = getTargetCell(year, dim, name, ptype, i);
-      if (v > 0) initSum += v;
-    }
-    grandTotal += initSum;
-    updateRowIndicators();
   });
 
-  const tfoot = document.createElement('tfoot');
-  const footRow = document.createElement('tr');
-  footRow.append(el('td', { textContent: 'TOTAL' }));
-  labels.forEach(() => footRow.append(el('td', { textContent: '' })));
-  footRow.append(el('td', { textContent: '' }));
-  footerTotalCell.textContent = grandTotal > 0 ? '₱' + formatPHP(grandTotal) : '—';
-  footRow.append(footerTotalCell);
-  tfoot.append(footRow);
-
-  table.append(thead, tbody, tfoot);
-  body.append(table);
+  table.append(tbody);
+  wrap.append(table);
+  body.append(wrap);
 }
 
-function formatPHP(v) {
-  return new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
-}
+async function saveTargets() {
+  const inputs = [...document.querySelectorAll('#target-body .target-input')];
+  if (!inputs.length) { alert('Walang laman ang target table.'); return; }
 
-async function saveTargetsFromEditor(silent) {
   const year = parseInt($('#target-year').value, 10);
+  const company = STATE.targetCompany;
   const dim = $('#target-dim').value;
-  const ptype = $('#target-period-type').value;
 
-  const inputs = $('#target-body').querySelectorAll('input.target-input');
-  const desired = new Map();
-  inputs.forEach(inp => {
+  if (!company) { alert('Pumili ng company.'); return; }
+
+  // Buuin ang upsert list.
+  // Isang value per period type → ire-replicate sa LAHAT ng period_index ng type na iyon.
+  const upserts = [];
+
+  for (const inp of inputs) {
     const name = inp.dataset.name;
-    const pidx = parseInt(inp.dataset.pidx, 10);
-    const v = parseFloat(inp.value);
-    if (!desired.has(name)) desired.set(name, new Map());
-    if (v > 0) desired.get(name).set(pidx, v);
-  });
+    const ptype = inp.dataset.ptype;
+    const val = parseTargetNumber(inp.value);
+    const pidxCount = (PERIOD_LABELS[ptype] || ['']).length;
+
+    if (val > 0) {
+      for (let pidx = 0; pidx < pidxCount; pidx++) {
+        upserts.push({
+          year, company,
+          dimension: dim,
+          name,
+          period_type: ptype,
+          period_index: pidx,
+          target_amount: val,
+          updated_at: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  // Local-only mode (no DB)
+  if (!STATE.targetsAvailable) {
+    // Clear existing entries for this scope first
+    for (const [k, v] of [...STATE.targets]) {
+      if (Number(v.year) === year && v.company === company && v.dimension === dim) {
+        STATE.targets.delete(k);
+      }
+    }
+    upserts.forEach(u => {
+      const k = targetKey(u.year, u.company, u.dimension, u.name, u.period_type, u.period_index);
+      STATE.targets.set(k, u);
+    });
+    updateTargetsBadge();
+    closeTargetManager();
+    alert('Note: sales.sales_targets not found — targets applied for this session only.');
+    return;
+  }
 
   setStatus('Saving targets…');
   try {
-    const existing = await restRequest(
-      `sales_targets?year=eq.${year}&dimension=eq.${encodeURIComponent(dim)}&period_type=eq.${encodeURIComponent(ptype)}&select=id,name,period_index,target_amount`
+    // 1) DELETE all existing rows for this (year, company, dim)
+    await restRequest(
+      `sales_targets?year=eq.${year}` +
+      `&company=eq.${encodeURIComponent(company)}` +
+      `&dimension=eq.${encodeURIComponent(dim)}`,
+      { method: 'DELETE', prefer: 'return=minimal' }
     );
-    const existingMap = new Map();
-    (existing || []).forEach(r => {
-      existingMap.set(`${r.name}\u0001${r.period_index}`, r);
-    });
 
-    const toInsert = [];
-    const toUpdate = [];
-    const toDelete = [];
-    const desiredKeys = new Set();
-
-    for (const [name, periods] of desired) {
-      for (const [pidx, amount] of periods) {
-        if (!amount || amount <= 0) continue;
-        const k = `${name}\u0001${pidx}`;
-        desiredKeys.add(k);
-        const ex = existingMap.get(k);
-        if (ex) {
-          if (Number(ex.target_amount) !== Number(amount)) {
-            toUpdate.push({ id: ex.id, target_amount: amount });
-          }
-        } else {
-          toInsert.push({
-            year, dimension: dim, name,
-            period_type: ptype,
-            period_index: pidx,
-            target_amount: amount,
-          });
-        }
+    // 2) INSERT fresh rows (chunked)
+    if (upserts.length) {
+      const CHUNK = 500;
+      for (let i = 0; i < upserts.length; i += CHUNK) {
+        const chunk = upserts.slice(i, i + CHUNK);
+        await restRequest('sales_targets', {
+          method: 'POST',
+          body: chunk,
+          prefer: 'return=minimal',
+        });
       }
-    }
-
-    for (const [k, r] of existingMap) {
-      if (!desiredKeys.has(k)) toDelete.push(r.id);
-    }
-
-    if (toDelete.length) {
-      await restRequest(
-        `sales_targets?id=in.(${toDelete.map(encodeURIComponent).join(',')})`,
-        { method: 'DELETE', prefer: 'return=minimal' }
-      );
-    }
-
-    if (toInsert.length) {
-      await restRequest('sales_targets', {
-        method: 'POST',
-        body: toInsert,
-        prefer: 'return=minimal',
-      });
-    }
-
-    for (const u of toUpdate) {
-      await restRequest(`sales_targets?id=eq.${u.id}`, {
-        method: 'PATCH',
-        body: { target_amount: u.target_amount, updated_at: new Date().toISOString() },
-        prefer: 'return=minimal',
-      });
     }
 
     await loadTargets();
     updateTargetsBadge();
     setStatus('Connected', 'ok');
-    if (!silent) closeTargetManager();
-    else renderTargetManager();
+    closeTargetManager();
   } catch (err) {
     console.error('[targets] save failed:', err);
     alert('Hindi ma-save ang targets: ' + err.message);
@@ -2542,77 +3015,592 @@ async function saveTargetsFromEditor(silent) {
   }
 }
 
-async function clearTargetsForCurrent() {
+async function clearTargetScope() {
   const year = parseInt($('#target-year').value, 10);
+  const company = STATE.targetCompany;
   const dim = $('#target-dim').value;
-  const ptype = $('#target-period-type').value;
-  const modeTxt = (dim === 'Client')
-    ? ` (includes both Grouped AND Ungrouped client targets)`
-    : '';
-  if (!confirm(`Clear ALL ${dim} ${ptype} targets for ${year}${modeTxt}?`)) return;
+
+  if (!company) { alert('Pumili ng company.'); return; }
+  if (!confirm(`I-clear ang lahat ng ${dim} targets para sa ${company} · ${year}?`)) return;
+
+  if (!STATE.targetsAvailable) {
+    for (const [k, v] of [...STATE.targets]) {
+      if (Number(v.year) === year && v.company === company && v.dimension === dim) {
+        STATE.targets.delete(k);
+      }
+    }
+    updateTargetsBadge();
+    renderTargetManager();
+    return;
+  }
+
   setStatus('Clearing targets…');
   try {
     await restRequest(
-      `sales_targets?year=eq.${year}&dimension=eq.${encodeURIComponent(dim)}&period_type=eq.${encodeURIComponent(ptype)}`,
+      `sales_targets?year=eq.${year}` +
+      `&company=eq.${encodeURIComponent(company)}` +
+      `&dimension=eq.${encodeURIComponent(dim)}`,
       { method: 'DELETE', prefer: 'return=minimal' }
     );
     await loadTargets();
     updateTargetsBadge();
-    renderTargetManager();
     setStatus('Connected', 'ok');
+    renderTargetManager();
   } catch (err) {
     console.error('[targets] clear failed:', err);
-    alert('Failed to clear: ' + err.message);
-    setStatus('Target clear failed', 'err');
+    alert('Clear failed: ' + err.message);
+    setStatus('Clear failed', 'err');
   }
+}
+
+// ============================================================
+// CLIENT × SR CODES (company-scoped, fast)
+// ============================================================
+function currentUserRecord() {
+  if (!STATE.me) return null;
+  return STATE.users.find(u => u.id === STATE.me.id) || STATE.me;
+}
+
+function getAvailableCompanies() {
+  const me = currentUserRecord();
+  if (!me) return [...COMPANY_OPTIONS];
+  const role = String(me.role || '').toLowerCase();
+  if (role === 'admin') return [...COMPANY_OPTIONS];
+  const owned = (STATE.companyMap[me.id] || [])
+    .map(v => String(v).trim())
+    .filter(Boolean);
+  if (!owned.length) return [...COMPANY_OPTIONS];
+  return COMPANY_OPTIONS.filter(c => owned.includes(c));
+}
+
+function invalidateClientScopeCache() {
+  STATE.clientsByCompany = {};
+}
+
+function csrKey(company, client) {
+  return String(company || '') + '\u0001' + String(client || '');
+}
+
+async function loadClientSrAssignments() {
+  try {
+    const rows = await restRequest(
+      'client_sr_assignments?select=company,client,sr_codes&order=company.asc,client.asc'
+    );
+    STATE.clientSrAvailable = true;
+    STATE.clientSrError = '';
+    STATE.clientSrAssignments.clear();
+    (rows || []).forEach(r => {
+      const k = csrKey(r.company, r.client);
+      STATE.clientSrAssignments.set(
+        k,
+        Array.isArray(r.sr_codes) ? r.sr_codes.filter(Boolean) : []
+      );
+    });
+  } catch (err) {
+    const msg = String(err.message || '').toLowerCase();
+    if (msg.includes('relation') || msg.includes('does not exist') || msg.includes('404')) {
+      STATE.clientSrAvailable = false;
+      STATE.clientSrError = '';
+      STATE.clientSrAssignments.clear();
+      console.warn('[clientsr] sales.client_sr_assignments not found.');
+    } else if (msg.includes('company') && (msg.includes('column') || msg.includes('schema cache'))) {
+      STATE.clientSrAvailable = false;
+      STATE.clientSrError = 'Missing "company" column. Run the SQL migration in Supabase.';
+      STATE.clientSrAssignments.clear();
+      console.error('[clientsr] company column missing');
+    } else {
+      console.error('[clientsr] load failed:', err);
+      STATE.clientSrAvailable = false;
+      STATE.clientSrError = err.message || String(err);
+      STATE.clientSrAssignments.clear();
+    }
+  }
+}
+
+async function loadKnownSrCodes() {
+  const set = new Set();
+  STATE.users.forEach(u => {
+    (u.assigned_sales_rep_codes || []).forEach(c => {
+      const s = String(c || '').trim();
+      if (s) set.add(s);
+    });
+  });
+  try {
+    const list = await pageDistinct('sr_code');
+    list.forEach(s => set.add(s));
+  } catch (err) {
+    console.warn('[clientsr] known SR codes fetch failed:', err);
+  }
+  STATE.knownSrCodes = [...set].sort((a, b) => a.localeCompare(b));
+}
+
+function updateClientSrBadge() {
+  const b = $('#clientsr-count-badge');
+  if (!b) return;
+  const n = [...STATE.clientSrAssignments.values()].filter(a => a.length).length;
+  b.textContent = `${n} assigned`;
+}
+
+function populateClientSrCompanyDropdown() {
+  const sel = $('#clientsr-company');
+  if (!sel) return;
+  const companies = getAvailableCompanies();
+  sel.innerHTML = '';
+  companies.forEach(c => sel.append(el('option', { value: c, textContent: c })));
+  if (!companies.includes(STATE.clientSrCompany)) {
+    STATE.clientSrCompany = companies[0] || '';
+  }
+  sel.value = STATE.clientSrCompany;
+  const lbl = sel.closest('label');
+  if (lbl) lbl.style.display = companies.length > 1 ? '' : 'none';
+}
+
+function rebuildDraftForCompany(company) {
+  const draft = new Map();
+  if (!company) { STATE.clientSrDraft = draft; return; }
+  const prefix = company + '\u0001';
+  for (const [key, codes] of STATE.clientSrAssignments) {
+    if (key.startsWith(prefix)) {
+      const client = key.slice(prefix.length);
+      draft.set(client, [...codes]);
+    }
+  }
+  const names = STATE.clientsByCompany[company] || [];
+  names.forEach(n => { if (!draft.has(n)) draft.set(n, []); });
+  STATE.clientSrDraft = draft;
+}
+
+async function openClientSrManager() {
+  const overlay = $('#clientsr-overlay');
+  overlay.hidden = false;
+  requestAnimationFrame(() => overlay.classList.add('active'));
+  document.body.style.overflow = 'hidden';
+
+  STATE.clientSrSearch = '';
+  STATE.clientSrSelected.clear();
+  $('#clientsr-search').value = '';
+
+  const companies = getAvailableCompanies();
+  if (!companies.length) {
+    alert('Walang assigned company sa account mo. Cannot manage client SR codes.');
+    closeClientSrManager();
+    return;
+  }
+
+  populateClientSrCompanyDropdown();
+  rebuildDraftForCompany(STATE.clientSrCompany);
+
+  // Show instantly — even before the full client list has finished loading
+  STATE.clientSrLoading = !STATE.clientsByCompany[STATE.clientSrCompany];
+  renderClientSrManager();
+
+  if (STATE.clientSrLoading) {
+    const company = STATE.clientSrCompany;
+    fetchClientsForCompany(company)
+      .then(() => {
+        if (overlay.hidden || STATE.clientSrCompany !== company) return;
+        STATE.clientSrLoading = false;
+        rebuildDraftForCompany(company);
+        renderClientSrManager();
+      })
+      .catch(err => {
+        console.error('[clientsr] background fetch failed:', err);
+        STATE.clientSrLoading = false;
+        renderClientSrManager();
+      });
+  }
+}
+
+function closeClientSrManager() {
+  const overlay = $('#clientsr-overlay');
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+  setTimeout(() => { overlay.hidden = true; STATE.clientSrDraft = null; }, 240);
+}
+
+function normalizeCodeArray(arr) {
+  return [...new Set((arr || []).map(s => String(s || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function codesEqual(a, b) {
+  const A = normalizeCodeArray(a);
+  const B = normalizeCodeArray(b);
+  if (A.length !== B.length) return false;
+  for (let i = 0; i < A.length; i++) if (A[i] !== B[i]) return false;
+  return true;
+}
+
+function renderAssigneeCell(currentCodes, originalCodes) {
+  const me = STATE.me;
+  const currentUsers  = usersForSrCodes(currentCodes);
+  const originalUsers = usersForSrCodes(originalCodes);
+  const changed = !codesEqual(currentCodes, originalCodes);
+
+  const td = el('td');
+  td.style.whiteSpace = 'normal';
+  const wrap = el('div');
+  const curLine = el('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '3px', alignItems: 'center' } });
+
+  if (currentUsers.length) {
+    currentUsers.forEach(u => {
+      curLine.append(el('span', {
+        className: 'assignee-pill' + (me && u.id === me.id ? ' me' : ''),
+        textContent: u.name,
+        title: (me && u.id === me.id ? '(you) ' : '') + u.name,
+      }));
+    });
+  } else if (currentCodes && currentCodes.length) {
+    currentCodes.forEach(code => {
+      curLine.append(el('span', {
+        className: 'assignee-pill',
+        style: { background: '#f3f4f6', color: 'var(--muted)', borderColor: '#e5e7eb' },
+        textContent: code,
+        title: `Walang user na may hawak ng ${code}`,
+      }));
+    });
+    curLine.append(el('span', { className: 'assignee-none', textContent: ' (walang user)' }));
+  } else {
+    curLine.append(el('span', { className: 'assignee-none', textContent: '— unassigned —' }));
+  }
+  wrap.append(curLine);
+
+  if (changed) {
+    const wasLine = el('div', { className: 'assignee-was' });
+    wasLine.append(el('span', { className: 'lbl', textContent: 'was:' }));
+    if (originalUsers.length) {
+      originalUsers.forEach(u => {
+        wasLine.append(el('span', {
+          className: 'assignee-pill was',
+          textContent: u.name,
+          title: '(dating naka-assign) ' + u.name,
+        }));
+      });
+    } else if (originalCodes && originalCodes.length) {
+      originalCodes.forEach(code => {
+        wasLine.append(el('span', { className: 'assignee-pill was', textContent: code }));
+      });
+    } else {
+      wasLine.append(el('span', { className: 'assignee-none', textContent: '(unassigned)' }));
+    }
+    wrap.append(wasLine);
+    td.dataset.dirty = '1';
+  }
+
+  td.append(wrap);
+  return td;
+}
+
+function renderClientSrManager() {
+  const body = $('#clientsr-body');
+  if (!body) return;
+  body.innerHTML = '';
+
+  if (!STATE.clientSrAvailable) {
+    const w = el('div', {
+      className: 'drill-empty',
+      style: { padding: '16px 22px', textAlign: 'left', color: 'var(--text-2)', fontSize: '12.5px' },
+    });
+    w.innerHTML = STATE.clientSrError
+      ? `<strong>Setup needed:</strong> ${escapeHtml(STATE.clientSrError)}`
+      : '<strong>Note:</strong> the <code>sales.client_sr_assignments</code> table was not found. ' +
+        'Changes will apply for this session only. Run the setup SQL to persist them.';
+    body.append(w);
+  }
+
+  // Live loading banner (full client list still streaming in)
+  if (STATE.clientSrLoading) {
+    const banner = el('div', {
+      className: 'drill-empty',
+      style: {
+        padding: '10px 22px', textAlign: 'left',
+        fontSize: '12px', color: 'var(--text-2)',
+        borderBottom: '1px solid var(--border)',
+      },
+    });
+    const sp = el('span', { className: 'csr-loader-spinner' });
+    banner.append(sp, document.createTextNode(
+      'Kinukuha ang buong client list sa background… (lumalabas na agad ang assigned clients sa baba)'
+    ));
+    body.append(banner);
+  }
+
+  const company = STATE.clientSrCompany;
+  if (!company) {
+    body.append(el('div', { className: 'drill-empty', textContent: 'Pumili ng company sa itaas.' }));
+    return;
+  }
+
+  const draft = STATE.clientSrDraft || new Map();
+  const q = (STATE.clientSrSearch || '').trim().toLowerCase();
+
+  let names = [...draft.keys()].sort((a, b) => a.localeCompare(b));
+  if (q) names = names.filter(n => n.toLowerCase().includes(q));
+
+  const totalAssigned = [...draft.values()].filter(a => a.length).length;
+  const metaText = () =>
+    `[${company}] ${totalAssigned} client${totalAssigned === 1 ? '' : 's'} with SR codes · ` +
+    `${STATE.clientSrSelected.size} checked · showing ${names.length} client${names.length === 1 ? '' : 's'}`;
+  $('#clientsr-meta').textContent = metaText();
+
+  if (!names.length) {
+    body.append(el('div', {
+      className: 'drill-empty',
+      textContent: q ? 'No clients match your search.' : `Loading ${company} clients…`,
+    }));
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'csr-table';
+
+  const thead = document.createElement('thead');
+  const hr = document.createElement('tr');
+  const thCheck = document.createElement('th');
+  thCheck.style.width = '40px';
+  thCheck.style.textAlign = 'center';
+  const selAll = document.createElement('input');
+  selAll.type = 'checkbox';
+  selAll.className = 'csr-check';
+  selAll.checked = names.length > 0 && names.every(n => STATE.clientSrSelected.has(n));
+  selAll.addEventListener('change', () => {
+    if (selAll.checked) names.forEach(n => STATE.clientSrSelected.add(n));
+    else names.forEach(n => STATE.clientSrSelected.delete(n));
+    renderClientSrManager();
+  });
+  thCheck.append(selAll);
+
+  const thClient = el('th', { textContent: 'Client' });
+  const thSr = el('th', { textContent: 'SR Codes (comma-separated)' });
+  const thAssigned = el('th', { textContent: 'Assigned To' });
+  thAssigned.style.minWidth = '220px';
+  hr.append(thCheck, thClient, thSr, thAssigned);
+  thead.append(hr);
+  table.append(thead);
+
+  const tbody = document.createElement('tbody');
+  names.forEach(name => {
+    const codes = normalizeCodeArray(draft.get(name) || []);
+    const origCodes = normalizeCodeArray(STATE.clientSrAssignments.get(csrKey(company, name)) || []);
+    const isDirty = !codesEqual(codes, origCodes);
+
+    const tr = document.createElement('tr');
+
+    const tdCb = document.createElement('td');
+    tdCb.style.textAlign = 'center';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'csr-check';
+    cb.checked = STATE.clientSrSelected.has(name);
+    cb.addEventListener('change', () => {
+      if (cb.checked) STATE.clientSrSelected.add(name);
+      else STATE.clientSrSelected.delete(name);
+      $('#clientsr-meta').textContent = metaText();
+    });
+    tdCb.append(cb);
+
+    const tdName = document.createElement('td');
+    tdName.style.fontWeight = '600';
+    tdName.append(document.createTextNode(name));
+    let dirtyDot = null;
+    if (isDirty) {
+      dirtyDot = el('span', { className: 'csr-dirty-dot', title: 'May hindi pa naka-save na pagbabago' });
+      tdName.append(dirtyDot);
+    }
+    tdName.title = name;
+
+    const tdInput = document.createElement('td');
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'cell-input';
+    inp.style.minWidth = '220px';
+    inp.placeholder = 'e.g. DOM, DANIEL';
+    inp.value = codes.join(', ');
+    inp.setAttribute('list', 'clientsr-known-sr');
+
+    let tdAssigned = renderAssigneeCell(codes, origCodes);
+
+    inp.addEventListener('input', () => {
+      const arr = [...new Set(inp.value.split(',').map(s => s.trim()).filter(Boolean))];
+      STATE.clientSrDraft.set(name, arr);
+
+      const nowDirty = !codesEqual(arr, origCodes);
+      if (nowDirty && !dirtyDot) {
+        dirtyDot = el('span', { className: 'csr-dirty-dot', title: 'May hindi pa naka-save na pagbabago' });
+        tdName.append(dirtyDot);
+      } else if (!nowDirty && dirtyDot) {
+        dirtyDot.remove();
+        dirtyDot = null;
+      }
+
+      const next = renderAssigneeCell(arr, origCodes);
+      tdAssigned.replaceWith(next);
+      tdAssigned = next;
+    });
+    tdInput.append(inp);
+
+    tr.append(tdCb, tdName, tdInput, tdAssigned);
+    tbody.append(tr);
+  });
+  table.append(tbody);
+  body.append(table);
+
+  let dl = document.getElementById('clientsr-known-sr');
+  if (!dl) {
+    dl = document.createElement('datalist');
+    dl.id = 'clientsr-known-sr';
+    document.body.append(dl);
+  }
+  if (!dl.dataset.filled) {
+    STATE.knownSrCodes.slice(0, 500).forEach(code => dl.append(el('option', { value: code })));
+    dl.dataset.filled = '1';
+  }
+}
+
+async function saveClientSrAssignments() {
+  const draft = STATE.clientSrDraft;
+  const company = STATE.clientSrCompany;
+  if (!draft || !company) return;
+
+  // Local-only mode
+  if (!STATE.clientSrAvailable) {
+    const prefix = company + '\u0001';
+    for (const [k] of [...STATE.clientSrAssignments]) {
+      if (k.startsWith(prefix)) STATE.clientSrAssignments.delete(k);
+    }
+    for (const [client, codes] of draft) {
+      const norm = normalizeCodeArray(codes);
+      if (norm.length) STATE.clientSrAssignments.set(csrKey(company, client), norm);
+    }
+    updateClientSrBadge();
+    closeClientSrManager();
+    alert('Note: sales.client_sr_assignments was not found — applied for this session only.');
+    return;
+  }
+
+  // Diff — clients na may laman
+  const toUpsert = [];
+  for (const [client, codes] of draft) {
+    const norm = normalizeCodeArray(codes);
+    if (norm.length) {
+      toUpsert.push({ company, client, sr_codes: norm });
+    }
+  }
+
+  setStatus('Saving client SR codes…');
+  try {
+    // 1) DELETE all existing rows for this company (simple + reliable)
+    await restRequest(
+      `client_sr_assignments?company=eq.${encodeURIComponent(company)}`,
+      { method: 'DELETE', prefer: 'return=minimal' }
+    );
+
+    // 2) INSERT fresh rows (chunked)
+    if (toUpsert.length) {
+      const rows = toUpsert.map(u => ({
+        company: u.company,
+        client: u.client,
+        sr_codes: u.sr_codes,
+        updated_at: new Date().toISOString(),
+      }));
+      const CHUNK = 500;
+      for (let i = 0; i < rows.length; i += CHUNK) {
+        await restRequest('client_sr_assignments', {
+          method: 'POST',
+          body: rows.slice(i, i + CHUNK),
+          prefer: 'return=minimal',
+        });
+      }
+    }
+
+    await loadClientSrAssignments();
+    updateClientSrBadge();
+    setStatus('Connected', 'ok');
+    closeClientSrManager();
+  } catch (err) {
+    console.error('[clientsr] save failed:', err);
+    alert('Hindi ma-save: ' + err.message);
+    setStatus('Save failed', 'err');
+  }
+}
+
+// ============================================================
+// BULK ASSIGN (Client SR Codes)
+// ============================================================
+async function bulkAssignClientSrCodes() {
+  const selected = [...STATE.clientSrSelected];
+  if (!selected.length) { alert('Walang naka-check na client.'); return; }
+  const input = prompt(
+    `Ilagay ang SR codes (comma-separated) na i-a-assign sa ${selected.length} client${selected.length === 1 ? '' : 's'}.\n` +
+    `Halimbawa:  DOM, DANIEL`
+  );
+  if (input == null) return;
+  const codes = [...new Set(input.split(',').map(s => s.trim()).filter(Boolean))];
+
+  for (const client of selected) {
+    STATE.clientSrDraft.set(client, codes.slice());
+  }
+  renderClientSrManager();
+}
+
+function clearCheckedClientSrCodes() {
+  const selected = [...STATE.clientSrSelected];
+  if (!selected.length) { alert('Walang naka-check na client.'); return; }
+  if (!confirm(`I-clear ang SR codes ng ${selected.length} naka-check na client${selected.length === 1 ? '' : 's'}?`)) return;
+  for (const client of selected) {
+    STATE.clientSrDraft.set(client, []);
+  }
+  renderClientSrManager();
 }
 
 // ============================================================
 // WIRE UI
 // ============================================================
 function wireUi() {
+  // Upload
   setupUploadUi();
 
-  let t;
-  $('#search').addEventListener('input', () => {
-    clearTimeout(t);
-    t = setTimeout(render, 120);
-  });
-  $('#btn-reload').addEventListener('click', async () => {
-    if (STATE.inflight.size) {
-      if (!confirm('There are unsaved changes. Reload anyway?')) return;
-    }
-    $('#btn-reload').disabled = true;
-    $('#btn-reload').textContent = 'Reloading…';
-    try { await loadAll(); }
-    catch (e) { alert('Reload failed: ' + e.message); }
-    $('#btn-reload').disabled = false;
-    $('#btn-reload').textContent = '⟳ Reload';
-  });
+  // Users
+  $('#search').addEventListener('input', render);
   $('#btn-export-users').addEventListener('click', downloadUsersCSV);
+  $('#btn-reload').addEventListener('click', async () => {
+    setStatus('Reloading…');
+    try {
+      await loadAll();
+      setStatus('Connected', 'ok');
+    } catch (err) {
+      setStatus('Reload failed', 'err');
+      alert('Reload failed: ' + err.message);
+    }
+  });
 
-  // --- Client Groups ---
+  // Client Groups
   $('#btn-manage-groups').addEventListener('click', openGroupManager);
   $('#group-close').addEventListener('click', closeGroupManager);
+  $('#group-overlay').addEventListener('click', (e) => {
+    if (e.target === $('#group-overlay')) closeGroupManager();
+  });
   $('#group-add').addEventListener('click', () => {
-    STATE.groupDraft.push({ id: null, label: '', keywords: [], clients: [], sort_order: STATE.groupDraft.length });
+    STATE.groupDraft = STATE.groupDraft || [];
+    STATE.groupDraft.push({
+      id: null, label: '', keywords: [], clients: [], sort_order: STATE.groupDraft.length,
+    });
     renderGroupManager();
   });
   $('#group-reset').addEventListener('click', () => {
-    if (!confirm('Reset the draft to built-in defaults? (You still need to Save to persist.)')) return;
+    if (!confirm('Reset sa built-in defaults? (Hindi pa naka-save — i-click ang Save groups pagkatapos.)')) return;
     STATE.groupDraft = DEFAULT_CLIENT_GROUPS.map((g, i) => ({
       id: null, label: g.label, keywords: [...g.keywords], clients: [], sort_order: i,
     }));
     renderGroupManager();
   });
   $('#group-save').addEventListener('click', saveGroupsFromEditor);
-  $('#group-overlay').addEventListener('click', (e) => {
-    if (e.target === $('#group-overlay')) closeGroupManager();
-  });
 
-  // --- Client Picker (nested) ---
+  // Client Picker
   $('#picker-close').addEventListener('click', closeClientPicker);
-  $('#picker-done').addEventListener('click', closeClientPicker);
+  $('#picker-overlay').addEventListener('click', (e) => {
+    if (e.target === $('#picker-overlay')) closeClientPicker();
+  });
   $('#picker-search').addEventListener('input', (e) => {
     STATE.pickerSearch = e.target.value || '';
     renderClientPicker();
@@ -2624,10 +3612,10 @@ function wireUi() {
     const q = (STATE.pickerSearch || '').trim().toLowerCase();
     const filtered = q ? all.filter(c => c.toLowerCase().includes(q)) : all;
     const set = new Set(g.clients || []);
-    filtered.forEach(c => {
+    filtered.forEach(n => {
       let exists = false;
-      for (const s of set) if (String(s).toLowerCase() === c.toLowerCase()) { exists = true; break; }
-      if (!exists) set.add(c);
+      for (const s of set) if (String(s).toLowerCase() === n.toLowerCase()) { exists = true; break; }
+      if (!exists) set.add(n);
     });
     g.clients = [...set];
     renderClientPicker();
@@ -2638,36 +3626,78 @@ function wireUi() {
     g.clients = [];
     renderClientPicker();
   });
-  $('#picker-overlay').addEventListener('click', (e) => {
-    if (e.target === $('#picker-overlay')) closeClientPicker();
-  });
+  $('#picker-done').addEventListener('click', closeClientPicker);
 
-  // --- Targets ---
+  // Targets
   $('#btn-manage-targets').addEventListener('click', openTargetManager);
   $('#target-close').addEventListener('click', closeTargetManager);
-  $('#target-save').addEventListener('click', () => saveTargetsFromEditor(false));
-  $('#target-clear').addEventListener('click', clearTargetsForCurrent);
-  $('#target-year').addEventListener('change', renderTargetManager);
-  $('#target-dim').addEventListener('change', renderTargetManager);
-  $('#target-period-type').addEventListener('change', renderTargetManager);
-  $('#target-group-mode').addEventListener('change', (e) => {
-    STATE.targetGroupMode = e.target.value === 'raw' ? 'raw' : 'grouped';
-    renderTargetManager();
-  });
   $('#target-overlay').addEventListener('click', (e) => {
     if (e.target === $('#target-overlay')) closeTargetManager();
   });
+  $('#target-year').addEventListener('change', () => renderTargetManager());
+  $('#target-company').addEventListener('change', (e) => {
+    STATE.targetCompany = e.target.value;
+    renderTargetManager();
+  });
+  $('#target-dim').addEventListener('change', () => {
+    updateTargetGroupModeVisibility();
+    renderTargetManager();
+  });
+  $('#target-group-mode').addEventListener('change', (e) => {
+    STATE.targetGroupMode = e.target.value;
+    updateTargetGroupModeVisibility();
+    renderTargetManager();
+  });
+  $('#target-save').addEventListener('click', saveTargets);
+  $('#target-clear').addEventListener('click', clearTargetScope);
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      if (!$('#picker-overlay').hidden) { closeClientPicker(); return; }
-      if (!$('#group-overlay').hidden) closeGroupManager();
-      if (!$('#target-overlay').hidden) closeTargetManager();
+  // Client SR
+  $('#btn-manage-client-sr').addEventListener('click', openClientSrManager);
+  $('#clientsr-close').addEventListener('click', closeClientSrManager);
+  $('#clientsr-overlay').addEventListener('click', (e) => {
+    if (e.target === $('#clientsr-overlay')) closeClientSrManager();
+  });
+  $('#clientsr-company').addEventListener('change', (e) => {
+    STATE.clientSrCompany = e.target.value;
+    STATE.clientSrSelected.clear();
+    rebuildDraftForCompany(STATE.clientSrCompany);
+
+    // Show instantly kung naka-cache na; kung wala pa, i-background fetch
+    STATE.clientSrLoading = !STATE.clientsByCompany[STATE.clientSrCompany];
+    renderClientSrManager();
+
+    if (STATE.clientSrLoading) {
+      const company = STATE.clientSrCompany;
+      fetchClientsForCompany(company)
+        .then(() => {
+          if (STATE.clientSrCompany !== company) return;
+          if ($('#clientsr-overlay').hidden) return;
+          STATE.clientSrLoading = false;
+          rebuildDraftForCompany(company);
+          renderClientSrManager();
+        })
+        .catch(err => {
+          console.error('[clientsr] background fetch failed:', err);
+          STATE.clientSrLoading = false;
+          renderClientSrManager();
+        });
     }
   });
+  $('#clientsr-search').addEventListener('input', (e) => {
+    STATE.clientSrSearch = e.target.value || '';
+    renderClientSrManager();
+  });
+  $('#clientsr-bulk').addEventListener('click', bulkAssignClientSrCodes);
+  $('#clientsr-clear-sel').addEventListener('click', clearCheckedClientSrCodes);
+  $('#clientsr-save').addEventListener('click', saveClientSrAssignments);
 
-  window.addEventListener('beforeunload', (e) => {
-    if (STATE.inflight.size) { e.preventDefault(); e.returnValue = ''; }
+  // ESC to close modals
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!$('#picker-overlay').hidden) { closeClientPicker(); return; }
+    if (!$('#group-overlay').hidden) { closeGroupManager(); return; }
+    if (!$('#target-overlay').hidden) { closeTargetManager(); return; }
+    if (!$('#clientsr-overlay').hidden) { closeClientSrManager(); return; }
   });
 }
 

@@ -13,8 +13,9 @@
 // ============================================================================
 
 const HOSTS = [
-  'http://192.168.0.5:8000',                                    // 1. local
-  'https://municipal-rebates-prayer-shoes.trycloudflare.com',   // 2. cloudflare
+ // 'http://192.168.0.5:8000',                                    // 1. local
+'https://snowy-mouse-c50bsupabase-proxy.ldicorplan68.workers.dev'
+  //'https://municipal-rebates-prayer-shoes.trycloudflare.com',   // 2. cloudflare
   //'https://scam-retouch-hull.ngrok-free.dev'                  // 3. ngrok
 ];
 
