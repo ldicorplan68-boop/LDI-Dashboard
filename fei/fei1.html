@@ -33,8 +33,9 @@
       font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 14px; color: var(--text);
       background: var(--royal-deep);
-      background-image: linear-gradient(180deg, rgba(27,27,179,.42) 0%, rgba(13,13,122,.72) 100%), url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/background.png');
-      background-size: cover, cover; background-attachment: fixed, fixed;
+      background-image: linear-gradient(180deg, rgba(27,27,179,.42) 0%, rgba(13,13,122,.72) 100%);
+      background-size: cover;
+      background-attachment: fixed;
       min-height: 100dvh; -webkit-font-smoothing: antialiased;
     }
     .app { min-height: 100dvh; display: flex; flex-direction: column; }
@@ -50,8 +51,9 @@
       position: relative; color: #fff;
       padding: clamp(16px, 2.4vh, 24px) clamp(16px, 2vw, 28px);
       border-radius: var(--r-lg);
-      background-image: linear-gradient(115deg, rgba(13,13,122,.95) 0%, rgba(27,27,179,.86) 48%, rgba(227,30,36,.60) 100%), url('https://trainers-police-rome-amplifier.trycloudflare.com/storage/v1/object/public/image/ldi1.png');
-      background-size: cover; background-position: center;
+      background-image: linear-gradient(115deg, rgba(13,13,122,.95) 0%, rgba(27,27,179,.86) 48%, rgba(227,30,36,.60) 100%);
+      background-size: cover;
+      background-position: center;
       border-bottom: 3px solid var(--amber);
       border-left: 3px solid var(--amber);
       border-right: 3px solid var(--amber);
@@ -1524,6 +1526,7 @@
 //   - Clickable sortable headers sa drill-down
 //   - "Open in Dashboard": drill stack → tunay na filters
 //   - Hit-based % Achieved: Set column = periods na na-hit ang target
+//   - Dynamic backgrounds (nakadepende sa connect.js window.HOSTNAME)
 // ============================================================
 
 const DEFAULT_CLIENT_GROUPS = [
@@ -1662,8 +1665,8 @@ const PALETTE = [
 const PHP = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const INT = new Intl.NumberFormat('en-PH');
 
-const PAGE_SIZE = 10000;
-const FETCH_CONCURRENCY = 3;
+const PAGE_SIZE = 3000;
+const FETCH_CONCURRENCY = 2;
 const CLIENT_RENDER_LIMIT = Infinity;
 const SERIES_TOP_N = 8;
 const CHART_TOP_N = 15;
@@ -1844,7 +1847,6 @@ function buildGroupSrCodesMap() {
     return map;
   }
 
-  // label -> Set<"company\u0001code">
   for (const g of STATE.clientGroups) {
     if (!g || !g.label) continue;
     const tagged = new Set();
@@ -1869,7 +1871,6 @@ function invalidateGroupSrCodesCache() {
   STATE._groupSrCodesCache = null;
 }
 
-// Return pairs { company, client } na naka-assign sa alinman sa active SR codes
 function getAssignedCompanyClientPairs() {
   if (STATE.isAdmin) return [];
   if (!STATE.clientSrAssignments || !STATE.clientSrAssignments.size) return [];
@@ -1926,7 +1927,6 @@ function getMyGroups() {
   return result;
 }
 
-// Per-company SR filter (in-memory)
 function applySrCodeFilter(rows) {
   if (STATE.isAdmin) return rows;
   if (hasCompanyAccess()) return rows;
@@ -1943,13 +1943,11 @@ function applySrCodeFilter(rows) {
     const client  = String(r.client  || '').trim();
     const company = String(r.company || '').trim();
 
-    // 1) Direct client assignment (per company)
     if (client && company && STATE.clientSrAssignments.size) {
       const direct = STATE.clientSrAssignments.get(company + KEY_SEP + client);
       if (direct && direct.some(c => codeSet.has(String(c).trim()))) return true;
     }
 
-    // 2) Group-level assignment (per company)
     if (client && company && groupMap.size) {
       const gLabel = matchClientGroup(client);
       if (gLabel) {
@@ -1967,7 +1965,6 @@ function applySrCodeFilter(rows) {
       }
     }
 
-    // 3) Raw sr_code match
     const raw = String(r.sr_code || '').trim();
     return codeSet.has(raw);
   });
@@ -1981,7 +1978,6 @@ function getVisibleCompareRows() {
   return applyCompanyFilter(applySrCodeFilter(applyGlobalExclusions(STATE.compareRows)));
 }
 
-// Silent drill scope filter (fallback para sa My Personnel drill)
 function matchDrillStep(row, step) {
   if (Array.isArray(step.codes)) {
     const eff = String(row._effective_sr_code || row.sr_code || '').trim();
@@ -2162,9 +2158,6 @@ async function loadClientGroupsFromDB() {
   }
 }
 
-// ============================================================
-// CLIENT → SR-CODE ASSIGNMENTS  (per-company)
-// ============================================================
 async function loadClientSrAssignmentsFromDB() {
   if (!STATE.client) return;
   try {
@@ -2212,7 +2205,6 @@ function applySrCodeOverrides(rows) {
     let effective = raw;
     let origin = 'raw';
 
-    // 1) Direct client assignment (per company)
     if (map.size && client && company) {
       const assigned = map.get(company + KEY_SEP + client);
       if (assigned && assigned.length) {
@@ -2223,7 +2215,6 @@ function applySrCodeOverrides(rows) {
       }
     }
 
-    // 2) Group-level assignment (per company)
     if (groupMap.size && client && company) {
       const gLabel = matchClientGroup(client);
       if (gLabel && groupMap.has(gLabel)) {
@@ -2245,9 +2236,6 @@ function applySrCodeOverrides(rows) {
   return rows;
 }
 
-// ============================================================
-// COMPANY / AREA ACCESS CONTROL
-// ============================================================
 async function loadUserCompanyAccess() {
   if (!STATE.client || !STATE.userId) return;
   try {
@@ -2278,7 +2266,6 @@ function hasCompanyAccess() {
   return STATE.myCompanies.length > 0 || STATE.myAreas.length > 0;
 }
 
-// Server-side scoping para sa fetch. Per-company na ang SR filter sa or() clause.
 function applyAccessFilter(q) {
   if (STATE.isAdmin) return q;
 
@@ -2355,9 +2342,6 @@ function applyAccessFilter(q) {
   return q.or(orExpr);
 }
 
-// ============================================================
-// TARGET HELPERS  (per-company)
-// ============================================================
 function scopeCompanyForDim(dim, selectedCompany) {
   return dim === 'Company' ? null : (selectedCompany || null);
 }
@@ -2374,19 +2358,6 @@ function getTargetCell(year, company, dim, name, ptype, pidx) {
   return row ? (Number(row.target_amount) || 0) : 0;
 }
 
-/**
- * Kinokompute ang target, achieved, at "set" (coverage) para sa isang row.
- *
- * ✅ SET (coverage) = bilang ng mga period kung saan NA-HIT ang target.
- *    - Kung ang sales >= target sa period na iyon → counted.
- *    - Kung ang sales < target (o zero) → hindi counted.
- *
- * Halimbawa:
- *   - 12 buwan, may target lahat ng 100M, pero 12M lang ang benta kada buwan
- *     → Set = 0/12, % Achieved = 0.00%
- *   - Kung ang Abril ay 100M (na-hit) at iba ay 12M
- *     → Set = 1/12, % Achieved = 8.33%
- */
 function computeRowTarget(year, company, dim, name, ptype, salesArr) {
   const labelsLen = PERIOD_LABELS[ptype].length;
   let target = 0, coverage = 0, achieved = 0;
@@ -2398,7 +2369,6 @@ function computeRowTarget(year, company, dim, name, ptype, salesArr) {
       target += t;
       const s = (salesArr && salesArr[i] != null) ? Number(salesArr[i]) : 0;
       achieved += s;
-      // ✅ Bilangin lang kung NA-HIT ang target sa period na ito
       if (s >= t) coverage += 1;
     }
   }
@@ -2459,9 +2429,6 @@ async function loadTargetsFromDB() {
   }
 }
 
-// ============================================================
-// MISC HELPERS
-// ============================================================
 function getMonthIndex(dateVal) {
   if (dateVal == null) return null;
   if (dateVal instanceof Date) {
@@ -2676,9 +2643,6 @@ function getActiveSrCodes() {
   return STATE.mySrCodes;
 }
 
-// ============================================================
-// FILTER-DIMENSION SYNC
-// ============================================================
 function deriveFilterDimension() {
   return STATE.groupBy === 'My Personnel' ? 'Client' : STATE.groupBy;
 }
@@ -2734,7 +2698,6 @@ function syncFilterDimensionToGroupBy() {
   updateFilterDimLabel();
 }
 
-// ---------- SORTING ----------
 function compareRows(a, b, groups) {
   const field = STATE.sortField;
   const dir = STATE.sortDir;
@@ -2758,7 +2721,6 @@ function compareRows(a, b, groups) {
       break;
     }
     case 'pctTarget': {
-      // ✅ Hit-based % Achieved (Set / total periods)
       const sA = groups[a].sales, sB = groups[b].sales;
       const rA = computeRowTarget(STATE.year, STATE.selectedCompany, STATE.groupBy, a, STATE.period, sA);
       const rB = computeRowTarget(STATE.year, STATE.selectedCompany, STATE.groupBy, b, STATE.period, sB);
@@ -2844,9 +2806,6 @@ function setActiveView(view) {
   }
 }
 
-// ============================================================
-// DRILL STACK → TUNAY NA FILTER CONVERSION
-// ============================================================
 function showSecondaryFilterUI(dim) {
   const e1 = $('#filter2-and');        if (e1) e1.hidden = false;
   const e2 = $('#filter2-dim-wrap');   if (e2) e2.hidden = false;
@@ -2927,9 +2886,6 @@ function applyDrillStackToDashboardFilters(stack) {
   return true;
 }
 
-// ============================================================
-// INIT
-// ============================================================
 async function init() {
   try {
     setStatus('Connecting to Supabase…');
@@ -3042,9 +2998,6 @@ async function init() {
   }
 }
 
-// ============================================================
-// LOAD AVAILABLE YEARS
-// ============================================================
 async function loadAvailableYears() {
   const activeCodes = getActiveSrCodes();
   const noAccess = !STATE.isAdmin && !hasCompanyAccess() && (!activeCodes || !activeCodes.length);
@@ -3094,9 +3047,6 @@ async function loadAvailableYears() {
   console.log(`[dashboard] ✅ years loaded in ${Math.round(performance.now() - t0)}ms: ${years.join(', ') || 'none'}`);
 }
 
-// ============================================================
-// LOAD YEAR DATA
-// ============================================================
 async function loadYearData() {
   $('#loader').hidden = false;
   $('#loader-text').textContent = 'Loading data…';
@@ -3185,9 +3135,6 @@ async function loadYearData() {
   }
 }
 
-// ============================================================
-// LOAD ALL YEARS (Compare mode)
-// ============================================================
 async function loadAllYearsData() {
   if (STATE.compareLoaded || STATE.compareLoading) return;
   STATE.compareLoading = true;
@@ -3242,9 +3189,6 @@ async function loadAllYearsData() {
   }
 }
 
-// ============================================================
-// TABLE VIEW
-// ============================================================
 function aggregate(rows) {
   const key = `table|${STATE.period}|${STATE.groupBy}|${STATE.groupClients ? 1 : 0}|${STATE.excludeHardware ? 1 : 0}|${STATE.selectedCompany || ''}`;
   if (STATE.aggCache.has(key)) return STATE.aggCache.get(key);
@@ -3486,8 +3430,6 @@ function render() {
       const { target, coverage, achieved, maxPeriods } = computeRowTarget(
         STATE.year, STATE.selectedCompany, targetDim, k, STATE.period, d.sales
       );
-      // ✅ % Achieved = hit-based (Set ÷ total periods)
-      //    Halimbawa: 1 na-hit / 12 periods = 8.33%
       const pct = maxPeriods > 0 ? (coverage / maxPeriods) * 100 : 0;
       const cls = coverage === 0 ? '' : (pct >= 100 ? 'good' : (pct >= 75 ? 'mid' : 'bad'));
       const covCls = coverage === 0 ? 'empty' : (coverage === maxPeriods ? 'complete' : 'partial');
@@ -3498,7 +3440,6 @@ function render() {
         textContent: `${coverage}/${maxPeriods}`,
       }));
       tr.append(covTd);
-      // ✅ Laging may value — 2 decimal places (e.g. 8.33%)
       tr.append(el('td', { className: 'pct-col ' + cls, textContent: pct.toFixed(2) + '%' }));
 
       grandTarget += target;
@@ -3529,7 +3470,6 @@ function render() {
 
   if (showTargets) {
     const totalPeriods = PERIOD_LABELS[STATE.period].length * keys.length;
-    // ✅ Footer % Achieved = hit-based
     const pct = totalPeriods > 0 ? (grandCoverage / totalPeriods) * 100 : 0;
     const cls = grandCoverage === 0 ? '' : (pct >= 100 ? 'good' : (pct >= 75 ? 'mid' : 'bad'));
     footRow.append(el('td', { textContent: grandTarget > 0 ? fmtS(grandTarget) : '—' }));
@@ -3569,9 +3509,6 @@ function render() {
   }
 }
 
-// ============================================================
-// DASHBOARD helpers
-// ============================================================
 function getChartRows() {
   let rows = STATE.compareMode ? getVisibleCompareRows() : getAllVisibleRows();
 
@@ -4515,9 +4452,6 @@ function chartOptions({ yFmt, rotateX = false, showLegend = false } = {}) {
   };
 }
 
-// ============================================================
-// DRILL-DOWN
-// ============================================================
 function getRowsAtDrillLevel() {
   return applyDrillScope(getAllVisibleRows(), STATE.drillStack);
 }
@@ -4909,9 +4843,6 @@ function renderDrill() {
   }
 }
 
-// ============================================================
-// CSV EXPORTS
-// ============================================================
 function exportCSV() {
   const rows = [];
   $('#grid').querySelectorAll('tr').forEach(tr => {
@@ -4973,9 +4904,6 @@ function exportDrillCSV() {
   URL.revokeObjectURL(url);
 }
 
-// ============================================================
-// WIRE CONTROLS
-// ============================================================
 function wireControls() {
   $('#hero-actions').addEventListener('click', (e) => {
     const btn = e.target.closest('.hero-btn[data-view]');
@@ -5310,7 +5238,6 @@ function wireControls() {
     }
   });
 
-  // Drill search
   const drillSearchInput = $('#drill-search-input');
   const drillSearchClear = $('#drill-search-clear');
 
@@ -5339,7 +5266,6 @@ function wireControls() {
     });
   }
 
-  // "Open in Dashboard" — i-convert ang drill stack → tunay na filters
   $('#drill-open-dashboard').addEventListener('click', () => {
     if (!STATE.drillStack.length) return;
 
@@ -5444,6 +5370,53 @@ function wireControls() {
     if (STATE.chart) STATE.chart.resize();
   });
 }
+
+// ============================================================
+// DYNAMIC BACKGROUNDS — nakadepende sa connect.js (window.HOSTNAME)
+// Hindi na kailangang i-edit ang fei1.html kahit mag-restart ang tunnel.
+// Ang connect.js ang bahala sa host selection (Worker o tunnel).
+// ============================================================
+function applyDynamicBackgrounds() {
+  const host = window.HOSTNAME
+    || (Array.isArray(window.HOSTS) && window.HOSTS[0])
+    || '';
+  if (!host) return;
+
+  // Body background image (page background)
+  const bgUrl = host + '/storage/v1/object/public/image/background.png';
+  document.body.style.backgroundImage =
+    "linear-gradient(180deg, rgba(27,27,179,.42) 0%, rgba(13,13,122,.72) 100%), url('" + bgUrl + "')";
+  document.body.style.backgroundSize = 'cover, cover';
+  document.body.style.backgroundAttachment = 'fixed, fixed';
+  document.body.style.backgroundRepeat = 'no-repeat, no-repeat';
+  document.body.style.backgroundPosition = 'center, center';
+
+  // Hero background image (header banner)
+  const heroEl = document.querySelector('.hero');
+  if (heroEl) {
+    const heroUrl = host + '/storage/v1/object/public/image/ldi1.png';
+    heroEl.style.backgroundImage =
+      "linear-gradient(115deg, rgba(13,13,122,.95) 0%, rgba(27,27,179,.86) 48%, rgba(227,30,36,.60) 100%), url('" + heroUrl + "')";
+    heroEl.style.backgroundSize = 'cover, cover';
+    heroEl.style.backgroundPosition = 'center, center';
+    heroEl.style.backgroundRepeat = 'no-repeat, no-repeat';
+  }
+}
+
+// I-apply kapag naka-set na ang host (galing connect.js)
+window.addEventListener('host-ready', applyDynamicBackgrounds);
+
+// I-apply din kapag nag-switch ang host (network change, failover, etc.)
+window.addEventListener('online', () => setTimeout(applyDynamicBackgrounds, 500));
+
+// Initial apply — sa DOMContentLoaded at pagkatapos mag-load ng connect.js
+document.addEventListener('DOMContentLoaded', () => {
+  applyDynamicBackgrounds();
+  // Retry kung hindi pa ready ang host (async boot ng connect.js)
+  setTimeout(applyDynamicBackgrounds, 300);
+  setTimeout(applyDynamicBackgrounds, 1000);
+  setTimeout(applyDynamicBackgrounds, 2500);
+});
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
