@@ -735,6 +735,24 @@
       margin-right: 6px;
     }
 
+    /* Portal menu for SR codes multi-select */
+    .ms-menu-portal {
+      font-family: 'DM Sans', system-ui, sans-serif;
+    }
+    .ms-menu-portal .ms-portal-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 6px;
+      font-size: 12.5px; cursor: pointer; user-select: none;
+      color: var(--text);
+    }
+    .ms-menu-portal .ms-portal-item:hover { background: var(--surface-2); }
+    .ms-menu-portal .ms-portal-item input[type="checkbox"] {
+      width: 15px; height: 15px;
+      accent-color: var(--royal);
+      flex: 0 0 auto;
+      cursor: pointer;
+    }
+
     @media (max-width: 900px) {
       :root { --content-max: 100%; }
       input, select, textarea,
@@ -1087,6 +1105,7 @@
         </label>
         <input type="text" id="clientsr-search" placeholder="Search clients…"
                style="flex:1 1 220px;height:32px;padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--r-sm);font:inherit;font-size:12.5px">
+        <button class="drill-back" id="clientsr-refresh-sr" title="Reload the SR code list from the server">⟳ SR codes <span id="clientsr-sr-count" style="opacity:.7;margin-left:4px">—</span></button>
         <button class="drill-back" id="clientsr-bulk" title="Bulk assign SR codes to checked clients">📋 Bulk assign</button>
         <button class="drill-back drill-danger" id="clientsr-clear-sel" title="Clear SR codes on checked clients">🧹 Clear checked</button>
         <button class="drill-back drill-save" id="clientsr-save" style="margin-left:auto">💾 Save all</button>
@@ -1150,7 +1169,7 @@
 // SETTINGS — CSV upload + User Assignments
 //          + Client Groups (DB)
 //          + Sales Targets (DB, per-company, ONE value per period type)
-//          + Client SR Codes (DB, per-company)
+//          + Client SR Codes (DB, per-company) — dropdown multi-select
 // ============================================================
 const COMPANY_OPTIONS = ['LDI', 'FEI', 'LCPI'];
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1165,7 +1184,6 @@ const DEFAULT_CLIENT_GROUPS = [
   { label: 'Greenline / Negros Jade',  keywords: ['greenline', 'negros jade', 'negros-jade'], clients: [] },
 ];
 
-// One input per period type — automatic replication sa lahat ng period_index
 const PERIOD_LABELS = {
   'Monthly':     ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
   'Quarterly':   ['Q1','Q2','Q3','Q4'],
@@ -1211,26 +1229,29 @@ const STATE = {
   pickerSearch: '',
   allClientNames: null,
 
-  // Targets (per-company, one value per period type)
+  // Targets
   targets: new Map(),
   targetsAvailable: true,
   targetYearOptions: [],
   targetGroupMode: 'grouped',
   targetCompany: '',
 
-  // Client × SR-code assignments (company-scoped)
-  clientSrAssignments: new Map(),   // key = company \u0001 client
+  // Client × SR-code assignments
+  clientSrAssignments: new Map(),
   clientSrAvailable: true,
   clientSrError: '',
-  clientSrDraft: null,              // Map<client, string[]> para sa current company
-  clientSrSelected: new Set(),      // Set<client>
+  clientSrDraft: null,
+  clientSrSelected: new Set(),
   clientSrSearch: '',
   clientSrCompany: '',
-  clientSrLoading: false,           // true habang kinukuha ang buong client list
-  clientsByCompany: {},             // cache: company -> sorted client names
+  clientSrLoading: false,
+  clientsByCompany: {},
   knownSrCodes: [],
   srCodeToUsers: new Map(),
-  rpcDistinctClientsAvailable: true, // false kapag hindi ma-call ang RPC (fallback sa cursor)
+  rpcDistinctClientsAvailable: true,
+
+  // CSR modal multi-select cleanup registry
+  csrMultiSelects: [],
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -1249,7 +1270,7 @@ const el = (tag, props = {}, children = []) => {
 // ============================================================
 // LOCALSTORAGE CACHE (24h TTL)
 // ============================================================
-const CACHE_VER = 'v3'; // bumped — invalidates stale v1/v2 client lists
+const CACHE_VER = 'v3';
 const CACHE_TTL = 24 * 60 * 60 * 1000;
 const CACHE_PREFIX = 'ldi_cache_' + CACHE_VER + '_';
 
@@ -1364,51 +1385,65 @@ function encodeFilter(expr) {
 }
 
 // ============================================================
-// ID-CURSOR PAGINATION
-// Walks the whole table kahit may server-side row cap (db-max-rows).
-// Hindi nag-break sa rows.length < PAGE — cursor lang ang basehan.
+// PAGE DISTINCT — keyset pagination on the field itself
+// ------------------------------------------------------------
+// HINDI na umaasa sa `id` column. Gumagamit ng sariling field value
+// bilang cursor (order=field.asc + field=gt."<lastVal>").
+// Works kahit string/UUID/number ang values, at kahit walang `id`.
 // ============================================================
 async function pageDistinct(field, { filter = '' } = {}) {
   const set = new Set();
   const PAGE = 1000;
-  let lastId = 0;
+  let lastVal = null;
   let guard = 0;
 
   while (guard++ < 5000) {
-    const cursor = lastId > 0 ? `&id=gt.${lastId}` : '';
+    let cursor = '';
+    if (lastVal != null) {
+      const esc = String(lastVal).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      cursor = `&${field}=gt.${encodeURIComponent('"' + esc + '"')}`;
+    }
     const rows = await restRequest(
-      `sales?select=id,${field}&${field}=not.is.null${filter}${cursor}` +
-      `&order=id.asc&limit=${PAGE}`
+      `sales?select=${field}&${field}=not.is.null${filter}${cursor}` +
+      `&order=${field}.asc&limit=${PAGE}`
     );
     if (!rows || !rows.length) break;
 
-    let advanced = false;
     rows.forEach(r => {
       const s = String(r[field] || '').trim();
       if (s) set.add(s);
-      const rid = Number(r.id);
-      if (!isNaN(rid) && rid > lastId) { lastId = rid; advanced = true; }
     });
 
-    if (!advanced) break;
+    const newLast = String(rows[rows.length - 1][field] || '').trim();
+    if (!newLast || newLast === lastVal) break;
+    lastVal = newLast;
   }
+  return [...set];
+}
+
+// Fallback kapag may sorun sa keyset (e.g. case-sensitivity).
+// Simple non-paginated fetch — umaasa sa server-side max rows.
+async function pageDistinctFallback(field, { filter = '' } = {}) {
+  const rows = await restRequest(
+    `sales?select=${field}&${field}=not.is.null${filter}&limit=10000`
+  );
+  const set = new Set();
+  (rows || []).forEach(r => {
+    const s = String(r[field] || '').trim();
+    if (s) set.add(s);
+  });
   return [...set];
 }
 
 // ============================================================
 // FAST DISTINCT CLIENT FETCH
-//   Primary: sales.distinct_clients RPC (one round-trip)
-//   Fallback: cursor-by-client pagination (kung hindi pa naka-deploy ang RPC)
-//   Cache: localStorage (24h) + in-memory
 // ============================================================
 async function fetchDistinctClientsViaRpc(company) {
-  // PostgREST accepts POST body for RPC even though it's a read.
   const rows = await restRequest('rpc/distinct_clients', {
     method: 'POST',
     body: { p_company: company },
   });
   if (!Array.isArray(rows)) return [];
-  // PostgREST returns either [{client: '...'}, ...] or ['...', ...]
   const out = [];
   for (const r of rows) {
     if (r == null) continue;
@@ -1471,7 +1506,6 @@ async function fetchClientsForCompany(company) {
   if (!company) return [];
   if (STATE.clientsByCompany[company]) return STATE.clientsByCompany[company];
 
-  // 1) Disk cache → instant kung na-fetch na dati
   const cached = cacheGet('clients_' + company);
   if (Array.isArray(cached) && cached.length) {
     STATE.clientsByCompany[company] = cached;
@@ -1479,7 +1513,6 @@ async function fetchClientsForCompany(company) {
     return cached;
   }
 
-  // 2) Fresh fetch
   try {
     const list = await fetchDistinctClientsForCompany(company, (n) => {
       const meta = document.getElementById('clientsr-meta');
@@ -1535,8 +1568,6 @@ async function init() {
     updateTargetsBadge();
     updateClientSrBadge();
 
-    // Warm the client cache for every company the user can see.
-    // Runs in the background so the modal opens instantly.
     getAvailableCompanies().forEach(c => {
       fetchClientsForCompany(c).catch(() => {});
     });
@@ -1821,7 +1852,6 @@ function makeCompanyMultiSelect(user) {
     document.querySelectorAll('.ms.open').forEach(w => { if (w !== wrap) w.classList.remove('open'); });
     wrap.classList.toggle('open');
   });
-  document.addEventListener('click', (ev) => { if (!wrap.contains(ev.target)) wrap.classList.remove('open'); });
 
   wrap._setStatus = (state) => {
     status.classList.remove('show', 'saving', 'saved', 'error');
@@ -2258,10 +2288,15 @@ async function handleUpload() {
     hideUploadPreview();
     updateUploadButton();
 
-    // Invalidate cached client lists — sales data just changed
     STATE.allClientNames = null;
     STATE.clientsByCompany = {};
     cacheClear('clients_');
+
+    // Refresh known SR codes since we just inserted new data
+    loadKnownSrCodes().then(() => {
+      updateClientSrBadge();
+      updateSrCountBadge();
+    }).catch(() => {});
   } catch (err) {
     console.error('[upload] failed:', err);
     setUploadProgress('error', '✕ Upload failed', err.message || String(err), 100);
@@ -2604,8 +2639,6 @@ async function saveGroupsFromEditor() {
 
 // ============================================================
 // SALES TARGETS — per-company, ONE value per period type
-//   DB still stores per period_index, pero awtomatikong nire-replicate
-//   ang isang value sa lahat ng period_index ng type na iyon.
 // ============================================================
 function targetKey(year, company, dim, name, ptype, pidx) {
   return `${year}\u0001${company}\u0001${dim}\u0001${name}\u0001${ptype}\u0001${pidx}`;
@@ -2688,7 +2721,6 @@ async function openTargetManager() {
   requestAnimationFrame(() => overlay.classList.add('active'));
   document.body.style.overflow = 'hidden';
 
-  // Year dropdown
   const yearSel = $('#target-year');
   yearSel.innerHTML = '';
   const years = STATE.targetYearOptions.length
@@ -2697,7 +2729,6 @@ async function openTargetManager() {
   years.forEach(y => yearSel.append(el('option', { value: y, textContent: y })));
   if (!yearSel.value) yearSel.value = years[0];
 
-  // Company dropdown
   const compWrap = $('#target-company-wrap');
   const compSel = $('#target-company');
   const companies = getAvailableCompanies();
@@ -2709,7 +2740,6 @@ async function openTargetManager() {
   compSel.value = STATE.targetCompany;
   if (compWrap) compWrap.style.display = companies.length > 1 ? '' : 'none';
 
-  // Group-mode toggle
   const gmSel = $('#target-group-mode');
   if (gmSel) gmSel.value = STATE.targetGroupMode;
   updateTargetGroupModeVisibility();
@@ -2724,12 +2754,10 @@ function closeTargetManager() {
   setTimeout(() => { overlay.hidden = true; }, 240);
 }
 
-// Kunin ang target value para sa period type (period_index=0 lang ang gagamitin)
 function getTargetForPeriodType(year, company, dim, name, ptype) {
   const k0 = targetKey(year, company, dim, name, ptype, 0);
   const r0 = STATE.targets.get(k0);
   if (r0 && Number(r0.target_amount) > 0) return Number(r0.target_amount);
-  // Fallback: hanapin sa kahit anong period_index
   for (const [, r] of STATE.targets) {
     if (Number(r.year) === Number(year) &&
         r.company === company &&
@@ -2770,7 +2798,6 @@ async function renderTargetManager() {
     return;
   }
 
-  // Kunin ang listahan ng names para sa dimension
   let names = [];
   try {
     if (dim === 'Client' && groupMode === 'grouped') {
@@ -2832,7 +2859,6 @@ async function renderTargetManager() {
   }));
   wrap.append(meta);
 
-  // ---------- TABLE ----------
   const table = document.createElement('table');
   table.style.cssText = 'width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px;';
 
@@ -2896,14 +2922,12 @@ async function renderTargetManager() {
       const cur = getTargetForPeriodType(year, company, dim, name, ptype);
       if (cur > 0) inp.value = formatNumberWithCommas(cur);
 
-      // Mark as dirty when changed
       const originalVal = inp.value;
       inp.addEventListener('input', () => {
         if (inp.value !== originalVal) inp.classList.add('dirty');
         else inp.classList.remove('dirty');
       });
 
-      // Enter → next field
       inp.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -2913,7 +2937,6 @@ async function renderTargetManager() {
           if (next) { next.focus(); next.select(); } else inp.blur();
         }
       });
-      // Focus select-all
       inp.addEventListener('focus', () => { try { inp.select(); } catch (_) {} });
 
       td.append(inp);
@@ -2938,8 +2961,6 @@ async function saveTargets() {
 
   if (!company) { alert('Pumili ng company.'); return; }
 
-  // Buuin ang upsert list.
-  // Isang value per period type → ire-replicate sa LAHAT ng period_index ng type na iyon.
   const upserts = [];
 
   for (const inp of inputs) {
@@ -2963,9 +2984,7 @@ async function saveTargets() {
     }
   }
 
-  // Local-only mode (no DB)
   if (!STATE.targetsAvailable) {
-    // Clear existing entries for this scope first
     for (const [k, v] of [...STATE.targets]) {
       if (Number(v.year) === year && v.company === company && v.dimension === dim) {
         STATE.targets.delete(k);
@@ -2983,7 +3002,6 @@ async function saveTargets() {
 
   setStatus('Saving targets…');
   try {
-    // 1) DELETE all existing rows for this (year, company, dim)
     await restRequest(
       `sales_targets?year=eq.${year}` +
       `&company=eq.${encodeURIComponent(company)}` +
@@ -2991,7 +3009,6 @@ async function saveTargets() {
       { method: 'DELETE', prefer: 'return=minimal' }
     );
 
-    // 2) INSERT fresh rows (chunked)
     if (upserts.length) {
       const CHUNK = 500;
       for (let i = 0; i < upserts.length; i += CHUNK) {
@@ -3054,8 +3071,9 @@ async function clearTargetScope() {
 }
 
 // ============================================================
-// CLIENT × SR CODES (company-scoped, fast)
+// CLIENT × SR CODES — with dropdown multi-select
 // ============================================================
+
 function currentUserRecord() {
   if (!STATE.me) return null;
   return STATE.users.find(u => u.id === STATE.me.id) || STATE.me;
@@ -3117,21 +3135,53 @@ async function loadClientSrAssignments() {
   }
 }
 
+// ============================================================
+// LOAD KNOWN SR CODES
+// ------------------------------------------------------------
+// SOURCE 1: public.users.assigned_sales_rep_codes
+// SOURCE 2: sales.sales.sr_code (distinct) — via pageDistinct
+// ------------------------------------------------------------
 async function loadKnownSrCodes() {
   const set = new Set();
+
+  // Source 1: from users
   STATE.users.forEach(u => {
     (u.assigned_sales_rep_codes || []).forEach(c => {
       const s = String(c || '').trim();
       if (s) set.add(s);
     });
   });
+  console.log(`[sr] from users: ${set.size}`);
+
+  // Source 2: from sales table
+  let salesList = [];
   try {
-    const list = await pageDistinct('sr_code');
-    list.forEach(s => set.add(s));
+    salesList = await pageDistinct('sr_code');
+    console.log(`[sr] from sales (keyset): ${salesList.length}`, salesList.slice(0, 10));
   } catch (err) {
-    console.warn('[clientsr] known SR codes fetch failed:', err);
+    console.error('[sr] sales keyset fetch FAILED:', err);
+    // Fallback: simple non-paginated fetch
+    try {
+      salesList = await pageDistinctFallback('sr_code');
+      console.log(`[sr] from sales (fallback): ${salesList.length}`, salesList.slice(0, 10));
+    } catch (err2) {
+      console.error('[sr] sales fallback fetch ALSO FAILED:', err2);
+      salesList = [];
+    }
   }
+  salesList.forEach(s => set.add(s));
+
   STATE.knownSrCodes = [...set].sort((a, b) => a.localeCompare(b));
+  console.log(`[sr] TOTAL known SR codes: ${STATE.knownSrCodes.length}`, STATE.knownSrCodes.slice(0, 20));
+
+  updateSrCountBadge();
+  return STATE.knownSrCodes;
+}
+
+function updateSrCountBadge() {
+  const b = $('#clientsr-sr-count');
+  if (!b) return;
+  b.textContent = String(STATE.knownSrCodes.length);
 }
 
 function updateClientSrBadge() {
@@ -3170,6 +3220,17 @@ function rebuildDraftForCompany(company) {
   STATE.clientSrDraft = draft;
 }
 
+// -------- Cleanup helper para sa portal menus --------
+function destroyCsrMultiSelects() {
+  if (STATE.csrMultiSelects && STATE.csrMultiSelects.length) {
+    STATE.csrMultiSelects.forEach(fn => { try { fn(); } catch (_) {} });
+  }
+  STATE.csrMultiSelects = [];
+  document.querySelectorAll('.ms-menu-portal').forEach(m => {
+    try { m.remove(); } catch (_) {}
+  });
+}
+
 async function openClientSrManager() {
   const overlay = $('#clientsr-overlay');
   overlay.hidden = false;
@@ -3190,7 +3251,6 @@ async function openClientSrManager() {
   populateClientSrCompanyDropdown();
   rebuildDraftForCompany(STATE.clientSrCompany);
 
-  // Show instantly — even before the full client list has finished loading
   STATE.clientSrLoading = !STATE.clientsByCompany[STATE.clientSrCompany];
   renderClientSrManager();
 
@@ -3212,6 +3272,7 @@ async function openClientSrManager() {
 }
 
 function closeClientSrManager() {
+  destroyCsrMultiSelects();
   const overlay = $('#clientsr-overlay');
   overlay.classList.remove('active');
   document.body.style.overflow = '';
@@ -3291,9 +3352,236 @@ function renderAssigneeCell(currentCodes, originalCodes) {
   return td;
 }
 
+/**
+ * SR Code multi-select dropdown para sa isang client.
+ * Ang menu ay naka-portal sa document.body para hindi ma-clip
+ * ng overflow ng drill-body. Position: fixed, computed on open.
+ */
+function makeSrCodeMultiSelect(clientName, onChange) {
+  const wrap = el('div', { className: 'ms', style: { position: 'relative' } });
+
+  const trigger = el('button', { type: 'button', className: 'ms-trigger' });
+  const label = el('span', { className: 'ms-label' });
+  const caret = el('span', { className: 'ms-caret', textContent: '▾' });
+  trigger.append(label, caret);
+
+  const updateLabel = () => {
+    const v = STATE.clientSrDraft.get(clientName) || [];
+    if (v.length === 0) {
+      label.textContent = '— Select SR codes —';
+      label.classList.add('empty');
+      trigger.removeAttribute('title');
+    } else {
+      label.textContent = v.join(', ');
+      label.classList.remove('empty');
+      trigger.title = v.join(', ');
+    }
+  };
+  updateLabel();
+
+  // ----- Portal menu -----
+  const menu = el('div', {
+    className: 'ms-menu-portal',
+    style: {
+      position: 'fixed',
+      display: 'none',
+      minWidth: '240px',
+      maxHeight: '300px',
+      overflowY: 'auto',
+      background: '#ffffff',
+      border: '1px solid var(--border-strong)',
+      borderRadius: '8px',
+      boxShadow: 'var(--shadow-lg)',
+      padding: '6px',
+      zIndex: 9999,
+      boxSizing: 'border-box',
+    }
+  });
+  document.body.append(menu);
+
+  // Search box
+  const search = el('input', {
+    type: 'text',
+    placeholder: 'Search SR codes…',
+    style: {
+      width: '100%',
+      padding: '6px 9px',
+      marginBottom: '6px',
+      border: '1px solid var(--border-strong)',
+      borderRadius: '6px',
+      fontSize: '12.5px',
+      fontFamily: 'inherit',
+      outline: 'none',
+      boxSizing: 'border-box',
+    }
+  });
+  search.addEventListener('click', e => e.stopPropagation());
+  search.addEventListener('input', renderOptions);
+  menu.append(search);
+
+  const optionsWrap = el('div');
+  menu.append(optionsWrap);
+
+  function renderOptions() {
+    optionsWrap.innerHTML = '';
+    const q = search.value.trim().toLowerCase();
+    const codes = STATE.knownSrCodes.filter(c => !q || c.toLowerCase().includes(q));
+
+    if (!codes.length) {
+      optionsWrap.append(el('div', {
+        style: {
+          padding: '10px',
+          fontSize: '12px',
+          color: 'var(--muted)',
+          textAlign: 'center',
+        },
+        textContent: STATE.knownSrCodes.length
+          ? 'No matching SR codes.'
+          : 'No SR codes available. Add SR codes to users or upload sales data first.'
+      }));
+      return;
+    }
+
+    const cur = STATE.clientSrDraft.get(clientName) || [];
+    codes.forEach(code => {
+      const cb = el('input', { type: 'checkbox' });
+      cb.checked = cur.includes(code);
+      cb.addEventListener('change', () => {
+        const arr = [...(STATE.clientSrDraft.get(clientName) || [])];
+        if (cb.checked) {
+          if (!arr.includes(code)) arr.push(code);
+        } else {
+          const i = arr.indexOf(code);
+          if (i >= 0) arr.splice(i, 1);
+        }
+        arr.sort((a, b) => a.localeCompare(b));
+        STATE.clientSrDraft.set(clientName, arr);
+        updateLabel();
+        if (typeof onChange === 'function') onChange();
+      });
+
+      const item = el('label', {
+        className: 'ms-portal-item',
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '6px 10px',
+          borderRadius: '6px',
+          fontSize: '12.5px',
+          cursor: 'pointer',
+          userSelect: 'none',
+          color: 'var(--text)',
+        }
+      }, [cb, document.createTextNode(code)]);
+
+      optionsWrap.append(item);
+    });
+  }
+  renderOptions();
+
+  wrap.append(trigger);
+
+  let isOpen = false;
+
+  function positionMenu() {
+    const rect = trigger.getBoundingClientRect();
+    const menuW = Math.max(240, Math.min(360, rect.width + 60));
+    let left = rect.left;
+    if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+    if (left < 8) left = 8;
+
+    const spaceBelow = window.innerHeight - rect.bottom - 8;
+    const spaceAbove = rect.top - 8;
+    const desiredH = 300;
+
+    let top, maxH;
+    if (spaceBelow >= 220 || spaceBelow >= spaceAbove) {
+      top = rect.bottom + 4;
+      maxH = Math.max(160, Math.min(desiredH, spaceBelow));
+    } else {
+      maxH = Math.max(160, Math.min(desiredH, spaceAbove));
+      top = rect.top - maxH - 4;
+      if (top < 8) top = 8;
+    }
+
+    menu.style.top = top + 'px';
+    menu.style.left = left + 'px';
+    menu.style.width = menuW + 'px';
+    menu.style.maxHeight = maxH + 'px';
+  }
+
+  function openMenu() {
+    document.querySelectorAll('.ms-menu-portal').forEach(m => {
+      if (m !== menu) m.style.display = 'none';
+    });
+    document.querySelectorAll('.ms.open').forEach(w => {
+      if (w !== wrap) w.classList.remove('open');
+    });
+
+    isOpen = true;
+    wrap.classList.add('open');
+    menu.style.display = 'block';
+    positionMenu();
+
+    setTimeout(() => {
+      try { search.focus(); search.select(); } catch (_) {}
+    }, 40);
+  }
+
+  function closeMenu() {
+    if (!isOpen) return;
+    isOpen = false;
+    wrap.classList.remove('open');
+    menu.style.display = 'none';
+    search.value = '';
+  }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isOpen) closeMenu();
+    else openMenu();
+  });
+
+  const onDocClick = (ev) => {
+    if (!isOpen) return;
+    if (wrap.contains(ev.target) || menu.contains(ev.target)) return;
+    closeMenu();
+  };
+
+  const onScroll = (ev) => {
+    if (!isOpen) return;
+    if (ev.target && ev.target.nodeType === 1 && menu.contains(ev.target)) return;
+    closeMenu();
+  };
+
+  const onResize = () => {
+    if (isOpen) positionMenu();
+  };
+
+  document.addEventListener('click', onDocClick);
+  window.addEventListener('scroll', onScroll, true);
+  window.addEventListener('resize', onResize);
+
+  wrap._destroy = () => {
+    document.removeEventListener('click', onDocClick);
+    window.removeEventListener('scroll', onScroll, true);
+    window.removeEventListener('resize', onResize);
+    try { menu.remove(); } catch (_) {}
+  };
+
+  if (!STATE.csrMultiSelects) STATE.csrMultiSelects = [];
+  STATE.csrMultiSelects.push(wrap._destroy);
+
+  return wrap;
+}
+
 function renderClientSrManager() {
   const body = $('#clientsr-body');
   if (!body) return;
+
+  destroyCsrMultiSelects();
+
   body.innerHTML = '';
 
   if (!STATE.clientSrAvailable) {
@@ -3308,7 +3596,6 @@ function renderClientSrManager() {
     body.append(w);
   }
 
-  // Live loading banner (full client list still streaming in)
   if (STATE.clientSrLoading) {
     const banner = el('div', {
       className: 'drill-empty',
@@ -3371,7 +3658,7 @@ function renderClientSrManager() {
   thCheck.append(selAll);
 
   const thClient = el('th', { textContent: 'Client' });
-  const thSr = el('th', { textContent: 'SR Codes (comma-separated)' });
+  const thSr = el('th', { textContent: 'SR Codes' });
   const thAssigned = el('th', { textContent: 'Assigned To' });
   thAssigned.style.minWidth = '220px';
   hr.append(thCheck, thClient, thSr, thAssigned);
@@ -3379,6 +3666,7 @@ function renderClientSrManager() {
   table.append(thead);
 
   const tbody = document.createElement('tbody');
+
   names.forEach(name => {
     const codes = normalizeCodeArray(draft.get(name) || []);
     const origCodes = normalizeCodeArray(STATE.clientSrAssignments.get(csrKey(company, name)) || []);
@@ -3402,59 +3690,52 @@ function renderClientSrManager() {
     const tdName = document.createElement('td');
     tdName.style.fontWeight = '600';
     tdName.append(document.createTextNode(name));
+
     let dirtyDot = null;
-    if (isDirty) {
-      dirtyDot = el('span', { className: 'csr-dirty-dot', title: 'May hindi pa naka-save na pagbabago' });
-      tdName.append(dirtyDot);
-    }
-    tdName.title = name;
-
-    const tdInput = document.createElement('td');
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.className = 'cell-input';
-    inp.style.minWidth = '220px';
-    inp.placeholder = 'e.g. DOM, DANIEL';
-    inp.value = codes.join(', ');
-    inp.setAttribute('list', 'clientsr-known-sr');
-
-    let tdAssigned = renderAssigneeCell(codes, origCodes);
-
-    inp.addEventListener('input', () => {
-      const arr = [...new Set(inp.value.split(',').map(s => s.trim()).filter(Boolean))];
-      STATE.clientSrDraft.set(name, arr);
-
+    const refreshDirtyDot = () => {
+      const arr = STATE.clientSrDraft.get(name) || [];
       const nowDirty = !codesEqual(arr, origCodes);
       if (nowDirty && !dirtyDot) {
-        dirtyDot = el('span', { className: 'csr-dirty-dot', title: 'May hindi pa naka-save na pagbabago' });
+        dirtyDot = el('span', {
+          className: 'csr-dirty-dot',
+          title: 'May hindi pa naka-save na pagbabago',
+        });
         tdName.append(dirtyDot);
       } else if (!nowDirty && dirtyDot) {
         dirtyDot.remove();
         dirtyDot = null;
       }
+    };
+    if (isDirty) {
+      dirtyDot = el('span', {
+        className: 'csr-dirty-dot',
+        title: 'May hindi pa naka-save na pagbabago',
+      });
+      tdName.append(dirtyDot);
+    }
+    tdName.title = name;
 
+    let tdAssigned = renderAssigneeCell(codes, origCodes);
+
+    const tdSr = document.createElement('td');
+    tdSr.style.minWidth = '220px';
+    tdSr.style.whiteSpace = 'normal';
+
+    const ms = makeSrCodeMultiSelect(name, () => {
+      refreshDirtyDot();
+      const arr = STATE.clientSrDraft.get(name) || [];
       const next = renderAssigneeCell(arr, origCodes);
       tdAssigned.replaceWith(next);
       tdAssigned = next;
     });
-    tdInput.append(inp);
+    tdSr.append(ms);
 
-    tr.append(tdCb, tdName, tdInput, tdAssigned);
+    tr.append(tdCb, tdName, tdSr, tdAssigned);
     tbody.append(tr);
   });
+
   table.append(tbody);
   body.append(table);
-
-  let dl = document.getElementById('clientsr-known-sr');
-  if (!dl) {
-    dl = document.createElement('datalist');
-    dl.id = 'clientsr-known-sr';
-    document.body.append(dl);
-  }
-  if (!dl.dataset.filled) {
-    STATE.knownSrCodes.slice(0, 500).forEach(code => dl.append(el('option', { value: code })));
-    dl.dataset.filled = '1';
-  }
 }
 
 async function saveClientSrAssignments() {
@@ -3462,7 +3743,6 @@ async function saveClientSrAssignments() {
   const company = STATE.clientSrCompany;
   if (!draft || !company) return;
 
-  // Local-only mode
   if (!STATE.clientSrAvailable) {
     const prefix = company + '\u0001';
     for (const [k] of [...STATE.clientSrAssignments]) {
@@ -3478,7 +3758,6 @@ async function saveClientSrAssignments() {
     return;
   }
 
-  // Diff — clients na may laman
   const toUpsert = [];
   for (const [client, codes] of draft) {
     const norm = normalizeCodeArray(codes);
@@ -3489,13 +3768,11 @@ async function saveClientSrAssignments() {
 
   setStatus('Saving client SR codes…');
   try {
-    // 1) DELETE all existing rows for this company (simple + reliable)
     await restRequest(
       `client_sr_assignments?company=eq.${encodeURIComponent(company)}`,
       { method: 'DELETE', prefer: 'return=minimal' }
     );
 
-    // 2) INSERT fresh rows (chunked)
     if (toUpsert.length) {
       const rows = toUpsert.map(u => ({
         company: u.company,
@@ -3530,9 +3807,13 @@ async function saveClientSrAssignments() {
 async function bulkAssignClientSrCodes() {
   const selected = [...STATE.clientSrSelected];
   if (!selected.length) { alert('Walang naka-check na client.'); return; }
+
   const input = prompt(
-    `Ilagay ang SR codes (comma-separated) na i-a-assign sa ${selected.length} client${selected.length === 1 ? '' : 's'}.\n` +
-    `Halimbawa:  DOM, DANIEL`
+    `Ilagay ang SR codes (comma-separated) na i-a-assign sa ${selected.length} client${selected.length === 1 ? '' : 's'}.\n\n` +
+    `Available SR codes (${STATE.knownSrCodes.length}):\n` +
+    STATE.knownSrCodes.slice(0, 40).join(', ') +
+    (STATE.knownSrCodes.length > 40 ? `… (+${STATE.knownSrCodes.length - 40} more)` : '') +
+    `\n\nHalimbawa:  DOM, DANIEL`
   );
   if (input == null) return;
   const codes = [...new Set(input.split(',').map(s => s.trim()).filter(Boolean))];
@@ -3557,10 +3838,8 @@ function clearCheckedClientSrCodes() {
 // WIRE UI
 // ============================================================
 function wireUi() {
-  // Upload
   setupUploadUi();
 
-  // Users
   $('#search').addEventListener('input', render);
   $('#btn-export-users').addEventListener('click', downloadUsersCSV);
   $('#btn-reload').addEventListener('click', async () => {
@@ -3662,7 +3941,6 @@ function wireUi() {
     STATE.clientSrSelected.clear();
     rebuildDraftForCompany(STATE.clientSrCompany);
 
-    // Show instantly kung naka-cache na; kung wala pa, i-background fetch
     STATE.clientSrLoading = !STATE.clientsByCompany[STATE.clientSrCompany];
     renderClientSrManager();
 
@@ -3687,6 +3965,26 @@ function wireUi() {
     STATE.clientSrSearch = e.target.value || '';
     renderClientSrManager();
   });
+
+  // Manual SR code reload
+  const refreshSrBtn = $('#clientsr-refresh-sr');
+  if (refreshSrBtn) {
+    refreshSrBtn.addEventListener('click', async () => {
+      const prev = refreshSrBtn.textContent;
+      refreshSrBtn.disabled = true;
+      refreshSrBtn.textContent = '⟳ Loading…';
+      try {
+        await loadKnownSrCodes();
+        renderClientSrManager();
+      } catch (err) {
+        alert('Hindi ma-load ang SR codes: ' + err.message);
+      } finally {
+        refreshSrBtn.disabled = false;
+        refreshSrBtn.textContent = prev;
+      }
+    });
+  }
+
   $('#clientsr-bulk').addEventListener('click', bulkAssignClientSrCodes);
   $('#clientsr-clear-sel').addEventListener('click', clearCheckedClientSrCodes);
   $('#clientsr-save').addEventListener('click', saveClientSrAssignments);

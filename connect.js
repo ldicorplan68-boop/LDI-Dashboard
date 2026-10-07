@@ -15,8 +15,8 @@
 // ============================================================================
 
 const HOSTS = [
-  //'http://192.168.0.5:8000',                                    // 1. local
-  'https://snowy-mouse-c50bsupabase-proxy.ldicorplan68.workers.dev', // 2. cloudflare workers
+  'http://192.168.0.5:8000',                                    // 1. local
+  //'https://snowy-mouse-c50bsupabase-proxy.ldicorplan68.workers.dev', // 2. cloudflare workers
   //'https://groundwater-player-bag-sip.trycloudflare.com',           // 3. cloudflare tunnel
   // 'https://scam-retouch-hull.ngrok-free.dev'                    // 4. ngrok
 ];
